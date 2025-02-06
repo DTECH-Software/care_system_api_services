@@ -10,7 +10,6 @@ import java.util.List;
 
 @Repository
 public interface ApplicationPasswordHistoryRepository extends JpaRepository<ApplicationPasswordHistory, Long> {
-
     List<ApplicationPasswordHistory> findByApplicationUser(ApplicationUser applicationUser, Pageable pageable);
 
 }
