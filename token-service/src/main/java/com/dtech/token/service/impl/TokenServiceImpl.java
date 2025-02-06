@@ -10,6 +10,8 @@ package com.dtech.token.service.impl;
 import com.dtech.token.dto.request.ChannelRequestDTO;
 import com.dtech.token.dto.response.ApiResponse;
 import com.dtech.token.enums.Status;
+import com.dtech.token.model.ApplicationUser;
+import com.dtech.token.repository.ApplicationUserRepository;
 import com.dtech.token.repository.ApplicationUserSessionRepository;
 import com.dtech.token.service.TokenService;
 import com.dtech.token.util.JwtUtil;
@@ -25,6 +27,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 @Service
@@ -42,16 +45,40 @@ public class TokenServiceImpl implements TokenService {
     private final ApplicationUserSessionRepository applicationUserSessionRepository;
 
     @Autowired
+    private final ApplicationUserRepository applicationUserRepository;
+
+    @Autowired
     private final MessageSource messageSource;
 
     @Override
     public ResponseEntity<ApiResponse<Object>> getToken(ChannelRequestDTO channelRequestDTO, Locale locale) {
-
         try {
             log.info("get token {}", channelRequestDTO.getUsername());
-            String token = jwtUtil.generateToken(channelRequestDTO.getUsername());
-            log.info("generate token {}", token);
-            return ResponseEntity.ok().body(responseUtil.success(Map.of("accessToken", token), messageSource.getMessage(ResponseMessageUtil.TOKEN_GENERATE_SUCCESS, null, locale)));
+
+            Optional<ApplicationUser> userOptional = applicationUserRepository
+                    .findByUsername(channelRequestDTO.getUsername().trim());
+
+            if (userOptional.isPresent()) {
+                ApplicationUser user = userOptional.get();
+                String token = jwtUtil.generateToken(channelRequestDTO.getUsername());
+                log.info("Generated token: {}", token);
+
+                return ResponseEntity.ok().body(
+                        responseUtil.success(
+                                Map.of("accessToken", token),
+                                messageSource.getMessage(ResponseMessageUtil.TOKEN_GENERATE_SUCCESS, null, locale)
+                        )
+                );
+            } else {
+                log.info("User not found: {}", channelRequestDTO.getUsername());
+                return ResponseEntity.ok().body(
+                        responseUtil.error(
+                                null,
+                                1009,
+                                messageSource.getMessage(ResponseMessageUtil.APPLICATION_USER_NOT_FOUND, null, locale)
+                        )
+                );
+            }
 
         } catch (Exception e) {
             log.error(e);
