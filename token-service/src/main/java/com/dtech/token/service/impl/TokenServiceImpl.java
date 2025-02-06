@@ -15,13 +15,13 @@ import com.dtech.token.service.TokenService;
 import com.dtech.token.util.JwtUtil;
 import com.dtech.token.util.ResponseMessageUtil;
 import com.dtech.token.util.ResponseUtil;
-import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.MessageSource;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Locale;
 import java.util.Map;

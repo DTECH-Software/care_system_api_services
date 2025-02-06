@@ -15,26 +15,28 @@ import com.dtech.login.enums.Channel;
 import com.dtech.login.enums.Status;
 import com.dtech.login.feign.TokenFeignClient;
 import com.dtech.login.mapper.CommonRequestMapper;
+import com.dtech.login.model.ApplicationPasswordPolicy;
 import com.dtech.login.model.ApplicationUser;
 import com.dtech.login.model.ApplicationUserSession;
+import com.dtech.login.repository.ApplicationPasswordPolicyRepository;
 import com.dtech.login.repository.ApplicationUserRepository;
 import com.dtech.login.repository.ApplicationUserSessionRepository;
 import com.dtech.login.service.LoginService;
 import com.dtech.login.util.*;
 import com.google.gson.Gson;
-import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.MessageSource;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.security.NoSuchAlgorithmException;
 import java.util.Locale;
+import java.util.Optional;
 
 
 @Service
@@ -57,11 +59,12 @@ public class LoginServiceImpl implements LoginService {
     @Autowired
     private final Gson gson;
 
-    @Value("${application.user.login.attempt.count}")
-    private int  attemptCount;
-
     @Autowired
     private final MessageSource messageSource;
+
+    @Autowired
+    private final ApplicationPasswordPolicyRepository applicationPasswordPolicyRepository;
+
 
     @Override
     @Transactional
@@ -76,18 +79,20 @@ public class LoginServiceImpl implements LoginService {
 
                 String hashPasswordRequest = "";
                 try {
-                    hashPasswordRequest = PasswordUtil.passwordEncoder(user.getUserKey(),password);
+                    hashPasswordRequest = PasswordUtil.passwordEncoder(user.getUserKey(), password);
                 } catch (NoSuchAlgorithmException e) {
                     throw new RuntimeException(e);
                 }
                 log.info("password decoder:-{}", hashPasswordRequest);
                 if (user.getPassword().equals(hashPasswordRequest)) {
+
+                    Optional<Integer> passwordPolicyAttemptCount = getPasswordPolicyAttemptCount();
                     if (user.getPasswordExpiredDate().before(DateTimeUtil.getCurrentDateTime())) {
                         log.info("User password {} is expired", username);
                         updatePasswordExpireLogin(user);
                         return ResponseEntity.ok().body(responseUtil.error(null, 1003, messageSource.getMessage(ResponseMessageUtil.PASSWORD_EXPIRED_AT_LOGIN_TIME, null, locale)));
-                    } else if (user.getAttemptCount() > attemptCount) {
-                        log.info("User password {} is attempt exceed", username);
+                    } else if (passwordPolicyAttemptCount.get() > 0 && user.getAttemptCount() > passwordPolicyAttemptCount.get()) {
+                        log.info("User password {} is attempt exceed", user.getAttemptCount());
                         updatePasswordExpireLogin(user);
                         return ResponseEntity.ok().body(responseUtil.error(null, 1004, messageSource.getMessage(ResponseMessageUtil.PASSWORD_ATTEMPT_EXCEED, null, locale)));
                     }
@@ -99,20 +104,31 @@ public class LoginServiceImpl implements LoginService {
                     log.info("After token mapper response {}", objectApiResponse);
                     updateSuccessLogin(user, loginRequestDTO);
                     log.info("After successful update application user");
-                    updateUserSession(user,gson.fromJson(gson.toJson(objectApiResponse),AccessTokenResponseDTO.class));
+                    updateUserSession(user, gson.fromJson(gson.toJson(objectApiResponse), AccessTokenResponseDTO.class));
                     log.info("After successful update application user session");
                     return ResponseEntity.ok().body(responseUtil.success(objectApiResponse, messageSource.getMessage(ResponseMessageUtil.AUTHENTICATION_SUCCESS, null, locale)));
 
                 } else {
                     log.info("Processing login request password mismatch for username {} ", loginRequestDTO.getUsername());
                     updateWrongLogin(user);
-                    return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(responseUtil.error(null, 1005,  messageSource.getMessage(ResponseMessageUtil.USERNAME_PASSWORD_INVALID, null, locale)));
+                    return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(responseUtil.error(null, 1005, messageSource.getMessage(ResponseMessageUtil.USERNAME_PASSWORD_INVALID, null, locale)));
                 }
             }).orElseGet(() -> {
                 log.info("Processing login request user not found for username {} ", loginRequestDTO.getUsername());
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(responseUtil.error(null, 1006,messageSource.getMessage(ResponseMessageUtil.USERNAME_PASSWORD_INVALID, null, locale)));
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(responseUtil.error(null, 1006, messageSource.getMessage(ResponseMessageUtil.USERNAME_PASSWORD_INVALID, null, locale)));
             });
 
+        } catch (Exception e) {
+            log.error(e);
+            throw e;
+        }
+    }
+
+    @org.springframework.transaction.annotation.Transactional(readOnly = true)
+    protected Optional<Integer> getPasswordPolicyAttemptCount() {
+        try {
+            log.info("Processing password policy attemptCount ");
+            return applicationPasswordPolicyRepository.findPasswordPolicy().map(ApplicationPasswordPolicy::getAttemptExceedCount);
         } catch (Exception e) {
             log.error(e);
             throw e;
@@ -141,8 +157,8 @@ public class LoginServiceImpl implements LoginService {
         try {
             log.info("Processing wrong login request  username {} attempt {} ",
                     applicationUser.getUsername(), applicationUser.getAttemptCount());
-
-            if (applicationUser.getAttemptCount() > attemptCount) {
+            Optional<Integer> attemptCount = getPasswordPolicyAttemptCount();
+            if (attemptCount.get() > 0 && applicationUser.getAttemptCount() > attemptCount.get()) {
                 log.info("Processing wrong login request username {} attempt {} login status {} ", applicationUser.getUsername()
                         , applicationUser.getAttemptCount(), applicationUser.getLoginStatus());
                 applicationUser.setLoginStatus(Status.INACTIVE);

@@ -40,7 +40,7 @@ public class LoginController {
     @PostMapping(path = "/login")
     @ApiOperation(value = "Handle login request ",notes = "Login request success or failed")
     public ResponseEntity<ApiResponse<Object>> loginRequest(@RequestBody @Valid LoginRequestValidatorDTO loginRequestValidatorDTO, Locale locale) {
-        log.info("Login request token controller {} ", loginRequestValidatorDTO);
+        log.info("Login request login controller {} ", loginRequestValidatorDTO);
         return loginService.loginRequest(gson.fromJson(gson.toJson(loginRequestValidatorDTO), LoginRequestDTO.class), locale);
     }
 
