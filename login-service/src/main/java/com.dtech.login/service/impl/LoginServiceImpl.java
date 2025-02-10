@@ -80,6 +80,7 @@ public class LoginServiceImpl implements LoginService {
             if(optionalUser.isEmpty()) {
                 log.info("Login request find by email {} ", username);
                 optionalUser = applicationUserRepository.findByPrimaryEmail(username);
+                loginRequestDTO.setUsername(optionalUser.isEmpty()?"":optionalUser.get().getUsername());
             }
             return optionalUser.map(user -> {
 
