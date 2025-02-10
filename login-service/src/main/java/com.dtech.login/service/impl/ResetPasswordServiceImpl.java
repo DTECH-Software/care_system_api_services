@@ -90,7 +90,7 @@ public class ResetPasswordServiceImpl implements ResetPasswordService {
                     log.info("password reset successfully completed {} {}", password, username);
                     return ResponseEntity.ok().body(responseUtil.success(null, messageSource.getMessage(ResponseMessageUtil.PASSWORD_RESET_SUCCESS, null, locale)));
                 }
-                return ResponseEntity.ok().body(responseUtil.error(null, 1007, messageSource.getMessage(message, null, locale)));
+                return ResponseEntity.ok().body(responseUtil.error(null, 1007, message));
             }).orElseGet(() -> {
                 log.info("Processing reset password request user not found for username {} ", resetPasswordDTO.getUsername());
                 return ResponseEntity.ok().body(responseUtil.error(null, 1008, messageSource.getMessage(ResponseMessageUtil.USERNAME_PASSWORD_INVALID, null, locale)));
