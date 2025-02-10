@@ -60,7 +60,7 @@ public class TokenServiceImpl implements TokenService {
 
             if (userOptional.isPresent()) {
                 ApplicationUser user = userOptional.get();
-                String token = jwtUtil.generateToken(channelRequestDTO.getUsername());
+                String token = jwtUtil.generateToken(user.getUsername());
                 log.info("Generated token: {}", token);
 
                 return ResponseEntity.ok().body(
