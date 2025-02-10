@@ -9,7 +9,7 @@ import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
 @SpringBootApplication
 @EnableFeignClients
 @EnableDiscoveryClient
-@EnableJpaAuditing(auditorAwareRef = "auditorAwareService")
+@EnableJpaAuditing  //(auditorAwareRef = "auditorAwareService")
 public class LoginServiceApplication {
 
 	public static void main(String[] args) {
