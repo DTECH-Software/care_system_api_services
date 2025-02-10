@@ -35,6 +35,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.security.NoSuchAlgorithmException;
 import java.util.List;
 import java.util.Locale;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -65,7 +66,14 @@ public class ResetPasswordServiceImpl implements ResetPasswordService {
             String username = resetPasswordDTO.getUsername();
             String password = resetPasswordDTO.getConfirmPassword();
 
-            return applicationUserRepository.findByUsername(username).map(user -> {
+            Optional<ApplicationUser> optionalUser = applicationUserRepository.findByUsername(username);
+
+            if(optionalUser.isEmpty()) {
+                log.info("Login request find by email {} ", username);
+                optionalUser = applicationUserRepository.findByPrimaryEmail(username);
+            }
+
+            return optionalUser.map(user -> {
                 String hashPassword = "";
                 try {
                     log.info("processing reset password hash {}", password);

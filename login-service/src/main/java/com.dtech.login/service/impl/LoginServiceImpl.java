@@ -75,7 +75,13 @@ public class LoginServiceImpl implements LoginService {
             String username = loginRequestDTO.getUsername().trim();
             String password = loginRequestDTO.getPassword().trim();
 
-            return applicationUserRepository.findByUsername(username).map(user -> {
+            Optional<ApplicationUser> optionalUser = applicationUserRepository.findByUsername(username);
+
+            if(optionalUser.isEmpty()) {
+                log.info("Login request find by email {} ", username);
+                optionalUser = applicationUserRepository.findByPrimaryEmail(username);
+            }
+            return optionalUser.map(user -> {
 
                 String hashPasswordRequest = "";
                 try {
