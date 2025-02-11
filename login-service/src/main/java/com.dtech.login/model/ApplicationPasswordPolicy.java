@@ -50,4 +50,7 @@ public class ApplicationPasswordPolicy extends Audit implements Serializable {
     @Column(name = "attempt_exceed_count",nullable = false,length = 2)
     private int attemptExceedCount;
 
+    @Column(name = "otp_exceed_count",nullable = false,length = 2)
+    private int otpExceedCount;
+
 }

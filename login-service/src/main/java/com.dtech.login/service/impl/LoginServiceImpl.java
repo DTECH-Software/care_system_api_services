@@ -13,6 +13,7 @@ import com.dtech.login.dto.response.AccessTokenResponseDTO;
 import com.dtech.login.dto.response.ApiResponse;
 import com.dtech.login.enums.Channel;
 import com.dtech.login.enums.Status;
+import com.dtech.login.feign.MessageFeignClient;
 import com.dtech.login.feign.TokenFeignClient;
 import com.dtech.login.mapper.CommonRequestMapper;
 import com.dtech.login.model.ApplicationPasswordPolicy;
@@ -51,7 +52,7 @@ public class LoginServiceImpl implements LoginService {
     private final ResponseUtil responseUtil;
 
     @Autowired
-    private final TokenFeignClient tokenFeignClient;
+    private final MessageFeignClient messageFeignClient;
 
     @Autowired
     private final ApplicationUserSessionRepository applicationUserSessionRepository;
@@ -64,6 +65,8 @@ public class LoginServiceImpl implements LoginService {
 
     @Autowired
     private final ApplicationPasswordPolicyRepository applicationPasswordPolicyRepository;
+    @Autowired
+    private TokenFeignClient tokenFeignClient;
 
 
     @Override

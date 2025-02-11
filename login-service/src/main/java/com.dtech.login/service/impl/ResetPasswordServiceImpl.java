@@ -8,19 +8,21 @@
 package com.dtech.login.service.impl;
 
 
+import com.dtech.login.dto.request.ChannelRequestDTO;
+import com.dtech.login.dto.request.MessageRequestDTO;
 import com.dtech.login.dto.request.ResetPasswordDTO;
 import com.dtech.login.dto.response.ApiResponse;
+import com.dtech.login.dto.response.MessageResponseDTO;
+import com.dtech.login.enums.NotificationsType;
 import com.dtech.login.enums.Status;
+import com.dtech.login.feign.MessageFeignClient;
+import com.dtech.login.model.ApplicationOtpSession;
 import com.dtech.login.model.ApplicationPasswordHistory;
 import com.dtech.login.model.ApplicationUser;
-import com.dtech.login.repository.ApplicationPasswordHistoryRepository;
-import com.dtech.login.repository.ApplicationPasswordPolicyRepository;
-import com.dtech.login.repository.ApplicationUserRepository;
+import com.dtech.login.repository.*;
 import com.dtech.login.service.ResetPasswordService;
-import com.dtech.login.util.DateTimeUtil;
-import com.dtech.login.util.PasswordUtil;
-import com.dtech.login.util.ResponseMessageUtil;
-import com.dtech.login.util.ResponseUtil;
+import com.dtech.login.util.*;
+import com.google.gson.Gson;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,11 +33,16 @@ import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.client.RestTemplate;
+import org.springframework.web.util.UriComponentsBuilder;
 
 import java.security.NoSuchAlgorithmException;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Optional;
+
+import static com.dtech.login.util.DateTimeUtil.get60s;
 
 @Service
 @RequiredArgsConstructor
@@ -57,6 +64,142 @@ public class ResetPasswordServiceImpl implements ResetPasswordService {
     @Autowired
     private final ResponseUtil responseUtil;
 
+    @Autowired
+    private final MessageFeignClient messageFeignClient;
+
+    @Autowired
+    private final ApplicationOtpSessionRepository applicationOtpSessionRepository;
+
+    @Autowired
+    private final Gson gson;
+
+    @Override
+    @Transactional
+    public ResponseEntity<ApiResponse<Object>> resetRequest(ChannelRequestDTO channelRequestDTO, Locale locale) {
+        try {
+            log.info("Processing reset password request gen otp {} ", channelRequestDTO.getUsername());
+            String username = channelRequestDTO.getUsername();
+            Optional<ApplicationUser> optionalUser = applicationUserRepository.findByUsername(username);
+
+            if (optionalUser.isEmpty()) {
+                log.info("Reset password OTP request find by email {} ", username);
+                optionalUser = applicationUserRepository.findByPrimaryEmail(username);
+                channelRequestDTO.setUsername(optionalUser.isEmpty() ? "" : optionalUser.get().getUsername());
+            }
+
+            return optionalUser.map(user -> applicationPasswordPolicyRepository.findPasswordPolicy().map((policy) -> {
+
+                if (user.getOtpAttemptCount() > policy.getOtpExceedCount()) {
+                    log.info("Reset password OTP request attempt exceed {} , {}", user.getOtpAttemptCount(), policy.getAttemptExceedCount());
+                    return ResponseEntity.ok().body(responseUtil.error(null, 1010, messageSource.getMessage(ResponseMessageUtil.APPLICATION_USER_OTP_EXCEED, null, locale)));
+                } else if (user.getOtpAttemptCount() > 0) {
+                    log.info("Reset password request otp session {}", user.getApplicationOtpSession());
+                    Optional<ApplicationOtpSession> applicationOtpSession = applicationOtpSessionRepository.
+                            findById(user.getApplicationOtpSession() != null ? user.getApplicationOtpSession().getId() : 0);
+
+                    if (applicationOtpSession.isPresent()) {
+                        log.info("Reset password request otp session {}", applicationOtpSession.get());
+                        if (applicationOtpSession.get().getExpTime().after(DateTimeUtil.getCurrentDateTime())) {
+                            log.info("Reset password request otp session valid this moment {}", applicationOtpSession.get().getExpTime());
+                            return ResponseEntity.ok().body(responseUtil.error(null, 1012, messageSource.getMessage(ResponseMessageUtil.APPLICATION_USER_OTP_REQUEST_TRY_TO_AFTER_60S, null, locale)));
+                        }
+                        log.info("Rest password send otp session attempt exceed greater than 0 {}", user);
+                    } else {
+                        log.info("Reset password request otp session not found {}", applicationOtpSession);
+                        return ResponseEntity.ok().body(responseUtil.error(null, 1011, messageSource.getMessage(ResponseMessageUtil.APPLICATION_USER_OTP_SESSION_NOT_FOUND, null, locale)));
+                    }
+                }
+
+                log.info("Rest password send otp session send message {}", user);
+                return sendMessage(user, locale,policy.getOtpExceedCount() - user.getOtpAttemptCount());
+            }).orElseGet(() -> {
+                log.info("Password reset request policy not found for username {} ", username);
+                return ResponseEntity.ok().body(responseUtil.error(null, 1010, messageSource.getMessage(ResponseMessageUtil.APPLICATION_USER_PASSWORD_POLICY_NOT_FOUND, null, locale)));
+            })).orElseGet(() -> {
+                log.info("Password otp reset password request user not found for username {} ", channelRequestDTO.getUsername());
+                return ResponseEntity.ok().body(responseUtil.error(null, 1009, messageSource.getMessage(ResponseMessageUtil.APPLICATION_USER_NOT_FOUND, null, locale)));
+            });
+
+        } catch (Exception e) {
+            log.error(e);
+            throw e;
+        }
+    }
+
+    @Transactional
+    protected ResponseEntity<ApiResponse<Object>> sendMessage(ApplicationUser applicationUser, Locale locale,int otpExceedCount) {
+        try {
+            log.info("Processing reset password request gen otp {} ", applicationUser.getUsername());
+            String otp = RandomGeneratorUtil.getRandom6DigitNumber();
+            log.info("Generate otp {} ", otp);
+            MessageRequestDTO messageRequestDTO = new MessageRequestDTO();
+            messageRequestDTO.setValue(otp);
+            messageRequestDTO.setMobileNo(applicationUser.getPrimaryMobile());
+            messageRequestDTO.setType(NotificationsType.PASSWORD_RESET.name());
+
+//            log.info("Before token request mapper {} ", messageRequestDTO);
+//            log.info("Before calling message service {}", messageFeignClient);
+//            ResponseEntity<ApiResponse<Object>> messageResponse = messageFeignClient.sendMessage(messageRequestDTO);
+//            log.info("After response message service {}", messageResponse);
+//            Object objectApiResponse = ExtractApiResponseUtil.extractApiResponse(messageResponse);
+//            log.info("After message mapper response {}", objectApiResponse);
+//            MessageResponseDTO messageResponseDTO = gson.fromJson(gson.toJson(objectApiResponse), MessageResponseDTO.class);
+
+
+            String url = UriComponentsBuilder.fromHttpUrl("https://www.textit.biz/sendmsg/index.php")
+                    .queryParam("id", "94766485496")
+                    .queryParam("password", "4427")
+                    .queryParam("text", "Your OTP is "+otp)
+                    .queryParam("to", applicationUser.getPrimaryMobile())
+                    .toUriString();
+
+            RestTemplate restTemplate = new RestTemplate();
+            restTemplate.getForObject(url, String.class);
+            MessageResponseDTO messageResponseDTO = new MessageResponseDTO();
+            messageResponseDTO.setSuccess(1);
+
+            ApplicationOtpSession applicationOtpSession = updateOtpSession(otp, messageResponseDTO.getSuccess());
+            updateApplicationUser(applicationUser, applicationOtpSession);
+            log.info("Application OTP session updated successfully");
+            return ResponseEntity.ok().body(responseUtil.success(Map.of("otpRequestAttempt",otpExceedCount), messageSource.getMessage(ResponseMessageUtil.APPLICATION_USER_OTP_SEND_SUCCESS, null, locale)));
+
+        } catch (Exception e) {
+            log.error(e);
+            throw e;
+        }
+    }
+
+    @Transactional
+    protected ApplicationOtpSession updateOtpSession(String otp, int state) {
+        try {
+            log.info("Processing reset password request gen otp application otp session update {} ", otp);
+            ApplicationOtpSession applicationOtpSession = new ApplicationOtpSession();
+            applicationOtpSession.setOtp(otp);
+            applicationOtpSession.setExpTime(get60s());
+            applicationOtpSession.setSuccess(state);
+            ApplicationOtpSession otpSession = applicationOtpSessionRepository.save(applicationOtpSession);
+            log.info("Reset password request otp session update {} ", otpSession);
+            return otpSession;
+        } catch (Exception e) {
+            log.error(e);
+            throw e;
+        }
+    }
+
+    @Transactional
+    protected void updateApplicationUser(ApplicationUser applicationUser, ApplicationOtpSession applicationOtpSession) {
+        try {
+            log.info("Rest password opt request update application user {}", applicationUser);
+            applicationUser.setApplicationOtpSession(applicationOtpSession);
+            applicationUser.setOtpAttemptCount(applicationUser.getOtpAttemptCount() + 1);
+            applicationUserRepository.save(applicationUser);
+        } catch (Exception e) {
+            log.error(e);
+            throw e;
+        }
+    }
+
+
     @Override
     @Transactional
     public ResponseEntity<ApiResponse<Object>> resetPassword(ResetPasswordDTO resetPasswordDTO, Locale locale) {
@@ -68,10 +211,10 @@ public class ResetPasswordServiceImpl implements ResetPasswordService {
 
             Optional<ApplicationUser> optionalUser = applicationUserRepository.findByUsername(username);
 
-            if(optionalUser.isEmpty()) {
-                log.info("Login request find by email {} ", username);
+            if (optionalUser.isEmpty()) {
+                log.info("Reset password find by email {} ", username);
                 optionalUser = applicationUserRepository.findByPrimaryEmail(username);
-                resetPasswordDTO.setUsername(optionalUser.isEmpty()?"":optionalUser.get().getUsername());
+                resetPasswordDTO.setUsername(optionalUser.isEmpty() ? "" : optionalUser.get().getUsername());
             }
 
             return optionalUser.map(user -> {

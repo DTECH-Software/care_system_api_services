@@ -76,4 +76,11 @@ public class ApplicationUser extends Audit implements Serializable {
     @Column(name = "attempt_count",nullable = false)
     private int attemptCount;
 
+    @Column(name = "otp_attempt_count")
+    private int otpAttemptCount;
+
+    @OneToOne(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JoinColumn(name = "otp_session",referencedColumnName = "id")
+    private ApplicationOtpSession applicationOtpSession;
+
 }

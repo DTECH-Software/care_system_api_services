@@ -16,4 +16,10 @@ public class ResponseMessageUtil {
 
     /*Password reset*/
     public final static String PASSWORD_RESET_SUCCESS = "val.password.reset.success";
+    public final static String APPLICATION_USER_NOT_FOUND = "val.application.user.not.found";
+    public final static String APPLICATION_USER_PASSWORD_POLICY_NOT_FOUND = "val.application.user.password.policy.not.found";
+    public final static String APPLICATION_USER_OTP_SESSION_NOT_FOUND = "val.application.user.otp.session.not.found";
+    public final static String APPLICATION_USER_OTP_REQUEST_TRY_TO_AFTER_60S = "val.application.user.otp.session.60s";
+    public final static String APPLICATION_USER_OTP_SEND_SUCCESS = "val.application.user.otp.send.success";
+    public final static String APPLICATION_USER_OTP_EXCEED = "val.application.user.otp.exceed";
 }
