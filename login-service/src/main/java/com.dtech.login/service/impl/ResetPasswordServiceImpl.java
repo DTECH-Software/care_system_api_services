@@ -137,28 +137,15 @@ public class ResetPasswordServiceImpl implements ResetPasswordService {
             messageRequestDTO.setMobileNo(applicationUser.getPrimaryMobile());
             messageRequestDTO.setType(NotificationsType.PASSWORD_RESET.name());
 
-//            log.info("Before token request mapper {} ", messageRequestDTO);
-//            log.info("Before calling message service {}", messageFeignClient);
-//            ResponseEntity<ApiResponse<Object>> messageResponse = messageFeignClient.sendMessage(messageRequestDTO);
-//            log.info("After response message service {}", messageResponse);
-//            Object objectApiResponse = ExtractApiResponseUtil.extractApiResponse(messageResponse);
-//            log.info("After message mapper response {}", objectApiResponse);
-//            MessageResponseDTO messageResponseDTO = gson.fromJson(gson.toJson(objectApiResponse), MessageResponseDTO.class);
-
-
-            String url = UriComponentsBuilder.fromHttpUrl("https://www.textit.biz/sendmsg/index.php")
-                    .queryParam("id", "94766485496")
-                    .queryParam("password", "4427")
-                    .queryParam("text", "Your OTP is "+otp)
-                    .queryParam("to", applicationUser.getPrimaryMobile())
-                    .toUriString();
-
-            RestTemplate restTemplate = new RestTemplate();
-            restTemplate.getForObject(url, String.class);
-            MessageResponseDTO messageResponseDTO = new MessageResponseDTO();
-            messageResponseDTO.setSuccess(1);
-
-            ApplicationOtpSession applicationOtpSession = updateOtpSession(otp, messageResponseDTO.getSuccess());
+            log.info("Before token request mapper {} ", messageRequestDTO);
+            log.info("Before calling message service {}", messageFeignClient);
+            ResponseEntity<ApiResponse<Object>> messageResponse = messageFeignClient.sendMessage(messageRequestDTO);
+            log.info("After response message service {}", messageResponse);
+            Object objectApiResponse = ExtractApiResponseUtil.extractApiResponse(messageResponse);
+            log.info("After message mapper response {}", objectApiResponse);
+            MessageResponseDTO messageResponseDTO = gson.fromJson(gson.toJson(objectApiResponse), MessageResponseDTO.class);
+            log.info("Otp send status {}",messageResponseDTO);
+            ApplicationOtpSession applicationOtpSession = updateOtpSession(otp, messageResponseDTO != null ? messageResponseDTO.getSuccess():0);
             updateApplicationUser(applicationUser, applicationOtpSession);
             log.info("Application OTP session updated successfully");
             return ResponseEntity.ok().body(responseUtil.success(Map.of("otpRequestAttempt",otpExceedCount), messageSource.getMessage(ResponseMessageUtil.APPLICATION_USER_OTP_SEND_SUCCESS, null, locale)));

@@ -5,7 +5,7 @@
  * <p>
  */
 
-package com.dtech.login.dto.request;
+package com.dtech.message.dto.request;
 
 import lombok.*;
 

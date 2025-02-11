@@ -25,7 +25,7 @@ import java.util.Locale;
 @RestController
 @RequestMapping(path = "api/v1/token")
 @Log4j2
-@RequiredArgsConstructor(onConstructor = @__(@Autowired))
+@RequiredArgsConstructor
 public class TokenServiceController {
 
     @Autowired

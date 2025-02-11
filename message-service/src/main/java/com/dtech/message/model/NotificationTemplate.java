@@ -5,10 +5,12 @@
  * <p>
  */
 
-package com.dtech.login.model;
+package com.dtech.message.model;
 
-import com.dtech.login.enums.NotificationsType;
+
+import com.dtech.message.enums.NotificationsType;
 import jakarta.persistence.*;
+import lombok.Data;
 import lombok.EqualsAndHashCode;
 
 import java.io.Serializable;
@@ -16,6 +18,7 @@ import java.io.Serializable;
 @EqualsAndHashCode(callSuper = true)
 @Entity
 @Table(name = "notification_template")
+@Data
 public class NotificationTemplate extends Audit implements Serializable {
     private static final long serialVersionUID = 1L;
 

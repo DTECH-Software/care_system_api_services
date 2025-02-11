@@ -28,7 +28,7 @@ import java.util.Locale;
 @RestController
 @RequestMapping(path = "api/v1/login")
 @Log4j2
-@RequiredArgsConstructor(onConstructor = @__(@Autowired))
+@RequiredArgsConstructor
 public class LoginController {
 
     @Autowired
