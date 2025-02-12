@@ -28,6 +28,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
 
+import java.text.MessageFormat;
 import java.util.Locale;
 
 
@@ -66,8 +67,8 @@ public class SendMessageServiceImpl implements SendMessageService {
 
                         ITextMessageRequestDTO iTextMessageRequestDTO = new ITextMessageRequestDTO();
                         iTextMessageRequestDTO.setTo(messageRequestDTO.getMobileNo());
-                        iTextMessageRequestDTO.setText(template.getMessageBody().replaceAll(":otp",messageRequestDTO.getValue()));
-
+                        String otpMessage = MessageFormat.format(template.getMessageBody(), messageRequestDTO.getValue());
+                        iTextMessageRequestDTO.setText(otpMessage);
                         HttpHeaders headers = new HttpHeaders();
                         headers.set(HttpHeaders.CONTENT_TYPE, "application/json");
                         headers.set(HttpHeaders.AUTHORIZATION, "Basic " + apiKey);
@@ -77,7 +78,7 @@ public class SendMessageServiceImpl implements SendMessageService {
                         ResponseEntity<String> response = restTemplate.exchange(messageURI, HttpMethod.POST, entity, String.class);
                         log.info("After send message {}", response.toString());
                         MessageResponseDTO responseState = getResponseState(response);
-                        return ResponseEntity.ok().body(responseUtil.success((Object)responseState, messageSource.getMessage(ResponseMessageUtil.MESSAGE_SEND_SUCCESS, null, locale)));
+                        return ResponseEntity.ok().body(responseUtil.success((Object) responseState, messageSource.getMessage(ResponseMessageUtil.MESSAGE_SEND_SUCCESS, null, locale)));
 
                     }).orElseGet(() -> {
                         log.info("Template {} not found", messageRequestDTO.getType());
