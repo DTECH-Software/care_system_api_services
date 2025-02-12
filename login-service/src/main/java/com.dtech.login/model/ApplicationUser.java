@@ -83,4 +83,8 @@ public class ApplicationUser extends Audit implements Serializable {
     @JoinColumn(name = "otp_session",referencedColumnName = "id")
     private ApplicationOtpSession applicationOtpSession;
 
+    @Column(name = "otp_attempt_reset_time",nullable = false)
+    @Temporal(TemporalType.TIMESTAMP)
+    private Date otpAttemptResetTime;
+
 }

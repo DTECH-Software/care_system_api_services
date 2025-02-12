@@ -177,6 +177,7 @@ public class ResetPasswordServiceImpl implements ResetPasswordService {
             log.info("Rest password opt request update application user {}", applicationUser);
             applicationUser.setApplicationOtpSession(applicationOtpSession);
             applicationUser.setOtpAttemptCount(applicationUser.getOtpAttemptCount() + 1);
+            applicationUser.setOtpAttemptResetTime(DateTimeUtil.getCurrentDateTime());
             applicationUserRepository.save(applicationUser);
         } catch (Exception e) {
             log.error(e);
