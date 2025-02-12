@@ -52,9 +52,6 @@ public class LoginServiceImpl implements LoginService {
     private final ResponseUtil responseUtil;
 
     @Autowired
-    private final MessageFeignClient messageFeignClient;
-
-    @Autowired
     private final ApplicationUserSessionRepository applicationUserSessionRepository;
 
     @Autowired

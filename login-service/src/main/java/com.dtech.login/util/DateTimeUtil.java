@@ -29,11 +29,10 @@ public class DateTimeUtil {
         return Date.from(futureDate.atZone(ZoneId.systemDefault()).toInstant());
     }
 
-    public static Date get60s() {
-        Date currentDate = getCurrentDateTime();
+    public static Date get60s(Date date) {
         log.info("get 60s DateTime");
         Calendar calendar = Calendar.getInstance();
-        calendar.setTime(currentDate);
+        calendar.setTime(date);
         calendar.add(Calendar.SECOND, 60);
         return calendar.getTime();
     }

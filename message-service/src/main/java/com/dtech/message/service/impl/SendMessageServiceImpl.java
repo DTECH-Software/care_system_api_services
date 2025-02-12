@@ -23,6 +23,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.MessageSource;
 import org.springframework.http.*;
+import org.springframework.scheduling.support.SimpleTriggerContext;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
@@ -73,7 +74,7 @@ public class SendMessageServiceImpl implements SendMessageService {
                         headers.set("X-API-VERSION", "v1");
                         HttpEntity<ITextMessageRequestDTO> entity = new HttpEntity<>(iTextMessageRequestDTO, headers);
                         log.info("Before send message {}", messageRequestDTO);
-                        ResponseEntity<Object> response = restTemplate.exchange(messageURI, HttpMethod.POST, entity, Object.class);
+                        ResponseEntity<String> response = restTemplate.exchange(messageURI, HttpMethod.POST, entity, String.class);
                         log.info("After send message {}", response.toString());
                         MessageResponseDTO responseState = getResponseState(response);
                         return ResponseEntity.ok().body(responseUtil.success((Object)responseState, messageSource.getMessage(ResponseMessageUtil.MESSAGE_SEND_SUCCESS, null, locale)));
@@ -89,7 +90,7 @@ public class SendMessageServiceImpl implements SendMessageService {
     }
 
     @Transactional(readOnly = true)
-    protected MessageResponseDTO getResponseState(ResponseEntity<Object> response) {
+    protected MessageResponseDTO getResponseState(ResponseEntity<String> response) {
         try {
             log.info("Response state for send otp: {}", response.getBody());
             HttpStatusCode statusCode = response.getStatusCode();

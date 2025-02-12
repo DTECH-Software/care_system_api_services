@@ -34,8 +34,4 @@ public class ApplicationOtpSession extends Audit implements Serializable {
     @Column(name = "success",nullable = false)
     private int success;
 
-    @Column(name="exp_time",nullable = false)
-    @Temporal(TemporalType.TIMESTAMP)
-    private Date expTime;
-
 }
