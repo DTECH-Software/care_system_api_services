@@ -10,6 +10,7 @@ package com.dtech.login.service.impl;
 
 import com.dtech.login.dto.request.ChannelRequestDTO;
 import com.dtech.login.dto.request.MessageRequestDTO;
+import com.dtech.login.dto.request.OtpRequestDTO;
 import com.dtech.login.dto.request.ResetPasswordDTO;
 import com.dtech.login.dto.response.ApiResponse;
 import com.dtech.login.dto.response.MessageResponseDTO;
@@ -33,8 +34,6 @@ import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.client.RestTemplate;
-import org.springframework.web.util.UriComponentsBuilder;
 
 import java.security.NoSuchAlgorithmException;
 import java.util.List;
@@ -99,7 +98,7 @@ public class ResetPasswordServiceImpl implements ResetPasswordService {
                     if (applicationOtpSession.isPresent()) {
                         log.info("Reset password request otp session {}", applicationOtpSession.get());
                         if (DateTimeUtil.get60s(applicationOtpSession.get().getCreatedDate()).after(DateTimeUtil.getCurrentDateTime())) {
-                            log.info("Reset password request otp session valid this moment {}",DateTimeUtil.get60s(applicationOtpSession.get().getCreatedDate()) );
+                            log.info("Reset password request otp session valid this moment {}", DateTimeUtil.get60s(applicationOtpSession.get().getCreatedDate()));
                             return ResponseEntity.ok().body(responseUtil.error(null, 1012, messageSource.getMessage(ResponseMessageUtil.APPLICATION_USER_OTP_REQUEST_TRY_TO_AFTER_60S, null, locale)));
                         }
                         log.info("Rest password send otp session attempt exceed greater than 0 {}", user);
@@ -110,7 +109,7 @@ public class ResetPasswordServiceImpl implements ResetPasswordService {
                 }
 
                 log.info("Rest password send otp session send message {}", user);
-                return sendMessage(user, locale,policy.getOtpExceedCount() - user.getOtpAttemptCount());
+                return sendMessage(user, locale, policy.getOtpExceedCount() - user.getOtpAttemptCount());
             }).orElseGet(() -> {
                 log.info("Password reset request policy not found for username {} ", username);
                 return ResponseEntity.ok().body(responseUtil.error(null, 1010, messageSource.getMessage(ResponseMessageUtil.APPLICATION_USER_PASSWORD_POLICY_NOT_FOUND, null, locale)));
@@ -126,7 +125,7 @@ public class ResetPasswordServiceImpl implements ResetPasswordService {
     }
 
     @Transactional
-    protected ResponseEntity<ApiResponse<Object>> sendMessage(ApplicationUser applicationUser, Locale locale,int otpExceedCount) {
+    protected ResponseEntity<ApiResponse<Object>> sendMessage(ApplicationUser applicationUser, Locale locale, int otpExceedCount) {
         try {
             log.info("Processing reset password request gen otp {} ", applicationUser.getUsername());
             String otp = RandomGeneratorUtil.getRandom6DigitNumber();
@@ -143,11 +142,11 @@ public class ResetPasswordServiceImpl implements ResetPasswordService {
             Object objectApiResponse = ExtractApiResponseUtil.extractApiResponse(messageResponse);
             log.info("After message mapper response {}", objectApiResponse);
             MessageResponseDTO messageResponseDTO = gson.fromJson(gson.toJson(objectApiResponse), MessageResponseDTO.class);
-            log.info("Otp send status {}",messageResponseDTO);
-            ApplicationOtpSession applicationOtpSession = updateOtpSession(otp, messageResponseDTO != null ? messageResponseDTO.getSuccess():0);
+            log.info("Otp send status {}", messageResponseDTO);
+            ApplicationOtpSession applicationOtpSession = updateOtpSession(otp, messageResponseDTO != null ? messageResponseDTO.getSuccess() : 0);
             updateApplicationUser(applicationUser, applicationOtpSession);
             log.info("Application OTP session updated successfully");
-            return ResponseEntity.ok().body(responseUtil.success(Map.of("otpRequestAttempt",otpExceedCount), messageSource.getMessage(ResponseMessageUtil.APPLICATION_USER_OTP_SEND_SUCCESS, null, locale)));
+            return ResponseEntity.ok().body(responseUtil.success(Map.of("otpRequestAttempt", otpExceedCount), messageSource.getMessage(ResponseMessageUtil.APPLICATION_USER_OTP_SEND_SUCCESS, null, locale)));
 
         } catch (Exception e) {
             log.error(e);
@@ -231,6 +230,50 @@ public class ResetPasswordServiceImpl implements ResetPasswordService {
 
     }
 
+    @Override
+    @Transactional
+    public ResponseEntity<ApiResponse<Object>> otpValidation(OtpRequestDTO otpRequestDTO, Locale locale) {
+        try {
+            log.info("processing otp validation request {}", otpRequestDTO);
+            String username = otpRequestDTO.getUsername();
+            Optional<ApplicationUser> optionalUser = applicationUserRepository.findByUsername(username);
+
+            if (optionalUser.isEmpty()) {
+                log.info("OTP validate request find by email {} ", username);
+                optionalUser = applicationUserRepository.findByPrimaryEmail(username);
+                otpRequestDTO.setUsername(optionalUser.isEmpty() ? "" : optionalUser.get().getUsername());
+            }
+
+            if (optionalUser.isPresent()) {
+                ApplicationUser user = optionalUser.get();
+                if (user.getApplicationOtpSession() != null) {
+                    log.info("Otp request otp session  {} ", user.getApplicationOtpSession());
+
+                    if (DateTimeUtil.get60s(user.getApplicationOtpSession().getCreatedDate()).after(DateTimeUtil.getCurrentDateTime()) &&
+                            user.getApplicationOtpSession().getOtp().equals(otpRequestDTO.getOtp()) && !user.getApplicationOtpSession().isValidated()) {
+                        log.info("Otp request valid {} ", user.getApplicationOtpSession());
+                        updateApplicationUserOtpData(user,user.getApplicationOtpSession());
+                        return ResponseEntity.ok().body(responseUtil.success(null, messageSource.getMessage(ResponseMessageUtil.OTP_VALIDATION_SUCCESS, null, locale)));
+                    }
+
+                    log.info("Otp request validation fail otp or invalid session {}", user.getApplicationOtpSession());
+                    return ResponseEntity.ok().body(responseUtil.error(null, 1016, messageSource.getMessage(ResponseMessageUtil.OTP_INVALID_OR_SESSION_TIME_OUT, null, locale)));
+                }
+
+                log.info("Otp request otp session not found {} ", username);
+                return ResponseEntity.ok().body(responseUtil.error(null, 1015, messageSource.getMessage(ResponseMessageUtil.OTP_SESSION_NOT_FOUND, null, locale)));
+            }
+
+            log.info("Otp validation request not found for username {} ", username);
+            return ResponseEntity.ok().body(responseUtil.error(null, 1014, messageSource.getMessage(ResponseMessageUtil.APPLICATION_USER_NOT_FOUND, null, locale)));
+
+        } catch (Exception e) {
+            log.error(e);
+            throw e;
+        }
+    }
+
+
     @Transactional(readOnly = true)
     protected String validAlignCurrentPasswordPolicy(String password, ApplicationUser applicationUser, String hashPassword) {
         try {
@@ -303,6 +346,15 @@ public class ResetPasswordServiceImpl implements ResetPasswordService {
             log.error(e);
             throw e;
         }
+    }
+
+    @Transactional
+    protected void updateApplicationUserOtpData(ApplicationUser applicationUser,ApplicationOtpSession applicationOtpSession) {
+        log.info("Update otp validation request otp records");
+        applicationUser.setOtpAttemptCount(0);
+        applicationOtpSession.setValidated(true);
+        applicationUserRepository.save(applicationUser);
+        applicationOtpSessionRepository.save(applicationOtpSession);
     }
 
     @Transactional

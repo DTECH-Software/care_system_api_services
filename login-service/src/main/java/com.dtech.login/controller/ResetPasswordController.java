@@ -8,8 +8,10 @@
 package com.dtech.login.controller;
 
 import com.dtech.login.dto.request.ChannelRequestDTO;
+import com.dtech.login.dto.request.OtpRequestDTO;
 import com.dtech.login.dto.request.ResetPasswordDTO;
 import com.dtech.login.dto.request.validator.ChannelRequestValidatorDTO;
+import com.dtech.login.dto.request.validator.OtpRequestValidatorDTO;
 import com.dtech.login.dto.request.validator.ResetPasswordValidatorDTO;
 import com.dtech.login.dto.response.ApiResponse;
 import com.dtech.login.service.ResetPasswordService;
@@ -50,6 +52,13 @@ public class ResetPasswordController {
     public ResponseEntity<ApiResponse<Object>> resetPassword(@RequestBody @Valid ResetPasswordValidatorDTO resetPasswordValidatorDTO, Locale locale) {
         log.info("Password reset request controller {} ", resetPasswordValidatorDTO);
         return resetPasswordService.resetPassword(gson.fromJson(gson.toJson(resetPasswordValidatorDTO), ResetPasswordDTO.class), locale);
+    }
+
+    @PostMapping(path = "/validate/otp")
+    @ApiOperation(value = "Handle OTP validation request request ",notes = "OTP validation request success or failed")
+    public ResponseEntity<ApiResponse<Object>> otpValidation(@RequestBody @Valid OtpRequestValidatorDTO otpRequestValidatorDTO, Locale locale) {
+        log.info("OTP validation request request controller {} ", otpRequestValidatorDTO);
+        return resetPasswordService.otpValidation(gson.fromJson(gson.toJson(otpRequestValidatorDTO), OtpRequestDTO.class), locale);
     }
 
 }
