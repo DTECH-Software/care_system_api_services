@@ -26,6 +26,7 @@ import java.util.Locale;
 @RequestMapping(path = "api/v1/token")
 @Log4j2
 @RequiredArgsConstructor
+@CrossOrigin(origins = "*")
 public class TokenServiceController {
 
     @Autowired
