@@ -10,9 +10,11 @@ package com.dtech.login.util;
 import lombok.extern.log4j.Log4j2;
 
 import java.text.SimpleDateFormat;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.Calendar;
 import java.util.Date;
 @Log4j2
@@ -42,6 +44,14 @@ public class DateTimeUtil {
         log.info("get time formatter");
         SimpleDateFormat simpleDateFormat = new SimpleDateFormat("HH:mm");
         return simpleDateFormat.format(date);
+    }
+
+    public static long getMinutes(String time) {
+        log.info("get minutes");
+        DateTimeFormatter formatter = DateTimeFormatter.ISO_LOCAL_DATE_TIME;
+        LocalDateTime givenDate = LocalDateTime.parse(time, formatter);
+        Duration duration = Duration.between(givenDate, LocalDateTime.now());
+        return duration.toMinutes();
     }
 
 

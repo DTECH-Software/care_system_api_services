@@ -36,6 +36,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.security.NoSuchAlgorithmException;
+import java.sql.Date;
 import java.util.*;
 
 
@@ -87,9 +88,9 @@ public class ResetPasswordServiceImpl implements ResetPasswordService {
                 if (user.getOtpAttemptCount() > policy.getOtpExceedCount()) {
                     log.info("Reset password OTP request attempt exceed {} , {}", user.getOtpAttemptCount(), policy.getAttemptExceedCount());
 
-                    String afterTryingTime = DateTimeUtil.getOnlyTimeFormatter(DateTimeUtil.getSeconds(user.getLastPasswordChangeDate(), 45));
+                    long minutes = DateTimeUtil.getMinutes(DateTimeUtil.getOnlyTimeFormatter(DateTimeUtil.getSeconds(user.getLastPasswordChangeDate(), 45)));
 
-                    return ResponseEntity.ok().body(responseUtil.error(null, 1010, messageSource.getMessage(ResponseMessageUtil.APPLICATION_USER_OTP_EXCEED, new Object[]{afterTryingTime}, locale)));
+                    return ResponseEntity.ok().body(responseUtil.error(null, 1010, messageSource.getMessage(ResponseMessageUtil.APPLICATION_USER_OTP_EXCEED, new Object[]{minutes}, locale)));
                 } else if (user.getOtpAttemptCount() > 0) {
                     log.info("Reset password request otp session {}", user.getApplicationOtpSession());
                     Optional<ApplicationOtpSession> applicationOtpSession = applicationOtpSessionRepository.
