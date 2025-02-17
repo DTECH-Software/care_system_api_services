@@ -40,15 +40,15 @@ public class DateTimeUtil {
         return calendar.getTime();
     }
 
-    public static String getOnlyTimeFormatter(Date date) {
+    public static String getYyyyMMddHHMmSsTimeFormatter(Date date) {
         log.info("get time formatter");
-        SimpleDateFormat simpleDateFormat = new SimpleDateFormat("HH:mm");
+        SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
         return simpleDateFormat.format(date);
     }
 
     public static long getMinutes(String time) {
         log.info("get minutes");
-        DateTimeFormatter formatter = DateTimeFormatter.ISO_LOCAL_DATE_TIME;
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
         LocalDateTime givenDate = LocalDateTime.parse(time, formatter);
         Duration duration = Duration.between(givenDate, LocalDateTime.now());
         return duration.toMinutes();
