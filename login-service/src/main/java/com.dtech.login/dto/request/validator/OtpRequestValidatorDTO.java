@@ -7,9 +7,8 @@
 
 package com.dtech.login.dto.request.validator;
 
-import jakarta.validation.constraints.Max;
-import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.Size;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
@@ -17,7 +16,6 @@ import lombok.EqualsAndHashCode;
 @Data
 public class OtpRequestValidatorDTO extends ChannelRequestValidatorDTO{
     @NotEmpty(message = "OTP is required")
-    @Max(value = 6,message = "OTP max length invalid")
-    @Min(value = 6,message = "OTP min length invalid")
+    @Size(min = 6, max = 6, message = "OTP length must be exactly 6")
     private String otp;
 }
