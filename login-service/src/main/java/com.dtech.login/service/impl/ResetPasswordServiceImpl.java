@@ -36,10 +36,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.security.NoSuchAlgorithmException;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
 
 @Service
@@ -89,7 +86,10 @@ public class ResetPasswordServiceImpl implements ResetPasswordService {
 
                 if (user.getOtpAttemptCount() > policy.getOtpExceedCount()) {
                     log.info("Reset password OTP request attempt exceed {} , {}", user.getOtpAttemptCount(), policy.getAttemptExceedCount());
-                    return ResponseEntity.ok().body(responseUtil.error(null, 1010, messageSource.getMessage(ResponseMessageUtil.APPLICATION_USER_OTP_EXCEED, null, locale)));
+
+                    String afterTryingTime = DateTimeUtil.getOnlyTimeFormatter(DateTimeUtil.getSeconds(user.getLastPasswordChangeDate(), 45));
+
+                    return ResponseEntity.ok().body(responseUtil.error(null, 1010, messageSource.getMessage(ResponseMessageUtil.APPLICATION_USER_OTP_EXCEED, new Object[]{afterTryingTime}, locale)));
                 } else if (user.getOtpAttemptCount() > 0) {
                     log.info("Reset password request otp session {}", user.getApplicationOtpSession());
                     Optional<ApplicationOtpSession> applicationOtpSession = applicationOtpSessionRepository.
@@ -97,8 +97,8 @@ public class ResetPasswordServiceImpl implements ResetPasswordService {
 
                     if (applicationOtpSession.isPresent()) {
                         log.info("Reset password request otp session {}", applicationOtpSession.get());
-                        if (DateTimeUtil.get60s(applicationOtpSession.get().getCreatedDate()).after(DateTimeUtil.getCurrentDateTime())) {
-                            log.info("Reset password request otp session valid this moment {}", DateTimeUtil.get60s(applicationOtpSession.get().getCreatedDate()));
+                        if (DateTimeUtil.getSeconds(applicationOtpSession.get().getCreatedDate(),60).after(DateTimeUtil.getCurrentDateTime())) {
+                            log.info("Reset password request otp session valid this moment {}", DateTimeUtil.getSeconds(applicationOtpSession.get().getCreatedDate(),60));
                             return ResponseEntity.ok().body(responseUtil.error(null, 1012, messageSource.getMessage(ResponseMessageUtil.APPLICATION_USER_OTP_REQUEST_TRY_TO_AFTER_60S, null, locale)));
                         }
                         log.info("Rest password send otp session attempt exceed greater than 0 {}", user);
@@ -249,7 +249,7 @@ public class ResetPasswordServiceImpl implements ResetPasswordService {
                 if (user.getApplicationOtpSession() != null) {
                     log.info("Otp request otp session  {} ", user.getApplicationOtpSession());
 
-                    if (DateTimeUtil.get60s(user.getApplicationOtpSession().getCreatedDate()).after(DateTimeUtil.getCurrentDateTime()) &&
+                    if (DateTimeUtil.getSeconds(user.getApplicationOtpSession().getCreatedDate(),60).after(DateTimeUtil.getCurrentDateTime()) &&
                             user.getApplicationOtpSession().getOtp().equals(otpRequestDTO.getOtp()) && !user.getApplicationOtpSession().isValidated()) {
                         log.info("Otp request valid {} ", user.getApplicationOtpSession());
                         updateApplicationUserOtpData(user,user.getApplicationOtpSession());

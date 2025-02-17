@@ -9,6 +9,7 @@ package com.dtech.login.util;
 
 import lombok.extern.log4j.Log4j2;
 
+import java.text.SimpleDateFormat;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -29,11 +30,19 @@ public class DateTimeUtil {
         return Date.from(futureDate.atZone(ZoneId.systemDefault()).toInstant());
     }
 
-    public static Date get60s(Date date) {
+    public static Date getSeconds(Date date,Integer amount) {
         log.info("get 60s DateTime");
         Calendar calendar = Calendar.getInstance();
         calendar.setTime(date);
-        calendar.add(Calendar.SECOND, 60);
+        calendar.add(Calendar.SECOND, amount);
         return calendar.getTime();
     }
+
+    public static String getOnlyTimeFormatter(Date date) {
+        log.info("get time formatter");
+        SimpleDateFormat simpleDateFormat = new SimpleDateFormat("HH:mm");
+        return simpleDateFormat.format(date);
+    }
+
+
 }
