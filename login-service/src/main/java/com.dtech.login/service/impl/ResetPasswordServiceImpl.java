@@ -87,7 +87,7 @@ public class ResetPasswordServiceImpl implements ResetPasswordService {
 
                 if (user.getOtpAttemptCount() > policy.getOtpExceedCount()) {
                     log.info("Reset password OTP request attempt exceed {} , {}", user.getOtpAttemptCount(), policy.getAttemptExceedCount());
-                    long minutes = DateTimeUtil.getMinutes(DateTimeUtil.getYyyyMMddHHMmSsTimeFormatter(DateTimeUtil.getSeconds(user.getOtpAttemptResetTime(), 45)));
+                    long minutes = DateTimeUtil.getMinutes(DateTimeUtil.getYyyyMMddHHMmSsTimeFormatter(DateTimeUtil.getSeconds(user.getOtpAttemptResetTime(), 2700)));
                     return ResponseEntity.ok().body(responseUtil.error(null, 1010, messageSource.getMessage(ResponseMessageUtil.APPLICATION_USER_OTP_EXCEED, new Object[]{minutes}, locale)));
                 } else if (user.getOtpAttemptCount() > 0) {
                     log.info("Reset password request otp session {}", user.getApplicationOtpSession());

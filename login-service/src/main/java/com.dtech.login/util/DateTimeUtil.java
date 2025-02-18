@@ -50,7 +50,7 @@ public class DateTimeUtil {
         log.info("get minutes");
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
         LocalDateTime givenDate = LocalDateTime.parse(time, formatter);
-        Duration duration = Duration.between(givenDate, LocalDateTime.now());
+        Duration duration = Duration.between(LocalDateTime.now(),givenDate);
         return duration.toMinutes();
     }
 
