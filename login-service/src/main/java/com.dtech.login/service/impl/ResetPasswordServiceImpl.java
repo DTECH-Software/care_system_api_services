@@ -19,6 +19,7 @@ import com.dtech.login.enums.Status;
 import com.dtech.login.feign.MessageFeignClient;
 import com.dtech.login.model.ApplicationOtpSession;
 import com.dtech.login.model.ApplicationPasswordHistory;
+import com.dtech.login.model.ApplicationPasswordPolicy;
 import com.dtech.login.model.ApplicationUser;
 import com.dtech.login.repository.*;
 import com.dtech.login.service.ResetPasswordService;
@@ -36,7 +37,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.security.NoSuchAlgorithmException;
-import java.sql.Date;
 import java.util.*;
 
 
@@ -108,7 +108,8 @@ public class ResetPasswordServiceImpl implements ResetPasswordService {
                 }
 
                 log.info("Rest password send otp session send message {}", user);
-                return sendMessage(user, locale, policy.getOtpExceedCount() - user.getOtpAttemptCount());
+                Optional<ApplicationPasswordPolicy> passwordPolicy = applicationPasswordPolicyRepository.findPasswordPolicy();
+                return sendMessage(user, locale, policy.getOtpExceedCount() - user.getOtpAttemptCount(), passwordPolicy.orElse(null));
             }).orElseGet(() -> {
                 log.info("Password reset request policy not found for username {} ", username);
                 return ResponseEntity.ok().body(responseUtil.error(null, 1010, messageSource.getMessage(ResponseMessageUtil.APPLICATION_USER_PASSWORD_POLICY_NOT_FOUND, null, locale)));
@@ -124,7 +125,7 @@ public class ResetPasswordServiceImpl implements ResetPasswordService {
     }
 
     @Transactional
-    protected ResponseEntity<ApiResponse<Object>> sendMessage(ApplicationUser applicationUser, Locale locale, int otpExceedCount) {
+    protected ResponseEntity<ApiResponse<Object>> sendMessage(ApplicationUser applicationUser, Locale locale, int otpExceedCount,ApplicationPasswordPolicy passwordPolicy) {
         try {
             log.info("Processing reset password request gen otp {} ", applicationUser.getUsername());
             String otp = RandomGeneratorUtil.getRandom6DigitNumber();
@@ -145,7 +146,7 @@ public class ResetPasswordServiceImpl implements ResetPasswordService {
             ApplicationOtpSession applicationOtpSession = updateOtpSession(otp, messageResponseDTO != null ? messageResponseDTO.getSuccess() : 0);
             updateApplicationUser(applicationUser, applicationOtpSession);
             log.info("Application OTP session updated successfully");
-            return ResponseEntity.ok().body(responseUtil.success(Map.of("otpRequestAttempt", otpExceedCount), messageSource.getMessage(ResponseMessageUtil.APPLICATION_USER_OTP_SEND_SUCCESS, null, locale)));
+            return ResponseEntity.ok().body(responseUtil.success(Map.of("otpRequestAttempt", otpExceedCount,"passwordPolicy",passwordPolicy), messageSource.getMessage(ResponseMessageUtil.APPLICATION_USER_OTP_SEND_SUCCESS, null, locale)));
 
         } catch (Exception e) {
             log.error(e);
