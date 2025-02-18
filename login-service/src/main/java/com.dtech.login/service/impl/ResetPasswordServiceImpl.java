@@ -14,6 +14,7 @@ import com.dtech.login.dto.request.OtpRequestDTO;
 import com.dtech.login.dto.request.ResetPasswordDTO;
 import com.dtech.login.dto.response.ApiResponse;
 import com.dtech.login.dto.response.MessageResponseDTO;
+import com.dtech.login.dto.response.PasswordPolicyResponseDTO;
 import com.dtech.login.enums.NotificationsType;
 import com.dtech.login.enums.Status;
 import com.dtech.login.feign.MessageFeignClient;
@@ -109,7 +110,7 @@ public class ResetPasswordServiceImpl implements ResetPasswordService {
 
                 log.info("Rest password send otp session send message {}", user);
                 Optional<ApplicationPasswordPolicy> passwordPolicy = applicationPasswordPolicyRepository.findPasswordPolicy();
-                return sendMessage(user, locale, policy.getOtpExceedCount() - user.getOtpAttemptCount(), passwordPolicy.orElse(null));
+                return sendMessage(user, locale, policy.getOtpExceedCount() - user.getOtpAttemptCount(), passwordPolicy.map(pw -> gson.fromJson(gson.toJson(pw), PasswordPolicyResponseDTO.class)).orElse(null));
             }).orElseGet(() -> {
                 log.info("Password reset request policy not found for username {} ", username);
                 return ResponseEntity.ok().body(responseUtil.error(null, 1010, messageSource.getMessage(ResponseMessageUtil.APPLICATION_USER_PASSWORD_POLICY_NOT_FOUND, null, locale)));
@@ -125,7 +126,7 @@ public class ResetPasswordServiceImpl implements ResetPasswordService {
     }
 
     @Transactional
-    protected ResponseEntity<ApiResponse<Object>> sendMessage(ApplicationUser applicationUser, Locale locale, int otpExceedCount,ApplicationPasswordPolicy passwordPolicy) {
+    protected ResponseEntity<ApiResponse<Object>> sendMessage(ApplicationUser applicationUser, Locale locale, int otpExceedCount,PasswordPolicyResponseDTO passwordPolicy) {
         try {
             log.info("Processing reset password request gen otp {} ", applicationUser.getUsername());
             String otp = RandomGeneratorUtil.getRandom6DigitNumber();
