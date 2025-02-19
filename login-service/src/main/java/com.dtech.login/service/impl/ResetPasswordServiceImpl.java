@@ -162,7 +162,7 @@ public class ResetPasswordServiceImpl implements ResetPasswordService {
             ApplicationOtpSession applicationOtpSession = new ApplicationOtpSession();
             applicationOtpSession.setOtp(otp);
             applicationOtpSession.setSuccess(state);
-            ApplicationOtpSession otpSession = applicationOtpSessionRepository.save(applicationOtpSession);
+            ApplicationOtpSession otpSession = applicationOtpSessionRepository.saveAndFlush(applicationOtpSession);
             log.info("Reset password request otp session update {} ", otpSession);
             return otpSession;
         } catch (Exception e) {
@@ -178,7 +178,7 @@ public class ResetPasswordServiceImpl implements ResetPasswordService {
             applicationUser.setApplicationOtpSession(applicationOtpSession);
             applicationUser.setOtpAttemptCount(applicationUser.getOtpAttemptCount() + 1);
             applicationUser.setOtpAttemptResetTime(DateTimeUtil.getCurrentDateTime());
-            applicationUserRepository.save(applicationUser);
+            applicationUserRepository.saveAndFlush(applicationUser);
         } catch (Exception e) {
             log.error(e);
             throw e;
@@ -354,8 +354,8 @@ public class ResetPasswordServiceImpl implements ResetPasswordService {
         log.info("Update otp validation request otp records");
         applicationUser.setOtpAttemptCount(0);
         applicationOtpSession.setValidated(true);
-        applicationUserRepository.save(applicationUser);
-        applicationOtpSessionRepository.save(applicationOtpSession);
+        applicationUserRepository.saveAndFlush(applicationUser);
+        applicationOtpSessionRepository.saveAndFlush(applicationOtpSession);
     }
 
     @Transactional

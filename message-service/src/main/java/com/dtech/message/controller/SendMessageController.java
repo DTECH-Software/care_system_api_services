@@ -17,6 +17,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -35,7 +36,7 @@ public class SendMessageController {
     @Autowired
     public final Gson gson;
 
-    @PostMapping(path = "/send")
+    @PostMapping(path = "/send",produces = MediaType.APPLICATION_JSON_VALUE,consumes = MediaType.APPLICATION_JSON_VALUE)
     @ApiOperation(value = "Handle send message request ",notes = "Send message request success or failed")
     public ResponseEntity<ApiResponse<Object>> sendMessage(@RequestBody @Valid  MessageRequestValidatorDTO messageRequestValidatorDTO, Locale locale) {
         log.info("OTP send via txt request  controller {} ", messageRequestValidatorDTO);
