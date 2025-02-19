@@ -11,6 +11,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.web.SecurityFilterChain;
 
 @Configuration
@@ -20,14 +21,13 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-                .authorizeRequests()
-                .requestMatchers("/api/v1/login/login","/api/v1/password/reset",
-                        "/api/v1/password/reset/otp","api/v1/password/validate/otp")
-                .permitAll()
-                .anyRequest().authenticated();
-
-        http.csrf().disable();
+                .authorizeHttpRequests(auth -> auth
+                        .requestMatchers("/api/v1/login/login", "/api/v1/password/reset", "/api/v1/password/reset/otp", "/api/v1/password/validate/otp")
+                        .permitAll()
+                        .anyRequest().authenticated()
+                )
+                .csrf(AbstractHttpConfigurer::disable);
         return http.build();
-
     }
+
 }

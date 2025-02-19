@@ -31,7 +31,6 @@ import java.util.Locale;
 @RequestMapping(path = "api/v1/password")
 @Log4j2
 @RequiredArgsConstructor
-@CrossOrigin(origins = "*")
 public class ResetPasswordController {
     @Autowired
     public final ResetPasswordService resetPasswordService;
