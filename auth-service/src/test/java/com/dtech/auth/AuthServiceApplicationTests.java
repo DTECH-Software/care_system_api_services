@@ -1,4 +1,4 @@
-package com.dtech.auth.auth;
+package com.dtech.auth;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;

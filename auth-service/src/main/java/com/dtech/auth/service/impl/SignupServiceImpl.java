@@ -5,12 +5,12 @@
  * <p>
  */
 
-package com.dtech.auth.auth.service.impl;
+package com.dtech.auth.service.impl;
 
 
-import com.dtech.auth.auth.dto.request.SignupRequestDTO;
-import com.dtech.auth.auth.dto.response.ApiResponse;
-import com.dtech.auth.auth.service.SignupService;
+import com.dtech.auth.dto.request.SignupRequestDTO;
+import com.dtech.auth.dto.response.ApiResponse;
+import com.dtech.auth.service.SignupService;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;

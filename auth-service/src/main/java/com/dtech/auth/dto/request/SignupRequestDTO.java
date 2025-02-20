@@ -5,7 +5,7 @@
  * <p>
  */
 
-package com.dtech.auth.auth.dto.request;
+package com.dtech.auth.dto.request;
 
 import lombok.Data;
 

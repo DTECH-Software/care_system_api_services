@@ -5,7 +5,7 @@
  * <p>
  */
 
-package com.dtech.auth.auth.model;
+package com.dtech.auth.model;
 
 import jakarta.persistence.*;
 import lombok.Data;

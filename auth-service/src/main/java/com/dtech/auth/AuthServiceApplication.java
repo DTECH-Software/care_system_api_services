@@ -1,11 +1,13 @@
-package com.dtech.auth.auth;
+package com.dtech.auth;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
+import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
 
 @SpringBootApplication
 @EnableDiscoveryClient
+@EnableJpaAuditing
 public class AuthServiceApplication {
 
 	public static void main(String[] args) {

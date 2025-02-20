@@ -5,7 +5,7 @@
  * <p>
  */
 
-package com.dtech.auth.auth.controller;
+package com.dtech.auth.controller;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;

@@ -1,4 +1,4 @@
-package com.dtech.auth.auth.dto.response;
+package com.dtech.auth.dto.response;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.AllArgsConstructor;

@@ -1,7 +1,7 @@
-package com.dtech.auth.auth.service;
+package com.dtech.auth.service;
 
-import com.dtech.auth.auth.dto.request.SignupRequestDTO;
-import com.dtech.auth.auth.dto.response.ApiResponse;
+import com.dtech.auth.dto.request.SignupRequestDTO;
+import com.dtech.auth.dto.response.ApiResponse;
 import org.springframework.http.ResponseEntity;
 
 import java.util.Locale;
