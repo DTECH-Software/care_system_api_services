@@ -43,10 +43,6 @@ public class ApplicationUser extends Audit implements Serializable {
     @Column(name = "primary_mobile",unique = true,nullable = false)
     private String primaryMobile;
 
-    @Column(name = "user_status",nullable = false)
-    @Enumerated(EnumType.STRING)
-    private Status userStatus;
-
     @Column(name = "login_status",nullable = false)
     @Enumerated(EnumType.STRING)
     private Status loginStatus;

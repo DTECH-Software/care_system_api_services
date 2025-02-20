@@ -12,6 +12,7 @@ import com.dtech.auth.dto.request.SignupInquiryDTO;
 import com.dtech.auth.dto.request.SignupRequestDTO;
 import com.dtech.auth.dto.response.ApiResponse;
 import com.dtech.auth.dto.response.UserPersonalDetailsResponseDTO;
+import com.dtech.auth.enums.Status;
 import com.dtech.auth.repository.ApplicationUserRepository;
 import com.dtech.auth.repository.UserPersonalDetailsRepository;
 import com.dtech.auth.service.SignupService;
@@ -28,7 +29,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Date;
 import java.util.Locale;
 
 @Service
@@ -60,7 +60,7 @@ public class SignupServiceImpl implements SignupService {
         try {
             log.info("Processing SignupInquiry {}", signupInquiryDTO);
 
-            return userPersonalDetailsRepository.findByEpfNoAndNicIgnoreCase(signupInquiryDTO.getEpfNo(), signupInquiryDTO.getNic())
+            return userPersonalDetailsRepository.findByEpfNoAndNicIgnoreCaseAndUserStatus(signupInquiryDTO.getEpfNo(), signupInquiryDTO.getNic(), Status.ACTIVE)
                     .map(user -> {
                         return applicationUserRepository.findByUserPersonalDetails(user).map(applicationUser -> {
                             log.info("User already sign up {}", applicationUser);
@@ -84,8 +84,6 @@ public class SignupServiceImpl implements SignupService {
         }
     }
 
-
-
     @Transactional(readOnly = true)
     protected void getAge(UserPersonalDetailsResponseDTO userPersonalDetailsResponseDTO) {
         try {
@@ -98,28 +96,6 @@ public class SignupServiceImpl implements SignupService {
             throw e;
         }
     }
-
-//    @Transactional(readOnly = true)
-//    protected void setEmployeeAddressDetails(UserAddress userAddress){
-//        try {
-//            log.info("Processing setEmployeeAddressDetails {}", userAddress);
-//
-//        }catch (Exception e){
-//            log.error(e);
-//            throw e;
-//        }
-//    }
-
-//    @Transactional(readOnly = true)
-//    protected void setEmployeeCompanyDetails(UserCompanyDetails userCompanyDetails){
-//        try {
-//            log.info("Processing setEmployeeCompanyDetails {}", userCompanyDetails);
-//
-//        }catch (Exception e){
-//            log.error(e);
-//            throw e;
-//        }
-//    }
 
     @Override
     @Transactional
