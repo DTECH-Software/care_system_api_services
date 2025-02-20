@@ -27,18 +27,19 @@ public class OnboardingRequest extends Audit implements Serializable {
     @Column(name = "id",nullable = false,updatable = false,unique = true)
     private Long id;
 
-    @Column(name = "request_id",updatable = false,nullable = false,unique = true)
-    private String requestId;
-
     @Column(name = "user_custom_details",nullable = false)
     @JsonRawValue
     private String userCustomDetails;
 
-    @Column(name = "otp_verified",nullable = false)
-    private boolean otpVerified;
-
-    @Column(name = "status",nullable = false)
+    @Column(name = "request_status",nullable = false)
     @Enumerated(EnumType.STRING)
-    private Status status;
+    private Status requestStatus;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "onboarding_request_verified")
+    private OnboardingVerifiedMobile onboardingVerifiedMobile;
+
+    @OneToOne(mappedBy = "onboardingRequest")
+    private ApplicationUser onboardingRequest;
 
 }

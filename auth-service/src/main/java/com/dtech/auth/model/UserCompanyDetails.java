@@ -47,4 +47,7 @@ public class UserCompanyDetails extends Audit implements Serializable {
     @Temporal(TemporalType.TIMESTAMP)
     private Date terminateDate;
 
+    @OneToOne(mappedBy = "userCompanyDetails")
+    private UserPersonalDetails userCompanyDetails;
+
 }

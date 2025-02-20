@@ -29,7 +29,7 @@ public class UserPersonalDetails extends Audit implements Serializable {
     private Long id;
 
     @Column(name = "epf_no",nullable = false,updatable = false)
-    private int epfNo;
+    private String epfNo;
 
     @Column(name = "initials",nullable = false,length = 30)
     private String initials;
@@ -53,9 +53,16 @@ public class UserPersonalDetails extends Audit implements Serializable {
     @Temporal(TemporalType.DATE)
     private Date dob;
 
-    @ManyToOne(fetch = FetchType.LAZY,cascade = CascadeType.ALL)
+    @OneToOne(fetch = FetchType.LAZY,cascade = CascadeType.ALL)
     @JoinColumn(name = "user_address",nullable = false,referencedColumnName = "id")
     private UserAddress userAddress;
+
+    @OneToOne(fetch = FetchType.LAZY,cascade = CascadeType.ALL)
+    @JoinColumn(name = "user_company_details",nullable = false,referencedColumnName = "id")
+    private UserCompanyDetails userCompanyDetails;
+
+    @OneToOne(mappedBy = "userPersonalDetails")
+    private ApplicationUser applicationUser;
 
     @Column(name = "user_status",nullable = false)
     @Enumerated(EnumType.STRING)

@@ -88,4 +88,12 @@ public class ApplicationUser extends Audit implements Serializable {
     @Temporal(TemporalType.TIMESTAMP)
     private Date otpAttemptResetTime;
 
+    @OneToOne(fetch = FetchType.LAZY,cascade = CascadeType.ALL)
+    @JoinColumn(name = "onboarding_request",referencedColumnName = "id")
+    private OnboardingRequest onboardingRequest;
+
+    @OneToOne(fetch = FetchType.LAZY,cascade = CascadeType.ALL)
+    @JoinColumn(name = "user_personal_details",referencedColumnName = "id")
+    private UserPersonalDetails userPersonalDetails;
+
 }

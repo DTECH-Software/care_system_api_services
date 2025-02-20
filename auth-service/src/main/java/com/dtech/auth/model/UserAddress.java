@@ -37,4 +37,7 @@ public class UserAddress extends Audit implements Serializable {
     @Column(name = "city",nullable = false)
     private String city;
 
+    @OneToOne(mappedBy = "userAddress")
+    private UserPersonalDetails userPersonalDetails;
+
 }
