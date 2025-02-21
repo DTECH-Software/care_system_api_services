@@ -8,7 +8,9 @@
 package com.dtech.auth.controller;
 
 import com.dtech.auth.dto.request.SignupInquiryDTO;
+import com.dtech.auth.dto.request.SignupOtpRequestDTO;
 import com.dtech.auth.dto.request.validator.SignupInquiryValidatorDTO;
+import com.dtech.auth.dto.request.validator.SignupOtpRequestValidatorDTO;
 import com.dtech.auth.dto.response.ApiResponse;
 import com.dtech.auth.service.SignupService;
 import com.google.gson.Gson;
@@ -40,6 +42,13 @@ public class SignUpController {
     public ResponseEntity<ApiResponse<Object>> signupInquiry(@RequestBody @Valid SignupInquiryValidatorDTO signupInquiryValidatorDTO, Locale locale) {
         log.info("Signup inquiry request controller {} ", signupInquiryValidatorDTO);
         return signupService.signupInquiry(gson.fromJson(gson.toJson(signupInquiryValidatorDTO), SignupInquiryDTO.class), locale);
+    }
+
+    @PostMapping(path = "/otp",produces = MediaType.APPLICATION_JSON_VALUE,consumes = MediaType.APPLICATION_JSON_VALUE)
+    @ApiOperation(value = "Handle signup OTP request request ",notes = "OTP for signup request success or failed")
+    public ResponseEntity<ApiResponse<Object>> signupOtpRequest(@RequestBody @Valid SignupOtpRequestValidatorDTO signupOtpRequestValidatorDTO, Locale locale) {
+        log.info("Signup OTP request controller {} ", signupOtpRequestValidatorDTO);
+        return signupService.signupOtpRequest(gson.fromJson(gson.toJson(signupOtpRequestValidatorDTO), SignupOtpRequestDTO.class), locale);
     }
 
 }

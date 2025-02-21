@@ -25,4 +25,5 @@ public class ResponseMessageUtil {
     public final static String OTP_SESSION_NOT_FOUND = "val.application.otp.not.found";
     public final static String OTP_INVALID_OR_SESSION_TIME_OUT = "val.application.otp.invalid.or.session.timeout";
     public final static String OTP_VALIDATION_SUCCESS = "val.application.otp.validation.success";
+    public final static String OTP_SENT_FAILED = "val.otp.send.failed";
 }

@@ -14,5 +14,7 @@ public class ResponseMessageUtil {
     public final static String EMPLOYEE_DETAILS_INQUIRY_SUCCESS = "val.employee.details.inquiry.success";
     public final static String APPLICATION_USER_PASSWORD_POLICY_NOT_FOUND = "val.application.user.password.policy.not.found";
     public final static String OTP_SEND_SUCCESS = "val.otp.send.success";
+    public final static String OTP_ALREADY_VERIFIED = "val.otp.already.verified";
+    public final static String OTP_SENT_FAILED = "val.otp.send.failed";
 
 }

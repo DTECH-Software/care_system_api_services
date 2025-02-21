@@ -147,8 +147,10 @@ public class ResetPasswordServiceImpl implements ResetPasswordService {
             ApplicationOtpSession applicationOtpSession = updateOtpSession(otp, messageResponseDTO != null ? messageResponseDTO.getSuccess() : 0);
             updateApplicationUser(applicationUser, applicationOtpSession);
             log.info("Application OTP session updated successfully");
-            return ResponseEntity.ok().body(responseUtil.success(Map.of("otpRequestAttempt", otpExceedCount,"passwordPolicy",passwordPolicy), messageSource.getMessage(ResponseMessageUtil.APPLICATION_USER_OTP_SEND_SUCCESS, null, locale)));
-
+            if(objectApiResponse != null) {
+                return ResponseEntity.ok().body(responseUtil.success(Map.of("otpRequestAttempt", otpExceedCount,"passwordPolicy",passwordPolicy), messageSource.getMessage(ResponseMessageUtil.APPLICATION_USER_OTP_SEND_SUCCESS, null, locale)));
+            }
+            return ResponseEntity.ok().body(responseUtil.error(null, 1019, messageSource.getMessage(ResponseMessageUtil.OTP_SENT_FAILED, null, locale)));
         } catch (Exception e) {
             log.error(e);
             throw e;

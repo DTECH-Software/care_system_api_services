@@ -38,7 +38,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 
 @Service
 @Log4j2
@@ -111,33 +110,32 @@ public class SignupServiceImpl implements SignupService {
     public ResponseEntity<ApiResponse<Object>> signupOtpRequest(SignupOtpRequestDTO signupOtpRequestDTO, Locale locale) {
         try {
             log.info("Processing SignupOtpRequest {}", signupOtpRequestDTO);
-            return userPersonalDetailsRepository.findByEpfNoAndNicIgnoreCaseAndUserStatus(signupOtpRequestDTO.getEpfNo().trim(), signupOtpRequestDTO.getNic().trim(), Status.ACTIVE).
-                    map(userPersonalDetails ->
-                            applicationPasswordPolicyRepository.findPasswordPolicy().map((pw) -> {
-                                    if(pw.getOnboardingOtpHistory() > 0){
-                                        log.info("Signup otp request policy - {}",pw.getOnboardingOtpHistory());
+            return userPersonalDetailsRepository.findByEpfNoAndNicIgnoreCaseAndUserStatus(signupOtpRequestDTO.getEpfNo().trim(), signupOtpRequestDTO.getNic().trim(), Status.ACTIVE)
+                    .map(userPersonalDetails -> {
+                        return applicationPasswordPolicyRepository.findPasswordPolicy()
+                                .map(pw -> {
+                                    if (pw.getOnboardingOtpHistory() > 0) {
+                                        log.info("Signup otp request policy - {}", pw.getOnboardingOtpHistory());
                                         Pageable pageable = PageRequest.of(0, pw.getOnboardingOtpHistory(), Sort.by(Sort.Order.desc("createdDate")));
                                         List<OnboardingVerifiedMobile> onboardingVerifiedMobiles = onboardingVerifiedMobileRepository.findByEpfNoAndNicEqualsIgnoreCaseAndMobile(userPersonalDetails.getEpfNo(), userPersonalDetails.getNic(),
                                                 signupOtpRequestDTO.getMobileNo().trim(), pageable);
-
-                                    //    onboardingVerifiedMobiles.
-
-                                     //   sendMessage(signupOtpRequestDTO, locale);
-                                    }else{
-                                        log.info("Signup otp request policy 0 - {}",pw);
-                                        sendMessage(signupOtpRequestDTO, locale);
+                                        if (!onboardingVerifiedMobiles.isEmpty() && onboardingVerifiedMobiles.stream().anyMatch(OnboardingVerifiedMobile::isVerified)) {
+                                            log.info("Sign up otp already verified");
+                                            return ResponseEntity.ok().body(responseUtil.error(null, 1018, messageSource.getMessage(ResponseMessageUtil.OTP_ALREADY_VERIFIED, null, locale)));
+                                        }
                                     }
-                                return ResponseEntity.ok().body(responseUtil.error(null, 1010, messageSource.getMessage(ResponseMessageUtil.APPLICATION_USER_PASSWORD_POLICY_NOT_FOUND, null, locale)));
+                                    log.info("Signup otp request success");
+                                    return sendMessage(signupOtpRequestDTO, locale);
+                                })
+                                .orElseGet(() -> {
+                                    log.info("Signup otp request password policy not found {}", signupOtpRequestDTO);
+                                    return ResponseEntity.ok().body(responseUtil.error(null, 1010, messageSource.getMessage(ResponseMessageUtil.APPLICATION_USER_PASSWORD_POLICY_NOT_FOUND, null, locale)));
+                                });
 
-
-                            }).orElseGet(() -> {
-                                log.info("Signup otp request password policy not found {}", signupOtpRequestDTO);
-                                return ResponseEntity.ok().body(responseUtil.error(null, 1010, messageSource.getMessage(ResponseMessageUtil.APPLICATION_USER_PASSWORD_POLICY_NOT_FOUND, null, locale)));
-                            })
-
-                    ).orElseGet(() -> {
+                    })
+                    .orElseGet(() -> {
                         log.info("Signup otp request user not found {}", signupOtpRequestDTO);
-                        return ResponseEntity.ok().body(responseUtil.error(null, 1017, messageSource.getMessage(ResponseMessageUtil.EMPLOYEE_DETAILS_NOT_FOUND_ON_SYSTEM, new Object[]{clientMobile}, locale)));
+                        return ResponseEntity.ok().body(responseUtil.error(null, 1017, messageSource.getMessage(ResponseMessageUtil.EMPLOYEE_DETAILS_NOT_FOUND_ON_SYSTEM, new Object[]{signupOtpRequestDTO.getMobileNo()}, locale)));
                     });
         } catch (Exception e) {
             log.error(e);
@@ -146,7 +144,7 @@ public class SignupServiceImpl implements SignupService {
     }
 
     @Transactional
-    protected ResponseEntity<ApiResponse<Object>> sendMessage(SignupOtpRequestDTO signupOtpRequestDTO,Locale locale) {
+    protected ResponseEntity<ApiResponse<Object>> sendMessage(SignupOtpRequestDTO signupOtpRequestDTO, Locale locale) {
         try {
             log.info("Processing onboarding otp request gen otp {} ", signupOtpRequestDTO);
             String otp = RandomGeneratorUtil.getRandom6DigitNumber();
@@ -164,11 +162,13 @@ public class SignupServiceImpl implements SignupService {
             log.info("After message mapper response {}", objectApiResponse);
             MessageResponseDTO messageResponseDTO = gson.fromJson(gson.toJson(objectApiResponse), MessageResponseDTO.class);
             log.info("Otp send status {}", messageResponseDTO);
-            updateOtpSession(otp, messageResponseDTO != null ? messageResponseDTO.getSuccess() : 0);
-            updateOnboardingVerifiedMobile(signupOtpRequestDTO);
+            ApplicationOtpSession applicationOtpSession = updateOtpSession(otp, messageResponseDTO != null ? messageResponseDTO.getSuccess() : 0);
+            updateOnboardingVerifiedMobile(signupOtpRequestDTO, applicationOtpSession);
             log.info("Application OTP session updated successfully - onboarding verified mobile {}", otp);
-            return ResponseEntity.ok().body(responseUtil.success(null, messageSource.getMessage(ResponseMessageUtil.OTP_SEND_SUCCESS, null, locale)));
-
+            if(objectApiResponse != null) {
+                return ResponseEntity.ok().body(responseUtil.success(null, messageSource.getMessage(ResponseMessageUtil.OTP_SEND_SUCCESS, null, locale)));
+            }
+            return ResponseEntity.ok().body(responseUtil.error(null, 1019, messageSource.getMessage(ResponseMessageUtil.OTP_SENT_FAILED, null, locale)));
         } catch (Exception e) {
             log.error(e);
             throw e;
@@ -176,7 +176,7 @@ public class SignupServiceImpl implements SignupService {
     }
 
     @Transactional
-    protected void updateOnboardingVerifiedMobile(SignupOtpRequestDTO signupOtpRequestDTO) {
+    protected void updateOnboardingVerifiedMobile(SignupOtpRequestDTO signupOtpRequestDTO, ApplicationOtpSession applicationOtpSession) {
         try {
             log.info("Update record updateOnboardingVerifiedMobile {}", signupOtpRequestDTO);
             OnboardingVerifiedMobile onboardingVerifiedMobile = new OnboardingVerifiedMobile();
@@ -184,6 +184,7 @@ public class SignupServiceImpl implements SignupService {
             onboardingVerifiedMobile.setEpfNo(signupOtpRequestDTO.getEpfNo().trim());
             onboardingVerifiedMobile.setMobile(signupOtpRequestDTO.getMobileNo().trim());
             onboardingVerifiedMobile.setVerified(false);
+            onboardingVerifiedMobile.setApplicationOtpSession(applicationOtpSession);
             onboardingVerifiedMobileRepository.saveAndFlush(onboardingVerifiedMobile);
         } catch (Exception e) {
             log.error(e);
@@ -192,7 +193,7 @@ public class SignupServiceImpl implements SignupService {
     }
 
     @Transactional
-    protected void updateOtpSession(String otp, int state) {
+    protected ApplicationOtpSession updateOtpSession(String otp, int state) {
         try {
             log.info("Processing onboarding otp request  application otp session update {} ", otp);
             ApplicationOtpSession applicationOtpSession = new ApplicationOtpSession();
@@ -200,6 +201,7 @@ public class SignupServiceImpl implements SignupService {
             applicationOtpSession.setSuccess(state);
             ApplicationOtpSession otpSession = applicationOtpSessionRepository.saveAndFlush(applicationOtpSession);
             log.info("Processing onboarding otp request otp session update {} ", otpSession);
+            return otpSession;
         } catch (Exception e) {
             log.error(e);
             throw e;

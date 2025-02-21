@@ -37,4 +37,8 @@ public class OnboardingVerifiedMobile extends Audit implements Serializable {
     @Column(name = "verified",nullable = false)
     private boolean verified;
 
+    @OneToOne(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JoinColumn(name = "otp_session",referencedColumnName = "id")
+    private ApplicationOtpSession applicationOtpSession;
+
 }
