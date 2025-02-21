@@ -29,7 +29,7 @@ public class OnboardingVerifiedMobile extends Audit implements Serializable {
     private String nic;
 
     @Column(name = "epf_no",nullable = false)
-    private int epfNo;
+    private String epfNo;
 
     @Column(name = "mobile",nullable = false,updatable = false)
     private String mobile;

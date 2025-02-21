@@ -27,7 +27,6 @@ import java.util.Locale;
 @RequestMapping(path = "api/v1/sign-up")
 @Log4j2
 @RequiredArgsConstructor
-@CrossOrigin(origins = "*")
 public class SignUpController {
 
     @Autowired
@@ -38,7 +37,7 @@ public class SignUpController {
 
     @PostMapping(path = "/inquiry",produces = MediaType.APPLICATION_JSON_VALUE,consumes = MediaType.APPLICATION_JSON_VALUE)
     @ApiOperation(value = "Handle signup inquiry request request ",notes = "Inquiry for signup request success or failed")
-    public ResponseEntity<ApiResponse<Object>> resetPassword(@RequestBody @Valid SignupInquiryValidatorDTO signupInquiryValidatorDTO, Locale locale) {
+    public ResponseEntity<ApiResponse<Object>> signupInquiry(@RequestBody @Valid SignupInquiryValidatorDTO signupInquiryValidatorDTO, Locale locale) {
         log.info("Signup inquiry request controller {} ", signupInquiryValidatorDTO);
         return signupService.signupInquiry(gson.fromJson(gson.toJson(signupInquiryValidatorDTO), SignupInquiryDTO.class), locale);
     }

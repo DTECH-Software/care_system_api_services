@@ -27,7 +27,6 @@ import java.util.Locale;
 @RequestMapping(path = "api/v1/text")
 @Log4j2
 @RequiredArgsConstructor
-@CrossOrigin(origins = "*")
 public class SendMessageController {
 
     @Autowired
