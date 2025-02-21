@@ -30,8 +30,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.MessageSource;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -77,7 +75,7 @@ public class ResetPasswordServiceImpl implements ResetPasswordService {
     public ResponseEntity<ApiResponse<Object>> resetRequest(ChannelRequestDTO channelRequestDTO, Locale locale) {
         try {
             log.info("Processing reset password request gen otp {} ", channelRequestDTO.getUsername());
-            String username = channelRequestDTO.getUsername();
+            String username = channelRequestDTO.getUsername().trim();
             Optional<ApplicationUser> optionalUser = applicationUserRepository.findByUsername(username);
 
             if (optionalUser.isEmpty()) {
@@ -196,8 +194,8 @@ public class ResetPasswordServiceImpl implements ResetPasswordService {
 
         try {
             log.info("processing reset password request {}", resetPasswordDTO);
-            String username = resetPasswordDTO.getUsername();
-            String password = resetPasswordDTO.getConfirmPassword();
+            String username = resetPasswordDTO.getUsername().trim();
+            String password = resetPasswordDTO.getConfirmPassword().trim();
 
             Optional<ApplicationUser> optionalUser = applicationUserRepository.findByUsername(username);
 
@@ -240,7 +238,7 @@ public class ResetPasswordServiceImpl implements ResetPasswordService {
     public ResponseEntity<ApiResponse<Object>> otpValidation(OtpRequestDTO otpRequestDTO, Locale locale) {
         try {
             log.info("processing otp validation request {}", otpRequestDTO);
-            String username = otpRequestDTO.getUsername();
+            String username = otpRequestDTO.getUsername().trim();
             Optional<ApplicationUser> optionalUser = applicationUserRepository.findByUsername(username);
 
             if (optionalUser.isEmpty()) {

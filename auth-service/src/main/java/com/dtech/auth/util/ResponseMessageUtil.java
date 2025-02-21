@@ -16,5 +16,9 @@ public class ResponseMessageUtil {
     public final static String OTP_SEND_SUCCESS = "val.otp.send.success";
     public final static String OTP_ALREADY_VERIFIED = "val.otp.already.verified";
     public final static String OTP_SENT_FAILED = "val.otp.send.failed";
+    public final static String OTP_SESSION_NOT_FOUND = "val.application.otp.not.found";
+    public final static String ONBOARDING_VERIFICATION_OTP_NOT_FOUND = "val.application.onboarding.verification.otp.not.found";
+    public final static String OTP_INVALID_OR_SESSION_TIME_OUT = "val.application.otp.invalid.or.session.timeout";
+    public final static String OTP_VALIDATION_SUCCESS = "val.application.otp.validation.success";
 
 }

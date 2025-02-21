@@ -16,7 +16,7 @@ import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 
 @Data
-@UsernameRequiredIfMessage(messagesThatDontRequireUsername = {"OnboardingDetailsVerification","OnboardingOtpRequest"}, message = "Username is required.")
+@UsernameRequiredIfMessage(messagesThatDontRequireUsername = {"OnboardingDetailsVerification","OnboardingOtpRequest","OnboardingOtpRequestValidation"}, message = "Username is required.")
 public class ChannelRequestValidatorDTO {
     @NotBlank(message = "Channel is required.")
     @ValidEnum(enumClass = Channel.class,message = "Invalid channel.")
