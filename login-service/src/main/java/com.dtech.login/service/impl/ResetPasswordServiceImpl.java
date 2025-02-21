@@ -38,6 +38,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.security.NoSuchAlgorithmException;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.*;
 
 
@@ -326,16 +328,17 @@ public class ResetPasswordServiceImpl implements ResetPasswordService {
 
                         //check password history in used
                         if (policy.getPasswordHistory() > 0) {
-                            Pageable pageable = PageRequest.of(0, policy.getPasswordHistory(), Sort.by(Sort.Order.desc("createdDate")));
-                            List<ApplicationPasswordHistory> byApplicationUserAndPasswordEquals = applicationPasswordHistoryRepository.findByApplicationUser(applicationUser, pageable);
+                            Sort sort = Sort.by(Sort.Order.desc("createdDate"));
+                            List<ApplicationPasswordHistory> byApplicationUserAndPasswordEquals = applicationPasswordHistoryRepository
+                                    .findByApplicationUserAndPassword(applicationUser,hashPassword,sort);
 
-                            if (byApplicationUserAndPasswordEquals != null && !byApplicationUserAndPasswordEquals.isEmpty()) {
-                                boolean present = byApplicationUserAndPasswordEquals.stream().anyMatch(pw -> pw.getPassword().equals(hashPassword));
-                                if (present) {
+                            LocalDateTime localDateTime = LocalDateTime.now().minusDays(policy.getPasswordHistory());
+                            boolean history = byApplicationUserAndPasswordEquals.stream().anyMatch((pw) -> pw.getCreatedDate().toInstant()
+                                    .atZone(ZoneId.systemDefault()).toLocalDateTime().isAfter(localDateTime));
+
+                            if (history) {
                                     log.info("Reset password invalid history validation {}", password);
                                     return messageSource.getMessage("val.password.used.history", null, null);
-
-                                }
                             }
                         }
                         log.info("Reset password success validation {}", password);

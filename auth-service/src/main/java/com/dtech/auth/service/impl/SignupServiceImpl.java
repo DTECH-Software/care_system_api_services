@@ -36,6 +36,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.Locale;
 
@@ -116,10 +119,18 @@ public class SignupServiceImpl implements SignupService {
                                 .map(pw -> {
                                     if (pw.getOnboardingOtpHistory() > 0) {
                                         log.info("Signup otp request policy - {}", pw.getOnboardingOtpHistory());
-                                        Pageable pageable = PageRequest.of(0, pw.getOnboardingOtpHistory(), Sort.by(Sort.Order.desc("createdDate")));
-                                        List<OnboardingVerifiedMobile> onboardingVerifiedMobiles = onboardingVerifiedMobileRepository.findByEpfNoAndNicEqualsIgnoreCaseAndMobile(userPersonalDetails.getEpfNo(), userPersonalDetails.getNic(),
-                                                signupOtpRequestDTO.getMobileNo().trim(), pageable);
-                                        if (!onboardingVerifiedMobiles.isEmpty() && onboardingVerifiedMobiles.stream().anyMatch(OnboardingVerifiedMobile::isVerified)) {
+
+                                        Sort sort =  Sort.by(Sort.Order.desc("createdDate"));
+                                        List<OnboardingVerifiedMobile> onboardingVerifiedMobiles = onboardingVerifiedMobileRepository
+                                                .findByEpfNoAndNicEqualsIgnoreCaseAndMobileAndVerified(userPersonalDetails.getEpfNo(), userPersonalDetails.getNic(),
+                                                signupOtpRequestDTO.getMobileNo().trim(),true, sort);
+
+                                        LocalDateTime localDateTime = LocalDateTime.now().minusDays(pw.getOnboardingOtpHistory());
+                                        System.out.println(localDateTime);
+                                        boolean history = onboardingVerifiedMobiles.stream().anyMatch((verifiedMobile) -> verifiedMobile.getCreatedDate().toInstant()
+                                                .atZone(ZoneId.systemDefault()).toLocalDateTime().isAfter(localDateTime));
+
+                                        if (history) {
                                             log.info("Sign up otp already verified");
                                             return ResponseEntity.ok().body(responseUtil.error(null, 1018, messageSource.getMessage(ResponseMessageUtil.OTP_ALREADY_VERIFIED, null, locale)));
                                         }
@@ -180,7 +191,7 @@ public class SignupServiceImpl implements SignupService {
         try {
             log.info("Update record updateOnboardingVerifiedMobile {}", signupOtpRequestDTO);
             OnboardingVerifiedMobile onboardingVerifiedMobile = new OnboardingVerifiedMobile();
-            onboardingVerifiedMobile.setNic(signupOtpRequestDTO.getEpfNo().trim());
+            onboardingVerifiedMobile.setNic(signupOtpRequestDTO.getNic().trim());
             onboardingVerifiedMobile.setEpfNo(signupOtpRequestDTO.getEpfNo().trim());
             onboardingVerifiedMobile.setMobile(signupOtpRequestDTO.getMobileNo().trim());
             onboardingVerifiedMobile.setVerified(false);
