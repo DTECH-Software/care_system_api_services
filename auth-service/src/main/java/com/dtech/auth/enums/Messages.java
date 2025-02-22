@@ -8,6 +8,5 @@
 package com.dtech.auth.enums;
 
 public enum Messages {
-    OnboardingDetailsVerification,OnboardingOtpRequest,
-    OnboardingOtpRequestValidation
+   POST,PRE
 }

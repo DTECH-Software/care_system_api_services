@@ -9,5 +9,5 @@ import java.util.List;
 
 @Repository
 public interface ApplicationUserSessionRepository extends JpaRepository<ApplicationUserSession,Long> {
-    List<ApplicationUserSession> deleteAllByApplicationUser(ApplicationUser applicationUser);
+      void deleteAllByApplicationUser(ApplicationUser applicationUser);
 }

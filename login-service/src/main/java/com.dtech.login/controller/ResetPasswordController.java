@@ -32,6 +32,7 @@ import java.util.Locale;
 @Log4j2
 @RequiredArgsConstructor
 public class ResetPasswordController {
+
     @Autowired
     public final ResetPasswordService resetPasswordService;
 
@@ -53,7 +54,7 @@ public class ResetPasswordController {
     }
 
     @PostMapping(path = "/validate/otp",produces = MediaType.APPLICATION_JSON_VALUE,consumes = MediaType.APPLICATION_JSON_VALUE)
-    @ApiOperation(value = "Handle OTP validation request request ",notes = "OTP validation request success or failed")
+    @ApiOperation(value = "Handle OTP validation request ",notes = "OTP validation request success or failed")
     public ResponseEntity<ApiResponse<Object>> otpValidation(@RequestBody @Valid OtpRequestValidatorDTO otpRequestValidatorDTO, Locale locale) {
         log.info("OTP validation request request controller {} ", otpRequestValidatorDTO);
         return resetPasswordService.otpValidation(gson.fromJson(gson.toJson(otpRequestValidatorDTO), OtpRequestDTO.class), locale);

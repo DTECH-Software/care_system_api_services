@@ -51,6 +51,7 @@ public class TokenServiceImpl implements TokenService {
     private final MessageSource messageSource;
 
     @Override
+    @Transactional(readOnly = true)
     public ResponseEntity<ApiResponse<Object>> getToken(ChannelRequestDTO channelRequestDTO, Locale locale) {
         try {
             log.info("get token {}", channelRequestDTO.getUsername());

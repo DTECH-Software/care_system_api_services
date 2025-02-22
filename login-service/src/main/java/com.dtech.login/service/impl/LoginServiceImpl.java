@@ -62,6 +62,7 @@ public class LoginServiceImpl implements LoginService {
 
     @Autowired
     private final ApplicationPasswordPolicyRepository applicationPasswordPolicyRepository;
+
     @Autowired
     private TokenFeignClient tokenFeignClient;
 
