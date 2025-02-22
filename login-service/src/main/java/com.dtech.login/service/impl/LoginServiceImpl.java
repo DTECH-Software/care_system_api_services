@@ -7,19 +7,21 @@
 
 package com.dtech.login.service.impl;
 
+import com.dtech.login.dto.request.ChannelMbDeviceDetailsDTO;
 import com.dtech.login.dto.request.ChannelRequestDTO;
 import com.dtech.login.dto.request.LoginRequestDTO;
 import com.dtech.login.dto.response.AccessTokenResponseDTO;
 import com.dtech.login.dto.response.ApiResponse;
 import com.dtech.login.enums.Channel;
 import com.dtech.login.enums.Status;
-import com.dtech.login.feign.MessageFeignClient;
 import com.dtech.login.feign.TokenFeignClient;
 import com.dtech.login.mapper.CommonRequestMapper;
 import com.dtech.login.model.ApplicationPasswordPolicy;
 import com.dtech.login.model.ApplicationUser;
+import com.dtech.login.model.ApplicationUserDeviceDetails;
 import com.dtech.login.model.ApplicationUserSession;
 import com.dtech.login.repository.ApplicationPasswordPolicyRepository;
+import com.dtech.login.repository.ApplicationUserDeviceDetailsRepository;
 import com.dtech.login.repository.ApplicationUserRepository;
 import com.dtech.login.repository.ApplicationUserSessionRepository;
 import com.dtech.login.service.LoginService;
@@ -64,7 +66,10 @@ public class LoginServiceImpl implements LoginService {
     private final ApplicationPasswordPolicyRepository applicationPasswordPolicyRepository;
 
     @Autowired
-    private TokenFeignClient tokenFeignClient;
+    private final TokenFeignClient tokenFeignClient;
+
+    @Autowired
+    private final ApplicationUserDeviceDetailsRepository applicationUserDeviceDetailsRepository;
 
 
     @Override
@@ -78,10 +83,10 @@ public class LoginServiceImpl implements LoginService {
 
             Optional<ApplicationUser> optionalUser = applicationUserRepository.findByUsername(username);
 
-            if(optionalUser.isEmpty()) {
+            if (optionalUser.isEmpty()) {
                 log.info("Login request find by email {} ", username);
                 optionalUser = applicationUserRepository.findByPrimaryEmail(username);
-                loginRequestDTO.setUsername(optionalUser.isEmpty()?"":optionalUser.get().getUsername());
+                loginRequestDTO.setUsername(optionalUser.isEmpty() ? "" : optionalUser.get().getUsername());
             }
             return optionalUser.map(user -> {
 
@@ -132,6 +137,24 @@ public class LoginServiceImpl implements LoginService {
         }
     }
 
+    @Transactional
+    protected ApplicationUserDeviceDetails updateUserDeviceDetails(ChannelMbDeviceDetailsDTO channelMbDeviceDetailsDTO) {
+        try {
+            log.info("Update use login device details ");
+            ApplicationUserDeviceDetails applicationUserDeviceDetails = new ApplicationUserDeviceDetails();
+            applicationUserDeviceDetails.setDeviceId(channelMbDeviceDetailsDTO.getDeviceId());
+            applicationUserDeviceDetails.setDeviceModel(channelMbDeviceDetailsDTO.getDeviceModel());
+            applicationUserDeviceDetails.setDeviceOS(channelMbDeviceDetailsDTO.getDeviceOS());
+            applicationUserDeviceDetails.setDeviceName(channelMbDeviceDetailsDTO.getDeviceName());
+            applicationUserDeviceDetails.setLongitude(channelMbDeviceDetailsDTO.getLongitude());
+            applicationUserDeviceDetails.setLatitude(channelMbDeviceDetailsDTO.getLatitude());
+            return applicationUserDeviceDetailsRepository.saveAndFlush(applicationUserDeviceDetails);
+        } catch (Exception e) {
+            log.error(e);
+            throw e;
+        }
+    }
+
     @org.springframework.transaction.annotation.Transactional(readOnly = true)
     protected Optional<Integer> getPasswordPolicyAttemptCount() {
         try {
@@ -150,6 +173,19 @@ public class LoginServiceImpl implements LoginService {
             applicationUser.setLoginStatus(Status.ACTIVE);
             applicationUser.setLastLoggedChannel(Channel.valueOf(loginRequestDTO.getChannel()));
             applicationUser.setLastLoggedDate(DateTimeUtil.getCurrentDateTime());
+            if (loginRequestDTO.getChannel().equals(Channel.MB.name())) {
+                applicationUser.setMbLastLoggedDate(DateTimeUtil.getCurrentDateTime());
+                if (applicationUser.isMbExpectingFirstTimeLogging()) {
+                    applicationUser.setMbExpectingFirstTimeLogging(false);
+                }
+                ApplicationUserDeviceDetails applicationUserDeviceDetails = updateUserDeviceDetails(loginRequestDTO.getDeviceDetails());
+                applicationUser.setApplicationUserDeviceDetails(applicationUserDeviceDetails);
+            } else {
+                applicationUser.setOpLastLoggedDate(DateTimeUtil.getCurrentDateTime());
+            }
+            if (applicationUser.isExpectingFirstTimeLogging()) {
+                applicationUser.setExpectingFirstTimeLogging(false);
+            }
             applicationUser.setPasswordExpiredDate(DateTimeUtil.get30FutureDate());
             applicationUser.setAttemptCount(0);
             applicationUserRepository.saveAndFlush(applicationUser);

@@ -35,6 +35,6 @@ public class ChannelRequestValidatorDTO {
     private String username;
 
     @Valid
-    private ChannelMBDeviceDetailsValidatorsDTO deviceDetails;
+    private ChannelMbDeviceDetailsValidatorsDTO deviceDetails;
 
 }

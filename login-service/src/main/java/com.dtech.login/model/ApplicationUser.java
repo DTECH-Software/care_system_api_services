@@ -69,6 +69,23 @@ public class ApplicationUser extends Audit implements Serializable {
     @Temporal(TemporalType.TIMESTAMP)
     private Date lastLoggedDate;
 
+    @Column(name = "mb_last_logged_date")
+    @Temporal(TemporalType.TIMESTAMP)
+    private Date mbLastLoggedDate;
+
+    @Column(name = "op_last_logged_date")
+    @Temporal(TemporalType.TIMESTAMP)
+    private Date opLastLoggedDate;
+
+    @Column(name = "expecting_first_time_loging",nullable = false)
+    private boolean expectingFirstTimeLogging;
+
+    @Column(name = "mb_expecting_first_time_loging",nullable = false)
+    private boolean mbExpectingFirstTimeLogging;
+
+    @Column(name = "expecting_dependents_register",nullable = false)
+    private boolean expectingDependentsRegister;
+
     @Column(name = "password_expired_date",nullable = false)
     @Temporal(TemporalType.TIMESTAMP)
     private Date passwordExpiredDate;
@@ -86,5 +103,9 @@ public class ApplicationUser extends Audit implements Serializable {
     @Column(name = "otp_attempt_reset_time",nullable = false)
     @Temporal(TemporalType.TIMESTAMP)
     private Date otpAttemptResetTime;
+
+    @ManyToOne(fetch = FetchType.LAZY,cascade = CascadeType.ALL)
+    @JoinColumn(name = "device_id",referencedColumnName = "id")
+    private ApplicationUserDeviceDetails applicationUserDeviceDetails;
 
 }

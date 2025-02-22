@@ -66,6 +66,14 @@ public class ApplicationUser extends Audit implements Serializable {
     @Temporal(TemporalType.TIMESTAMP)
     private Date lastLoggedDate;
 
+    @Column(name = "mb_last_logged_date")
+    @Temporal(TemporalType.TIMESTAMP)
+    private Date mbLastLoggedDate;
+
+    @Column(name = "op_last_logged_date")
+    @Temporal(TemporalType.TIMESTAMP)
+    private Date opLastLoggedDate;
+
     @Column(name = "password_expired_date",nullable = false)
     @Temporal(TemporalType.TIMESTAMP)
     private Date passwordExpiredDate;
