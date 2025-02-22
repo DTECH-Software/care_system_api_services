@@ -5,14 +5,13 @@
  * <p>
  */
 
-package com.dtech.login.util;
+package com.dtech.auth.util;
 
 import lombok.extern.log4j.Log4j2;
 
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Base64;
-import java.util.function.Predicate;
 
 @Log4j2
 public class PasswordUtil {
@@ -30,6 +29,18 @@ public class PasswordUtil {
             log.error(e);
             throw e;
         }
+
+    }
+
+    public static String generateSaltKey(String input) throws NoSuchAlgorithmException {
+        log.info("Generate Salt Key {}", input);
+        MessageDigest digest = MessageDigest.getInstance("SHA-256");
+        byte[] hash = digest.digest(input.getBytes());
+        StringBuilder hexString = new StringBuilder();
+        for (byte b : hash) {
+            hexString.append(String.format("%02x", b));
+        }
+        return hexString.toString();
     }
 
 }

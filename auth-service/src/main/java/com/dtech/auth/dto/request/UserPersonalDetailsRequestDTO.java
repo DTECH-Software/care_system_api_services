@@ -1,11 +1,11 @@
 /**
  * User: Himal_J
- * Date: 2/20/2025
- * Time: 1:50 PM
+ * Date: 2/22/2025
+ * Time: 6:28 PM
  * <p>
  */
 
-package com.dtech.auth.dto.response;
+package com.dtech.auth.dto.request;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.Data;
@@ -13,7 +13,10 @@ import lombok.Data;
 import java.util.Date;
 
 @Data
-public class UserPersonalDetailsResponseDTO {
+public class UserPersonalDetailsRequestDTO {
+    private String username;
+    private String password;
+    private String confirmPassword;
     private String epfNo;
     private String initials;
     private String firstName;
@@ -23,7 +26,6 @@ public class UserPersonalDetailsResponseDTO {
     private String mobileNo;
     @JsonFormat(pattern = "yyyy-MM-dd")
     private Date dob;
-    private long age;
-    private UserAddressResponseDTO userAddress;
-    private UserCompanyDetailsResponseDTO userCompanyDetails;
+    private UserAddressRequestDTO userAddress;
+    private UserCompanyDetailsRequestDTO userCompanyDetails;
 }

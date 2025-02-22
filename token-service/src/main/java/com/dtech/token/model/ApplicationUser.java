@@ -41,10 +41,6 @@ public class ApplicationUser extends Audit implements Serializable {
     @Column(name = "primary_mobile",unique = true,nullable = false)
     private String primaryMobile;
 
-    @Column(name = "user_status",nullable = false)
-    @Enumerated(EnumType.STRING)
-    private Status userStatus;
-
     @Column(name = "login_status",nullable = false)
     @Enumerated(EnumType.STRING)
     private Status loginStatus;
@@ -55,15 +51,15 @@ public class ApplicationUser extends Audit implements Serializable {
     @Column(name = "user_key",nullable = false,updatable = false)
     private String userKey;
 
-    @Column(name = "last_logged_channel",nullable = false)
+    @Column(name = "last_logged_channel")
     @Enumerated(EnumType.STRING)
     private Channel lastLoggedChannel;
 
-    @Column(name = "last_password_change_date",nullable = false)
+    @Column(name = "last_password_change_date")
     @Temporal(TemporalType.TIMESTAMP)
     private Date lastPasswordChangeDate;
 
-    @Column(name = "last_logged_date",nullable = false)
+    @Column(name = "last_logged_date")
     @Temporal(TemporalType.TIMESTAMP)
     private Date lastLoggedDate;
 

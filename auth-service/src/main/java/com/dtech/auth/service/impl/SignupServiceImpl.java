@@ -8,18 +8,14 @@
 package com.dtech.auth.service.impl;
 
 
-import com.dtech.auth.dto.request.MessageRequestDTO;
-import com.dtech.auth.dto.request.OtpRequestDTO;
-import com.dtech.auth.dto.request.SignupInquiryDTO;
-import com.dtech.auth.dto.request.SignupOtpRequestDTO;
+import com.dtech.auth.dto.request.*;
 import com.dtech.auth.dto.response.ApiResponse;
 import com.dtech.auth.dto.response.MessageResponseDTO;
 import com.dtech.auth.dto.response.UserPersonalDetailsResponseDTO;
 import com.dtech.auth.enums.NotificationsType;
 import com.dtech.auth.enums.Status;
 import com.dtech.auth.feign.MessageFeignClient;
-import com.dtech.auth.model.ApplicationOtpSession;
-import com.dtech.auth.model.OnboardingVerifiedMobile;
+import com.dtech.auth.model.*;
 import com.dtech.auth.repository.*;
 import com.dtech.auth.service.SignupService;
 import com.dtech.auth.util.*;
@@ -35,6 +31,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.List;
@@ -77,6 +74,15 @@ public class SignupServiceImpl implements SignupService {
 
     @Autowired
     private final MessageFeignClient messageFeignClient;
+
+    @Value("${application.username.min.length}")
+    private int minUsernameLength;
+
+    @Autowired
+    private final OnboardingRequestRepository onboardingRequestRepository;
+
+    @Autowired
+    private final ApplicationPasswordHistoryRepository applicationPasswordHistoryRepository;
 
     @Override
     @Transactional
@@ -157,10 +163,10 @@ public class SignupServiceImpl implements SignupService {
             return applicationOtpSessionRepository.findByOtpAndValidated(otpRequestDTO.getOtp(), false).map(os -> onboardingVerifiedMobileRepository
                     .findByApplicationOtpSession(os).map(od -> {
 
-                        if (DateTimeUtil.getSeconds(os.getCreatedDate(),60).after(DateTimeUtil.getCurrentDateTime()) &&
+                        if (DateTimeUtil.getSeconds(os.getCreatedDate(), 60).after(DateTimeUtil.getCurrentDateTime()) &&
                                 os.getOtp().equals(otpRequestDTO.getOtp()) && !os.isValidated()) {
-                            log.info("Otp request  for signup {} ",os);
-                            updateOtpData(os,od);
+                            log.info("Otp request  for signup {} ", os);
+                            updateOtpData(os, od);
                             return ResponseEntity.ok().body(responseUtil.success(null, messageSource.getMessage(ResponseMessageUtil.OTP_VALIDATION_SUCCESS, null, locale)));
                         }
 
@@ -182,8 +188,197 @@ public class SignupServiceImpl implements SignupService {
 
     }
 
+    @Override
     @Transactional
-    protected void updateOtpData(ApplicationOtpSession applicationOtpSession,OnboardingVerifiedMobile onboardingVerifiedMobile) {
+    public ResponseEntity<ApiResponse<Object>> signup(UserPersonalDetailsRequestDTO userPersonalDetailsRequestDTO, Locale locale) {
+        try {
+            log.info("Processing Signup {}", userPersonalDetailsRequestDTO);
+
+            String username = userPersonalDetailsRequestDTO.getUsername().trim();
+            String password = userPersonalDetailsRequestDTO.getConfirmPassword().trim();
+
+            int charCount = StringUtil.getCharCount(username);
+            //check username minlength
+            if (charCount >= minUsernameLength) {
+                log.info("min username length success {}", username);
+                boolean exists = applicationUserRepository
+                        .existsByUsernameEndingWithIgnoreCase(userPersonalDetailsRequestDTO.getUsername().trim());
+
+                if (!exists) {
+                    //check password sta¤tus
+                    String message = validAlignCurrentPasswordPolicy(password);
+                    log.info("After signup password validation process {}", message);
+                    if (message == null || message.trim().isEmpty()) {
+                        return userPersonalDetailsRepository
+                                .findByEpfNoAndNicIgnoreCaseAndUserStatus(userPersonalDetailsRequestDTO.getEpfNo().trim(),
+                                        userPersonalDetailsRequestDTO.getNic().trim(),
+                                        Status.ACTIVE).map((pd) -> {
+                                    String hashPassword = "";
+                                    String saltKey = "";
+                                    try {
+                                        log.info("processing signup generate salt key {}", password);
+                                        saltKey = PasswordUtil.generateSaltKey(
+                                                userPersonalDetailsRequestDTO.getNic().trim()
+                                                        + DateTimeUtil.getCurrentDateTime());
+                                    } catch (NoSuchAlgorithmException e) {
+                                        throw new RuntimeException(e);
+                                    }
+
+                                    try {
+                                        log.info("processing signup password hash {}", password);
+                                        hashPassword = PasswordUtil.passwordEncoder(saltKey, password);
+                                    } catch (NoSuchAlgorithmException e) {
+                                        throw new RuntimeException(e);
+                                    }
+                                    OnboardingRequest onboardingRequest = updateOnboardingRequest(userPersonalDetailsRequestDTO);
+                                    ApplicationUser applicationUser = updateApplicationUser(userPersonalDetailsRequestDTO, hashPassword, saltKey, onboardingRequest, pd);
+                                    updateApplicationUserPasswordHistory(applicationUser,hashPassword);
+                                    log.info("Signup register success {}", applicationUser);
+                                    return ResponseEntity.ok().body(responseUtil.success(null, messageSource.getMessage(ResponseMessageUtil.SIGNUP_PROCESS_SUCCESS, null, locale)));
+                                }).orElseGet(() -> {
+                                    log.info("Signup inquiry user not found {}", userPersonalDetailsRequestDTO);
+                                    return ResponseEntity.ok().body(responseUtil.error(null, 1017, messageSource.getMessage(ResponseMessageUtil.EMPLOYEE_DETAILS_NOT_FOUND_ON_SYSTEM, new Object[]{clientMobile}, locale)));
+                                });
+                    }
+                    return ResponseEntity.ok().body(responseUtil.error(null, 1007, message));
+                }
+                log.info("Signup exists username {}", userPersonalDetailsRequestDTO.getUsername());
+                return ResponseEntity.ok().body(responseUtil.error(null, 1021, messageSource.getMessage(ResponseMessageUtil.USERNAME_ALREADY_EXISTS, null, locale)));
+
+            }
+            log.info("Signup username min length not  {}", username);
+            return ResponseEntity.ok().body(responseUtil.error(null, 1020, messageSource.getMessage(ResponseMessageUtil.USERNAME_MIN_LENGTH_INVALID, new Object[]{minUsernameLength}, locale)));
+
+        } catch (Exception e) {
+            log.error(e);
+            throw e;
+        }
+    }
+
+    @Transactional
+    protected ApplicationUser updateApplicationUser(UserPersonalDetailsRequestDTO userPersonalDetailsRequestDTO,
+                                         String hashPassword, String saltKey,
+                                         OnboardingRequest onboardingRequest,
+                                         UserPersonalDetails userPersonalDetails) {
+        try {
+            log.info("Processing signup application user {}", userPersonalDetailsRequestDTO);
+            ApplicationUser applicationUser = new ApplicationUser();
+
+            applicationUser.setUsername(userPersonalDetailsRequestDTO.getUsername().trim());
+            applicationUser.setPassword(hashPassword);
+            applicationUser.setUserKey(saltKey);
+            applicationUser.setPrimaryEmail(userPersonalDetailsRequestDTO.getEmail().trim());
+            applicationUser.setPrimaryMobile(userPersonalDetailsRequestDTO.getMobileNo().trim());
+            applicationUser.setLoginStatus(Status.ACTIVE);
+            applicationUser.setReset(false);
+            applicationUser.setPasswordExpiredDate(DateTimeUtil.get30FutureDate());
+            applicationUser.setAttemptCount(0);
+            applicationUser.setOtpAttemptCount(0);
+            applicationUser.setExpectingFirstTimeLogging(true);
+            applicationUser.setMbExpectingFirstTimeLogging(true);
+            applicationUser.setExpectingDependentsRegister(true);
+            applicationUser.setOnboardingRequest(onboardingRequest);
+            applicationUser.setUserPersonalDetails(userPersonalDetails);
+            log.info(" Signup Application user {} updated", userPersonalDetailsRequestDTO);
+            return applicationUserRepository.saveAndFlush(applicationUser);
+        } catch (Exception e) {
+            log.error(e);
+            throw e;
+        }
+
+    }
+
+    @Transactional
+    protected OnboardingRequest updateOnboardingRequest(UserPersonalDetailsRequestDTO userPersonalDetailsRequestDTO) {
+        try {
+            log.info("Processing signup updateOnboardingRequest {}", userPersonalDetailsRequestDTO);
+            OnboardingRequest onboardingRequest = new OnboardingRequest();
+            onboardingRequest.setRequestStatus(Status.ACTIVE);
+            onboardingRequest.setUserCustomDetails(userPersonalDetailsRequestDTO.toString());
+            return onboardingRequestRepository.saveAndFlush(onboardingRequest);
+        } catch (Exception e) {
+            log.error(e);
+            throw e;
+        }
+
+    }
+    @Transactional
+    protected void updateApplicationUserPasswordHistory(ApplicationUser applicationUser, String hashPassword) {
+        try {
+            log.info("Updating application user password history for reset password {}", applicationUser);
+            ApplicationPasswordHistory applicationPasswordHistory = new ApplicationPasswordHistory();
+            applicationPasswordHistory.setApplicationUser(applicationUser);
+            applicationPasswordHistory.setPassword(hashPassword);
+            applicationPasswordHistoryRepository.saveAndFlush(applicationPasswordHistory);
+        } catch (Exception e) {
+            log.error(e);
+            throw e;
+        }
+    }
+
+
+    @Transactional(readOnly = true)
+    protected String validAlignCurrentPasswordPolicy(String password) {
+        try {
+            log.info("Signup password align with current password policy {}", password);
+            return applicationPasswordPolicyRepository.findPasswordPolicy()
+                    .map(policy -> {
+                        int charCount = StringUtil.getCharCount(password);
+                        // max length check
+                        if (charCount > policy.getMaxLength()) {
+                            log.info("Signup password invalid max length validation {}", password);
+                            return messageSource.getMessage("val.max.length.invalid", new Object[]{policy.getMaxLength()}, null);
+                        }
+
+                        // min length check
+                        if (charCount < policy.getMinLength()) {
+                            log.info("Signup password invalid min length validation char count {} policy min length {}", charCount, policy.getMinLength());
+                            return messageSource.getMessage("val.min.length.invalid", new Object[]{policy.getMinLength()}, null);
+                        }
+
+                        int upperCount = StringUtil.countCharsByConditions(password, Character::isUpperCase);
+                        // upper count check
+                        if (upperCount < policy.getMinUpperCase()) {
+                            log.info("Signup password invalid upper case validation {}", password);
+                            return messageSource.getMessage("val.upper.length.invalid", new Object[]{policy.getMinUpperCase()}, null);
+                        }
+
+                        int lowerCount = StringUtil.countCharsByConditions(password, Character::isLowerCase);
+                        // lower count check
+                        if (lowerCount < policy.getMinLowerCase()) {
+                            log.info("Signup password invalid lower case validation {}", password);
+                            return messageSource.getMessage("val.lower.length.invalid", new Object[]{policy.getMinLowerCase()}, null);
+                        }
+
+                        int digitCount = StringUtil.countCharsByConditions(password, Character::isDigit);
+                        // number count check
+                        if (digitCount < policy.getMinNumbers()) {
+                            log.info("Signup password invalid min digit validation {}", password);
+                            return messageSource.getMessage("val.number.length.invalid", new Object[]{policy.getMinNumbers()}, null);
+                        }
+
+                        int specialCharCount = StringUtil.countCharsByConditions(password, c -> !Character.isLetterOrDigit(c));
+                        // special char count check
+                        if (specialCharCount < policy.getMinSpecialCharacters()) {
+                            log.info("Signup password invalid special char validation {}", password);
+                            return messageSource.getMessage("val.special.length.invalid", new Object[]{policy.getMinSpecialCharacters()}, null);
+                        }
+                        log.info("Signup password success validation {}", password);
+                        return "";
+                    })
+                    .orElseGet(() -> {
+                        log.info("Signup request policy not found for username {} ", password);
+                        return messageSource.getMessage("val.password.policy.notfound", null, null);
+                    });
+        } catch (Exception e) {
+            log.error(e);
+            throw e;
+        }
+    }
+
+
+    @Transactional
+    protected void updateOtpData(ApplicationOtpSession applicationOtpSession, OnboardingVerifiedMobile onboardingVerifiedMobile) {
         log.info("Update sign up otp validation request otp records");
         applicationOtpSession.setValidated(true);
         onboardingVerifiedMobile.setVerified(true);
@@ -262,7 +457,6 @@ public class SignupServiceImpl implements SignupService {
             log.info("Processing getAge {}", userPersonalDetailsResponseDTO);
             userPersonalDetailsResponseDTO.setAge(DateTimeUtil.getAge(
                     String.valueOf(userPersonalDetailsResponseDTO.getDob())));
-
         } catch (Exception e) {
             log.error(e);
             throw e;

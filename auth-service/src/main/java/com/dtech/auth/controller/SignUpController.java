@@ -10,6 +10,7 @@ package com.dtech.auth.controller;
 import com.dtech.auth.dto.request.OtpRequestDTO;
 import com.dtech.auth.dto.request.SignupInquiryDTO;
 import com.dtech.auth.dto.request.SignupOtpRequestDTO;
+import com.dtech.auth.dto.request.UserPersonalDetailsRequestDTO;
 import com.dtech.auth.dto.request.validator.OtpRequestValidatorDTO;
 import com.dtech.auth.dto.request.validator.SignupInquiryValidatorDTO;
 import com.dtech.auth.dto.request.validator.SignupOtpRequestValidatorDTO;
@@ -54,10 +55,17 @@ public class SignUpController {
     }
 
     @PostMapping(path = "/validate/otp",produces = MediaType.APPLICATION_JSON_VALUE,consumes = MediaType.APPLICATION_JSON_VALUE)
-    @ApiOperation(value = "Handle signup OTP validation request request ",notes = "OTP validation for signup request success or failed")
+    @ApiOperation(value = "Handle signup OTP validation request",notes = "OTP validation for signup request success or failed")
     public ResponseEntity<ApiResponse<Object>> signupOtpValidation(@RequestBody @Valid OtpRequestValidatorDTO otpRequestValidatorDTO, Locale locale) {
         log.info("Signup OTP validation request controller {} ", otpRequestValidatorDTO);
         return signupService.signupOtpValidation(gson.fromJson(gson.toJson(otpRequestValidatorDTO), OtpRequestDTO.class), locale);
+    }
+
+    @PostMapping(path = "/",produces = MediaType.APPLICATION_JSON_VALUE,consumes = MediaType.APPLICATION_JSON_VALUE)
+    @ApiOperation(value = "Handle signup request ",notes = "Signup success or failed")
+    public ResponseEntity<ApiResponse<Object>> signup(@RequestBody @Valid UserPersonalDetailsRequestDTO userPersonalDetailsRequestDTO, Locale locale) {
+        log.info("Signup request controller {} ", userPersonalDetailsRequestDTO);
+        return signupService.signup(gson.fromJson(gson.toJson(userPersonalDetailsRequestDTO), UserPersonalDetailsRequestDTO.class), locale);
     }
 
 }

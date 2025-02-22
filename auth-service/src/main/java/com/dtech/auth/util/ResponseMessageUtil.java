@@ -20,5 +20,8 @@ public class ResponseMessageUtil {
     public final static String ONBOARDING_VERIFICATION_OTP_NOT_FOUND = "val.application.onboarding.verification.otp.not.found";
     public final static String OTP_INVALID_OR_SESSION_TIME_OUT = "val.application.otp.invalid.or.session.timeout";
     public final static String OTP_VALIDATION_SUCCESS = "val.application.otp.validation.success";
+    public final static String USERNAME_ALREADY_EXISTS = "val.application.username.already.exists";
+    public final static String USERNAME_MIN_LENGTH_INVALID= "val.application.username.min.length.invalid";
+    public final static String SIGNUP_PROCESS_SUCCESS= "val.application.signup.process.success";
 
 }

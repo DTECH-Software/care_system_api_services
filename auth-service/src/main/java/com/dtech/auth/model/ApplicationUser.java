@@ -48,17 +48,17 @@ public class ApplicationUser extends Audit implements Serializable {
     private Status loginStatus;
 
     @Column(name = "is_reset",nullable = false)
-    private int isReset;
+    private boolean isReset;
 
     @Column(name = "user_key",nullable = false,updatable = false)
     @Lob
     private String userKey;
 
-    @Column(name = "last_logged_channel",nullable = false)
+    @Column(name = "last_logged_channel")
     @Enumerated(EnumType.STRING)
     private Channel lastLoggedChannel;
 
-    @Column(name = "last_password_change_date",nullable = false)
+    @Column(name = "last_password_change_date")
     @Temporal(TemporalType.TIMESTAMP)
     private Date lastPasswordChangeDate;
 
@@ -74,6 +74,15 @@ public class ApplicationUser extends Audit implements Serializable {
     @Temporal(TemporalType.TIMESTAMP)
     private Date opLastLoggedDate;
 
+    @Column(name = "expecting_first_time_loging",nullable = false)
+    private boolean expectingFirstTimeLogging;
+
+    @Column(name = "mb_expecting_first_time_loging",nullable = false)
+    private boolean mbExpectingFirstTimeLogging;
+
+    @Column(name = "expecting_dependents_register",nullable = false)
+    private boolean expectingDependentsRegister;
+
     @Column(name = "password_expired_date",nullable = false)
     @Temporal(TemporalType.TIMESTAMP)
     private Date passwordExpiredDate;
@@ -88,7 +97,7 @@ public class ApplicationUser extends Audit implements Serializable {
     @JoinColumn(name = "otp_session",referencedColumnName = "id")
     private ApplicationOtpSession applicationOtpSession;
 
-    @Column(name = "otp_attempt_reset_time",nullable = false)
+    @Column(name = "otp_attempt_reset_time")
     @Temporal(TemporalType.TIMESTAMP)
     private Date otpAttemptResetTime;
 
@@ -100,4 +109,7 @@ public class ApplicationUser extends Audit implements Serializable {
     @JoinColumn(name = "user_personal_details",referencedColumnName = "id")
     private UserPersonalDetails userPersonalDetails;
 
+    @ManyToOne(fetch = FetchType.LAZY,cascade = CascadeType.ALL)
+    @JoinColumn(name = "device_id",referencedColumnName = "id")
+    private ApplicationUserDeviceDetails applicationUserDeviceDetails;
 }

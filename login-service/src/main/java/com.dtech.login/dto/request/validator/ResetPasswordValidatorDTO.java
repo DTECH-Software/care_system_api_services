@@ -17,7 +17,7 @@ import lombok.EqualsAndHashCode;
 @PasswordEquals(message = "New password and confirm password mismatch.Please try again")
 public class ResetPasswordValidatorDTO extends ChannelRequestValidatorDTO{
     @NotEmpty(message = "New password cannot be empty")
-    private String newPassword;
+    private String password;
     @NotEmpty(message = "Confirm password cannot be empty")
     private String confirmPassword;
 }

@@ -1,16 +1,16 @@
 /**
  * User: Himal_J
- * Date: 2/20/2025
- * Time: 1:57 PM
+ * Date: 2/22/2025
+ * Time: 6:32 PM
  * <p>
  */
 
-package com.dtech.auth.dto.response;
+package com.dtech.auth.dto;
 
 import lombok.Data;
 
 @Data
-public class CompanyTypesResponseDTO {
+public class SimpleBaseDTO {
     private String code;
     private String description;
 }

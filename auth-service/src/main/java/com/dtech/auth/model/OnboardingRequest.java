@@ -35,9 +35,9 @@ public class OnboardingRequest extends Audit implements Serializable {
     @Enumerated(EnumType.STRING)
     private Status requestStatus;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "onboarding_request_verified")
-    private OnboardingVerifiedMobile onboardingVerifiedMobile;
+//    @ManyToOne(fetch = FetchType.LAZY)
+//    @JoinColumn(name = "onboarding_request_verified")
+//    private OnboardingVerifiedMobile onboardingVerifiedMobile;
 
     @OneToOne(mappedBy = "onboardingRequest")
     private ApplicationUser onboardingRequest;

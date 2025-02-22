@@ -283,7 +283,7 @@ public class ResetPasswordServiceImpl implements ResetPasswordService {
             log.info("Reset password align with current password policy {}", password);
             return applicationPasswordPolicyRepository.findPasswordPolicy()
                     .map(policy -> {
-                        int charCount = PasswordUtil.getCharCount(password);
+                        int charCount = StringUtil.getCharCount(password);
                         // max length check
                         if (charCount > policy.getMaxLength()) {
                             log.info("Reset password invalid max length validation {}", password);
@@ -296,28 +296,28 @@ public class ResetPasswordServiceImpl implements ResetPasswordService {
                             return messageSource.getMessage("val.min.length.invalid", new Object[]{policy.getMinLength()}, null);
                         }
 
-                        int upperCount = PasswordUtil.countCharsByConditions(password, Character::isUpperCase);
+                        int upperCount = StringUtil.countCharsByConditions(password, Character::isUpperCase);
                         // upper count check
                         if (upperCount < policy.getMinUpperCase()) {
                             log.info("Reset password invalid upper case validation {}", password);
                             return messageSource.getMessage("val.upper.length.invalid", new Object[]{policy.getMinUpperCase()}, null);
                         }
 
-                        int lowerCount = PasswordUtil.countCharsByConditions(password, Character::isLowerCase);
+                        int lowerCount = StringUtil.countCharsByConditions(password, Character::isLowerCase);
                         // lower count check
                         if (lowerCount < policy.getMinLowerCase()) {
                             log.info("Reset password invalid lower case validation {}", password);
                             return messageSource.getMessage("val.lower.length.invalid", new Object[]{policy.getMinLowerCase()}, null);
                         }
 
-                        int digitCount = PasswordUtil.countCharsByConditions(password, Character::isDigit);
+                        int digitCount = StringUtil.countCharsByConditions(password, Character::isDigit);
                         // number count check
                         if (digitCount < policy.getMinNumbers()) {
                             log.info("Reset password invalid min digit validation {}", password);
                             return messageSource.getMessage("val.number.length.invalid", new Object[]{policy.getMinNumbers()}, null);
                         }
 
-                        int specialCharCount = PasswordUtil.countCharsByConditions(password, c -> !Character.isLetterOrDigit(c));
+                        int specialCharCount = StringUtil.countCharsByConditions(password, c -> !Character.isLetterOrDigit(c));
                         // special char count check
                         if (specialCharCount < policy.getMinSpecialCharacters()) {
                             log.info("Reset password invalid special char validation {}", password);
