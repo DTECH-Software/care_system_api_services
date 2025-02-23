@@ -40,20 +40,35 @@ public class JwtUtil {
 
     }
 
+    public String extractUsername(String token) {
+        log.info("Extract username from token {}", token);
+        return extractClaims(token).getSubject();
+    }
+
+    public Claims extractClaims(String token) {
+        log.info("Extracting claims from token {}", token);
+        return Jwts.parser()
+                .setSigningKey(getSignInKey())
+                .build()
+                .parseClaimsJws(token)
+                .getBody();
+    }
+
+
     private SecretKey getSignInKey() {
         log.info("Get Sign In Key {}", SECRET_KEY);
         return new SecretKeySpec(SECRET_KEY.getBytes(StandardCharsets.UTF_8), "HmacSHA256");
     }
 
     //validate token
-    public boolean validateToken(String token) {
+    public boolean validateToken(String token,String username) {
         try {
             log.info("Validate token {}", token);
             Jws<Claims> claimsJws = Jwts.parser()
                     .setSigningKey(getSignInKey())
                     .build().parseSignedClaims(token);
             Date expiration = claimsJws.getPayload().getExpiration();
-            if (expiration.before(new Date())) {
+            if (expiration.before(new Date()) || !extractUsername(token).equals(username)) {
                 log.warn("Token is expired {}", expiration);
                 return false;
             }

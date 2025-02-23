@@ -42,11 +42,11 @@ public class TokenServiceController {
         return tokenService.getToken(gson.fromJson(gson.toJson(requestValidatorDTO), ChannelRequestDTO.class), locale);
     }
 
-    @GetMapping(path = "/validate-token",produces = MediaType.APPLICATION_JSON_VALUE,consumes = MediaType.APPLICATION_JSON_VALUE)
+    @PostMapping(path = "/validate-token")
     @ApiOperation(value = "Check access token is valid",notes = "Token is valid or invalid")
-    public ResponseEntity<ApiResponse<Object>> validateToken(@RequestParam(name = "token",required = true) String token, Locale locale) {
-        log.info("Getting token validate controller {} ", token);
-        return tokenService.validateToken(token, locale);
+    public ResponseEntity<ApiResponse<Object>> validateToken(@RequestParam(name = "token",required = true) String token,@RequestParam(name = "username",required = true)String username, Locale locale) {
+        log.info("Getting token validate controller {} {}", token, username);
+        return tokenService.validateToken(token, username,locale);
     }
 
 }

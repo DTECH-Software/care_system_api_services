@@ -8,5 +8,5 @@ import java.util.Locale;
 
 public interface TokenService {
     ResponseEntity<ApiResponse<Object>> getToken(ChannelRequestDTO channelRequestDTO, Locale locale);
-    ResponseEntity<ApiResponse<Object>> validateToken(String token, Locale locale);
+    ResponseEntity<ApiResponse<Object>> validateToken(String token,String username, Locale locale);
 }
