@@ -22,7 +22,7 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/v1/login/login", "/api/v1/password/reset", "/api/v1/password/reset/otp", "/api/v1/password/validate/otp")
+                        .requestMatchers("/api/v1/login/**", "/api/v1/password/**")
                         .permitAll()
                         .anyRequest().authenticated()
                 )

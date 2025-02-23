@@ -18,23 +18,17 @@ import lombok.Data;
 
 @Data
 @Conditional(selected = "channel" , values = {"MB"} ,required = {"deviceDetails"} ,message = "Device details is required.")
-@Conditional(selected = "message" , values = {"POST"} ,required = {"username"} ,message = "Username is required.")
+@Conditional(selected = "message" , values = {"SIGNUP_REGISTERED"} ,required = {"username"} ,message = "Username is required.")
 public class ChannelRequestValidatorDTO {
-
     @NotBlank(message = "Channel is required.")
     @ValidEnum(enumClass = Channel.class,message = "Invalid channel.")
     private String channel;
-
     @NotBlank(message = "IP is required.")
     private String ip;
-
     @NotBlank(message = "Message is required.")
     @ValidEnum(enumClass = Messages.class, message = "Invalid message.")
     private String message;
-
     private String username;
-
     @Valid
     private ChannelMbDeviceDetailsValidatorsDTO deviceDetails;
-
 }

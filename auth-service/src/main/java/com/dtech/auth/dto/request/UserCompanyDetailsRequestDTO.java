@@ -20,6 +20,4 @@ public class UserCompanyDetailsRequestDTO {
     private SimpleBaseDTO staffType;
     @JsonFormat(pattern = "yyyy-MM-dd")
     private Date permanentDate;
-    @JsonFormat(pattern = "yyyy-MM-dd")
-    private Date terminateDate;
 }

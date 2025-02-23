@@ -38,7 +38,6 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 import java.util.Optional;
 
 @Service
@@ -334,7 +333,7 @@ public class SignupServiceImpl implements SignupService {
         try {
             log.info("Processing signup updateOnboardingRequest {}", userPersonalDetailsRequestDTO);
             OnboardingRequest onboardingRequest = new OnboardingRequest();
-            onboardingRequest.setRequestStatus(Status.COMPLETED);
+            onboardingRequest.setRequestStatus(Status.ACTIVE);
             onboardingRequest.setUserCustomDetails(jsonString);
             return onboardingRequestRepository.saveAndFlush(onboardingRequest);
         } catch (Exception e) {

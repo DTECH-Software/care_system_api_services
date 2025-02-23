@@ -8,5 +8,5 @@
 package com.dtech.auth.enums;
 
 public enum Status {
-    ACTIVE,INACTIVE,PENDING,DRAFT,COMPLETED
+    ACTIVE,INACTIVE
 }

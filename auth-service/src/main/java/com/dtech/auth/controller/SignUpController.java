@@ -14,6 +14,7 @@ import com.dtech.auth.dto.request.UserPersonalDetailsRequestDTO;
 import com.dtech.auth.dto.request.validator.OtpRequestValidatorDTO;
 import com.dtech.auth.dto.request.validator.SignupInquiryValidatorDTO;
 import com.dtech.auth.dto.request.validator.SignupOtpRequestValidatorDTO;
+import com.dtech.auth.dto.request.validator.UserPersonalDetailsRequestValidatorDTO;
 import com.dtech.auth.dto.response.ApiResponse;
 import com.dtech.auth.service.SignupService;
 import com.google.gson.Gson;
@@ -63,9 +64,9 @@ public class SignUpController {
 
     @PostMapping(path = "/",produces = MediaType.APPLICATION_JSON_VALUE,consumes = MediaType.APPLICATION_JSON_VALUE)
     @ApiOperation(value = "Handle signup request ",notes = "Signup success or failed")
-    public ResponseEntity<ApiResponse<Object>> signup(@RequestBody @Valid UserPersonalDetailsRequestDTO userPersonalDetailsRequestDTO, Locale locale) {
-        log.info("Signup request controller {} ", userPersonalDetailsRequestDTO);
-        return signupService.signup(gson.fromJson(gson.toJson(userPersonalDetailsRequestDTO), UserPersonalDetailsRequestDTO.class), locale);
+    public ResponseEntity<ApiResponse<Object>> signup(@RequestBody @Valid UserPersonalDetailsRequestValidatorDTO userPersonalDetailsRequestValidatorDTO, Locale locale) {
+        log.info("Signup request controller {} ", userPersonalDetailsRequestValidatorDTO);
+        return signupService.signup(gson.fromJson(gson.toJson(userPersonalDetailsRequestValidatorDTO), UserPersonalDetailsRequestDTO.class), locale);
     }
 
 }

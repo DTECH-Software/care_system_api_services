@@ -9,12 +9,13 @@ package com.dtech.auth.dto.request;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 
 import java.util.Date;
 
+@EqualsAndHashCode(callSuper = true)
 @Data
-public class UserPersonalDetailsRequestDTO {
-    private String username;
+public class UserPersonalDetailsRequestDTO extends ChannelRequestDTO{
     private String password;
     private String confirmPassword;
     private String epfNo;

@@ -21,7 +21,7 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
                 .authorizeRequests()
-                .requestMatchers("/api/v1/token/issuer-token","/api/v1/token/validate-token")
+                .requestMatchers("/api/v1/token/**")
                 .permitAll()
                 .anyRequest().authenticated();
 

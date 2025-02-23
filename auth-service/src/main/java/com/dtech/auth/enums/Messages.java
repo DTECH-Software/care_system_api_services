@@ -8,5 +8,5 @@
 package com.dtech.auth.enums;
 
 public enum Messages {
-   POST,PRE
+   POST,PRE,SIGNUP_REGISTERED
 }
