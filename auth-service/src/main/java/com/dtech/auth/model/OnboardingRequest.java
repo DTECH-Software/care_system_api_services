@@ -9,6 +9,7 @@ package com.dtech.auth.model;
 
 import com.dtech.auth.enums.Status;
 import com.fasterxml.jackson.annotation.JsonRawValue;
+import com.fasterxml.jackson.annotation.JsonSubTypes;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -27,8 +28,7 @@ public class OnboardingRequest extends Audit implements Serializable {
     @Column(name = "id",nullable = false,updatable = false,unique = true)
     private Long id;
 
-    @Column(name = "user_custom_details",nullable = false)
-    @JsonRawValue
+    @Column(name = "user_custom_details",nullable = false,columnDefinition = "json")
     private String userCustomDetails;
 
     @Column(name = "request_status",nullable = false)

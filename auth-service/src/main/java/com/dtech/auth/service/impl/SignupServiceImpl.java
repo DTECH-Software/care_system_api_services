@@ -19,6 +19,8 @@ import com.dtech.auth.model.*;
 import com.dtech.auth.repository.*;
 import com.dtech.auth.service.SignupService;
 import com.dtech.auth.util.*;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
@@ -36,6 +38,7 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Optional;
 
 @Service
@@ -93,6 +96,9 @@ public class SignupServiceImpl implements SignupService {
 
     @Autowired
     private final StaffTypesRepository staffTypesRepository;
+
+    @Autowired
+    private final ObjectMapper objectMapper;
 
     @Override
     @Transactional
@@ -219,7 +225,7 @@ public class SignupServiceImpl implements SignupService {
                     String alignPassword = validAlignCurrentPasswordPolicy(password);
                     log.info("After signup password validation process {}", alignPassword);
                     if (alignPassword == null || alignPassword.trim().isEmpty()) {
-                        
+
                         //check company details
                         String alignCompanyDetails = validCompanyDetails(userPersonalDetailsRequestDTO.getUserCompanyDetails());
 
@@ -253,7 +259,15 @@ public class SignupServiceImpl implements SignupService {
                                             log.error(e);
                                             throw new RuntimeException(e);
                                         }
-                                        OnboardingRequest onboardingRequest = updateOnboardingRequest(userPersonalDetailsRequestDTO);
+                                        String jsonString = "";
+                                        try {
+                                            log.info("processing signup  json {}", userPersonalDetailsRequestDTO);
+                                           jsonString = objectMapper.writeValueAsString(userPersonalDetailsRequestDTO);
+                                        } catch (JsonProcessingException e) {
+                                            log.error(e);
+                                            throw new RuntimeException(e);
+                                        }
+                                        OnboardingRequest onboardingRequest = updateOnboardingRequest(userPersonalDetailsRequestDTO,jsonString);
                                         ApplicationUser applicationUser = updateApplicationUser(userPersonalDetailsRequestDTO, hashPassword, saltKey, onboardingRequest, pd);
                                         updateApplicationUserPasswordHistory(applicationUser, hashPassword);
                                         log.info("Signup register success {}", applicationUser);
@@ -316,12 +330,12 @@ public class SignupServiceImpl implements SignupService {
     }
 
     @Transactional
-    protected OnboardingRequest updateOnboardingRequest(UserPersonalDetailsRequestDTO userPersonalDetailsRequestDTO) {
+    protected OnboardingRequest updateOnboardingRequest(UserPersonalDetailsRequestDTO userPersonalDetailsRequestDTO,String jsonString) {
         try {
             log.info("Processing signup updateOnboardingRequest {}", userPersonalDetailsRequestDTO);
             OnboardingRequest onboardingRequest = new OnboardingRequest();
             onboardingRequest.setRequestStatus(Status.COMPLETED);
-            onboardingRequest.setUserCustomDetails(userPersonalDetailsRequestDTO.toString());
+            onboardingRequest.setUserCustomDetails(jsonString);
             return onboardingRequestRepository.saveAndFlush(onboardingRequest);
         } catch (Exception e) {
             log.error(e);
