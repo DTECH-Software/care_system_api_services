@@ -33,11 +33,11 @@ public class UserCompanyDetails extends Audit implements Serializable {
 
     @ManyToOne(fetch = FetchType.LAZY,cascade = CascadeType.ALL)
     @JoinColumn(name = "staff_category",nullable = false,referencedColumnName = "id")
-    private StaffCategory staffCategory;
+    private StaffCategories staffCategories;
 
     @ManyToOne(fetch = FetchType.LAZY,cascade = CascadeType.ALL)
     @JoinColumn(name = "staff_type",nullable = false,referencedColumnName = "id")
-    private StaffType staffType;
+    private StaffTypes staffTypes;
 
     @Column(name = "permanent_date",nullable = false,updatable = false)
     @Temporal(TemporalType.TIMESTAMP)

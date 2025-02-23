@@ -36,6 +36,7 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.List;
 import java.util.Locale;
+import java.util.Optional;
 
 @Service
 @Log4j2
@@ -75,14 +76,23 @@ public class SignupServiceImpl implements SignupService {
     @Autowired
     private final MessageFeignClient messageFeignClient;
 
-    @Value("${application.username.min.length}")
-    private int minUsernameLength;
-
     @Autowired
     private final OnboardingRequestRepository onboardingRequestRepository;
 
     @Autowired
     private final ApplicationPasswordHistoryRepository applicationPasswordHistoryRepository;
+
+    @Autowired
+    private final ApplicationUsernamePolicyRepository applicationUsernamePolicyRepository;
+
+    @Autowired
+    private final CompanyTypesRepository companyTypesRepository;
+
+    @Autowired
+    private final StaffCategoriesRepository staffCategoriesRepository;
+
+    @Autowired
+    private final StaffTypesRepository staffTypesRepository;
 
     @Override
     @Transactional
@@ -197,57 +207,74 @@ public class SignupServiceImpl implements SignupService {
             String username = userPersonalDetailsRequestDTO.getUsername().trim();
             String password = userPersonalDetailsRequestDTO.getConfirmPassword().trim();
 
-            int charCount = StringUtil.getCharCount(username);
-            //check username minlength
-            if (charCount >= minUsernameLength) {
-                log.info("min username length success {}", username);
+            //check username
+            String alignUsername = validAlignCurrentUsernamePolicy(username);
+            if (alignUsername == null || alignUsername.trim().isEmpty()) {
+                log.info("username validation  success {}", username);
                 boolean exists = applicationUserRepository
                         .existsByUsernameEndingWithIgnoreCase(userPersonalDetailsRequestDTO.getUsername().trim());
 
                 if (!exists) {
                     //check password sta¤tus
-                    String message = validAlignCurrentPasswordPolicy(password);
-                    log.info("After signup password validation process {}", message);
-                    if (message == null || message.trim().isEmpty()) {
-                        return userPersonalDetailsRepository
-                                .findByEpfNoAndNicIgnoreCaseAndUserStatus(userPersonalDetailsRequestDTO.getEpfNo().trim(),
-                                        userPersonalDetailsRequestDTO.getNic().trim(),
-                                        Status.ACTIVE).map((pd) -> {
-                                    String hashPassword = "";
-                                    String saltKey = "";
-                                    try {
-                                        log.info("processing signup generate salt key {}", password);
-                                        saltKey = PasswordUtil.generateSaltKey(
-                                                userPersonalDetailsRequestDTO.getNic().trim()
-                                                        + DateTimeUtil.getCurrentDateTime());
-                                    } catch (NoSuchAlgorithmException e) {
-                                        throw new RuntimeException(e);
-                                    }
+                    String alignPassword = validAlignCurrentPasswordPolicy(password);
+                    log.info("After signup password validation process {}", alignPassword);
+                    if (alignPassword == null || alignPassword.trim().isEmpty()) {
+                        
+                        //check company details
+                        String alignCompanyDetails = validCompanyDetails(userPersonalDetailsRequestDTO.getUserCompanyDetails());
 
-                                    try {
-                                        log.info("processing signup password hash {}", password);
-                                        hashPassword = PasswordUtil.passwordEncoder(saltKey, password);
-                                    } catch (NoSuchAlgorithmException e) {
-                                        throw new RuntimeException(e);
-                                    }
-                                    OnboardingRequest onboardingRequest = updateOnboardingRequest(userPersonalDetailsRequestDTO);
-                                    ApplicationUser applicationUser = updateApplicationUser(userPersonalDetailsRequestDTO, hashPassword, saltKey, onboardingRequest, pd);
-                                    updateApplicationUserPasswordHistory(applicationUser,hashPassword);
-                                    log.info("Signup register success {}", applicationUser);
-                                    return ResponseEntity.ok().body(responseUtil.success(null, messageSource.getMessage(ResponseMessageUtil.SIGNUP_PROCESS_SUCCESS, null, locale)));
-                                }).orElseGet(() -> {
-                                    log.info("Signup inquiry user not found {}", userPersonalDetailsRequestDTO);
-                                    return ResponseEntity.ok().body(responseUtil.error(null, 1017, messageSource.getMessage(ResponseMessageUtil.EMPLOYEE_DETAILS_NOT_FOUND_ON_SYSTEM, new Object[]{clientMobile}, locale)));
-                                });
+                        if (alignCompanyDetails == null || alignCompanyDetails.trim().isEmpty()) {
+                            return userPersonalDetailsRepository
+                                    .findByEpfNoAndNicIgnoreCaseAndUserStatus(userPersonalDetailsRequestDTO.getEpfNo().trim(),
+                                            userPersonalDetailsRequestDTO.getNic().trim(), Status.ACTIVE).map(pd -> {
+                                        Optional<ApplicationUser> userPersonalDetails = applicationUserRepository.findByUserPersonalDetails(pd);
+
+                                        if (userPersonalDetails.isPresent()) {
+                                            log.info("User already sign up {}", userPersonalDetails.get());
+                                            return ResponseEntity.ok().body(responseUtil.error(null, 1018, messageSource.getMessage(ResponseMessageUtil.EMPLOYEE_ALREADY_SIGN_UP, null, locale)));
+                                        }
+
+                                        String hashPassword = "";
+                                        String saltKey = "";
+                                        try {
+                                            log.info("processing signup generate salt key {}", password);
+                                            saltKey = PasswordUtil.generateSaltKey(
+                                                    userPersonalDetailsRequestDTO.getNic().trim()
+                                                            + DateTimeUtil.getCurrentDateTime());
+                                        } catch (NoSuchAlgorithmException e) {
+                                            log.error(e);
+                                            throw new RuntimeException(e);
+                                        }
+
+                                        try {
+                                            log.info("processing signup password hash {}", password);
+                                            hashPassword = PasswordUtil.passwordEncoder(saltKey, password);
+                                        } catch (NoSuchAlgorithmException e) {
+                                            log.error(e);
+                                            throw new RuntimeException(e);
+                                        }
+                                        OnboardingRequest onboardingRequest = updateOnboardingRequest(userPersonalDetailsRequestDTO);
+                                        ApplicationUser applicationUser = updateApplicationUser(userPersonalDetailsRequestDTO, hashPassword, saltKey, onboardingRequest, pd);
+                                        updateApplicationUserPasswordHistory(applicationUser, hashPassword);
+                                        log.info("Signup register success {}", applicationUser);
+                                        return ResponseEntity.ok().body(responseUtil.success(null, messageSource.getMessage(ResponseMessageUtil.SIGNUP_PROCESS_SUCCESS, null, locale)));
+
+                                    }).orElseGet(() -> {
+                                        log.info("Signup inquiry user not found {}", userPersonalDetailsRequestDTO);
+                                        return ResponseEntity.ok().body(responseUtil.error(null, 1017, messageSource.getMessage(ResponseMessageUtil.EMPLOYEE_DETAILS_NOT_FOUND_ON_SYSTEM, new Object[]{clientMobile}, locale)));
+                                    });
+                        }
+                        log.info("Signup not align company details {}", alignCompanyDetails);
+                        return ResponseEntity.ok().body(responseUtil.error(null, 1022, alignCompanyDetails));
                     }
-                    return ResponseEntity.ok().body(responseUtil.error(null, 1007, message));
+                    return ResponseEntity.ok().body(responseUtil.error(null, 1007, alignPassword));
                 }
                 log.info("Signup exists username {}", userPersonalDetailsRequestDTO.getUsername());
                 return ResponseEntity.ok().body(responseUtil.error(null, 1021, messageSource.getMessage(ResponseMessageUtil.USERNAME_ALREADY_EXISTS, null, locale)));
 
             }
-            log.info("Signup username min length not  {}", username);
-            return ResponseEntity.ok().body(responseUtil.error(null, 1020, messageSource.getMessage(ResponseMessageUtil.USERNAME_MIN_LENGTH_INVALID, new Object[]{minUsernameLength}, locale)));
+            log.info("Signup username not valid {}", username);
+            return ResponseEntity.ok().body(responseUtil.error(null, 1020, alignUsername));
 
         } catch (Exception e) {
             log.error(e);
@@ -257,9 +284,9 @@ public class SignupServiceImpl implements SignupService {
 
     @Transactional
     protected ApplicationUser updateApplicationUser(UserPersonalDetailsRequestDTO userPersonalDetailsRequestDTO,
-                                         String hashPassword, String saltKey,
-                                         OnboardingRequest onboardingRequest,
-                                         UserPersonalDetails userPersonalDetails) {
+                                                    String hashPassword, String saltKey,
+                                                    OnboardingRequest onboardingRequest,
+                                                    UserPersonalDetails userPersonalDetails) {
         try {
             log.info("Processing signup application user {}", userPersonalDetailsRequestDTO);
             ApplicationUser applicationUser = new ApplicationUser();
@@ -293,7 +320,7 @@ public class SignupServiceImpl implements SignupService {
         try {
             log.info("Processing signup updateOnboardingRequest {}", userPersonalDetailsRequestDTO);
             OnboardingRequest onboardingRequest = new OnboardingRequest();
-            onboardingRequest.setRequestStatus(Status.ACTIVE);
+            onboardingRequest.setRequestStatus(Status.COMPLETED);
             onboardingRequest.setUserCustomDetails(userPersonalDetailsRequestDTO.toString());
             return onboardingRequestRepository.saveAndFlush(onboardingRequest);
         } catch (Exception e) {
@@ -302,6 +329,7 @@ public class SignupServiceImpl implements SignupService {
         }
 
     }
+
     @Transactional
     protected void updateApplicationUserPasswordHistory(ApplicationUser applicationUser, String hashPassword) {
         try {
@@ -316,6 +344,64 @@ public class SignupServiceImpl implements SignupService {
         }
     }
 
+    @Transactional(readOnly = true)
+    protected String validAlignCurrentUsernamePolicy(String username) {
+        try {
+            log.info("Signup username align with current username policy {}", username);
+            return applicationUsernamePolicyRepository.findUsernamePolicy()
+                    .map(policy -> {
+                        int charCount = StringUtil.getCharCount(username);
+                        // max length check
+                        if (charCount > policy.getMaxLength()) {
+                            log.info("Signup username invalid max length validation {}", username);
+                            return messageSource.getMessage("val.username.max.length.invalid", new Object[]{policy.getMaxLength()}, null);
+                        }
+
+                        // min length check
+                        if (charCount < policy.getMinLength()) {
+                            log.info("Signup username invalid min length validation char count {} policy min length {}", charCount, policy.getMinLength());
+                            return messageSource.getMessage("val.username.min.length.invalid", new Object[]{policy.getMinLength()}, null);
+                        }
+
+                        int upperCount = StringUtil.countCharsByConditions(username, Character::isUpperCase);
+                        // upper count check
+                        if (upperCount < policy.getMinUpperCase()) {
+                            log.info("Signup username invalid upper case validation {}", username);
+                            return messageSource.getMessage("val.username.upper.length.invalid", new Object[]{policy.getMinUpperCase()}, null);
+                        }
+
+                        int lowerCount = StringUtil.countCharsByConditions(username, Character::isLowerCase);
+                        // lower count check
+                        if (lowerCount < policy.getMinLowerCase()) {
+                            log.info("Signup username invalid lower case validation {}", username);
+                            return messageSource.getMessage("val.username.lower.length.invalid", new Object[]{policy.getMinLowerCase()}, null);
+                        }
+
+                        int digitCount = StringUtil.countCharsByConditions(username, Character::isDigit);
+                        // number count check
+                        if (digitCount < policy.getMinNumbers()) {
+                            log.info("Signup username invalid min digit validation {}", username);
+                            return messageSource.getMessage("val.username.number.length.invalid", new Object[]{policy.getMinNumbers()}, null);
+                        }
+
+                        int specialCharCount = StringUtil.countCharsByConditions(username, c -> !Character.isLetterOrDigit(c));
+                        // special char count check
+                        if (specialCharCount < policy.getMinSpecialCharacters()) {
+                            log.info("Signup username invalid special char validation {}", username);
+                            return messageSource.getMessage("val.username.special.length.invalid", new Object[]{policy.getMinSpecialCharacters()}, null);
+                        }
+                        log.info("Signup username success validation {}", username);
+                        return "";
+                    })
+                    .orElseGet(() -> {
+                        log.info("Signup request username policy not found for username {} ", username);
+                        return messageSource.getMessage("val.username.policy.notfound", null, null);
+                    });
+        } catch (Exception e) {
+            log.error(e);
+            throw e;
+        }
+    }
 
     @Transactional(readOnly = true)
     protected String validAlignCurrentPasswordPolicy(String password) {
@@ -327,41 +413,41 @@ public class SignupServiceImpl implements SignupService {
                         // max length check
                         if (charCount > policy.getMaxLength()) {
                             log.info("Signup password invalid max length validation {}", password);
-                            return messageSource.getMessage("val.max.length.invalid", new Object[]{policy.getMaxLength()}, null);
+                            return messageSource.getMessage("val.password.max.length.invalid", new Object[]{policy.getMaxLength()}, null);
                         }
 
                         // min length check
                         if (charCount < policy.getMinLength()) {
                             log.info("Signup password invalid min length validation char count {} policy min length {}", charCount, policy.getMinLength());
-                            return messageSource.getMessage("val.min.length.invalid", new Object[]{policy.getMinLength()}, null);
+                            return messageSource.getMessage("val.password.min.length.invalid", new Object[]{policy.getMinLength()}, null);
                         }
 
                         int upperCount = StringUtil.countCharsByConditions(password, Character::isUpperCase);
                         // upper count check
                         if (upperCount < policy.getMinUpperCase()) {
                             log.info("Signup password invalid upper case validation {}", password);
-                            return messageSource.getMessage("val.upper.length.invalid", new Object[]{policy.getMinUpperCase()}, null);
+                            return messageSource.getMessage("val.password.upper.length.invalid", new Object[]{policy.getMinUpperCase()}, null);
                         }
 
                         int lowerCount = StringUtil.countCharsByConditions(password, Character::isLowerCase);
                         // lower count check
                         if (lowerCount < policy.getMinLowerCase()) {
                             log.info("Signup password invalid lower case validation {}", password);
-                            return messageSource.getMessage("val.lower.length.invalid", new Object[]{policy.getMinLowerCase()}, null);
+                            return messageSource.getMessage("val.password.lower.length.invalid", new Object[]{policy.getMinLowerCase()}, null);
                         }
 
                         int digitCount = StringUtil.countCharsByConditions(password, Character::isDigit);
                         // number count check
                         if (digitCount < policy.getMinNumbers()) {
                             log.info("Signup password invalid min digit validation {}", password);
-                            return messageSource.getMessage("val.number.length.invalid", new Object[]{policy.getMinNumbers()}, null);
+                            return messageSource.getMessage("val.password.number.length.invalid", new Object[]{policy.getMinNumbers()}, null);
                         }
 
                         int specialCharCount = StringUtil.countCharsByConditions(password, c -> !Character.isLetterOrDigit(c));
                         // special char count check
                         if (specialCharCount < policy.getMinSpecialCharacters()) {
                             log.info("Signup password invalid special char validation {}", password);
-                            return messageSource.getMessage("val.special.length.invalid", new Object[]{policy.getMinSpecialCharacters()}, null);
+                            return messageSource.getMessage("val.password.special.length.invalid", new Object[]{policy.getMinSpecialCharacters()}, null);
                         }
                         log.info("Signup password success validation {}", password);
                         return "";
@@ -376,6 +462,39 @@ public class SignupServiceImpl implements SignupService {
         }
     }
 
+    @Transactional(readOnly = true)
+    protected String validCompanyDetails(UserCompanyDetailsRequestDTO userCompanyDetailsRequestDTO) {
+        try {
+            log.info("Signup company details {}", userCompanyDetailsRequestDTO);
+
+            //company type
+            Optional<CompanyTypes> companyTypes = companyTypesRepository.findByCodeAndStatus(userCompanyDetailsRequestDTO
+                    .getCompanyType().getCode(), Status.ACTIVE);
+
+            //staff category
+            Optional<StaffCategories> staffCategories = staffCategoriesRepository.findByCodeAndStatus(userCompanyDetailsRequestDTO
+                    .getStaffCategory().getCode(), Status.ACTIVE);
+
+            //staff type
+            Optional<StaffTypes> staffTypes = staffTypesRepository.findByCodeAndStatus(userCompanyDetailsRequestDTO
+                    .getStaffType().getCode(), Status.ACTIVE);
+
+            if (companyTypes.isEmpty()) {
+                log.info("Signup company types not found {}", userCompanyDetailsRequestDTO.getCompanyType());
+                return messageSource.getMessage("val.company.types.notfound", null, null);
+            } else if (staffCategories.isEmpty()) {
+                log.info("Signup staff category types not found {}", userCompanyDetailsRequestDTO.getStaffCategory());
+                return messageSource.getMessage("val.staff.category.notfound", null, null);
+            } else if (staffTypes.isEmpty()) {
+                log.info("Signup staff types not found {}", userCompanyDetailsRequestDTO.getStaffType());
+                return messageSource.getMessage("val.staff.type.notfound", null, null);
+            }
+            return "";
+        } catch (Exception e) {
+            log.error(e);
+            throw e;
+        }
+    }
 
     @Transactional
     protected void updateOtpData(ApplicationOtpSession applicationOtpSession, OnboardingVerifiedMobile onboardingVerifiedMobile) {

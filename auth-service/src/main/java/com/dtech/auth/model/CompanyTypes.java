@@ -7,6 +7,7 @@
 
 package com.dtech.auth.model;
 
+import com.dtech.auth.enums.Status;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -30,5 +31,9 @@ public class CompanyTypes extends Audit implements Serializable {
 
     @Column(name = "description",nullable = false)
     private String description;
+
+    @Column(name = "status",nullable = false)
+    @Enumerated(EnumType.STRING)
+    private Status status;
 
 }
