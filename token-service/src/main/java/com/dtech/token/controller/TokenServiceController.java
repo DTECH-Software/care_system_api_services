@@ -44,9 +44,9 @@ public class TokenServiceController {
 
     @PostMapping(path = "/validate-token")
     @ApiOperation(value = "Check access token is valid",notes = "Token is valid or invalid")
-    public ResponseEntity<ApiResponse<Object>> validateToken(@RequestParam(name = "token",required = true) String token,@RequestParam(name = "username",required = true)String username, Locale locale) {
-        log.info("Getting token validate controller {} {}", token, username);
-        return tokenService.validateToken(token, username,locale);
+    public ResponseEntity<ApiResponse<Object>> validateToken(@RequestParam(name = "token",required = true) String token, Locale locale) {
+        log.info("Getting token validate controller {}", token);
+        return tokenService.validateToken(token,locale);
     }
 
 }

@@ -21,7 +21,9 @@ public class ResponseMessageUtil {
     public final static String OTP_INVALID_OR_SESSION_TIME_OUT = "val.application.otp.invalid.or.session.timeout";
     public final static String OTP_VALIDATION_SUCCESS = "val.application.otp.validation.success";
     public final static String USERNAME_ALREADY_EXISTS = "val.application.username.already.exists";
-    public final static String USERNAME_MIN_LENGTH_INVALID= "val.application.username.min.length.invalid";
     public final static String SIGNUP_PROCESS_SUCCESS= "val.application.signup.process.success";
 
+    /*profile*/
+    public final static String APPLICATION_USER_NOT_FOUND = "val.application.user.not.found";
+    public final static String APPLICATION_PROFILE_SPLASH_SUCCESS = "val.application.profile.splash.success";
 }

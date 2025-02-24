@@ -18,7 +18,7 @@ public interface TokenFeignClient {
     ResponseEntity<ApiResponse<Object>> getToken(@RequestBody ChannelRequestDTO channelRequestDTO);
 
     @PostMapping("/token-service/api/v1/token/validate-token")
-    ResponseEntity<ApiResponse<Object>> validateToken(@RequestParam(name = "token") String token,@RequestParam(name = "username")String username);
+    ResponseEntity<ApiResponse<Object>> validateToken(@RequestParam(name = "token") String token);
 
 }
 
@@ -30,7 +30,7 @@ class TokenFeignClientFallback implements TokenFeignClient {
     }
 
     @Override
-    public ResponseEntity<ApiResponse<Object>> validateToken(String token,String username) {
+    public ResponseEntity<ApiResponse<Object>> validateToken(String token) {
         return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(new ApiResponse<>());
     }
 }

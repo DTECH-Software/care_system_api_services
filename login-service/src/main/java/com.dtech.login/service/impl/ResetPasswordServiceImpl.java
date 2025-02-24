@@ -224,7 +224,7 @@ public class ResetPasswordServiceImpl implements ResetPasswordService {
                 return ResponseEntity.ok().body(responseUtil.error(null, 1007, message));
             }).orElseGet(() -> {
                 log.info("Processing reset password request user not found for username {} ", resetPasswordDTO.getUsername());
-                return ResponseEntity.ok().body(responseUtil.error(null, 1008, messageSource.getMessage(ResponseMessageUtil.USERNAME_PASSWORD_INVALID, null, locale)));
+                return ResponseEntity.ok().body(responseUtil.error(null, 1014, messageSource.getMessage(ResponseMessageUtil.APPLICATION_USER_NOT_FOUND, null, locale)));
             });
         } catch (Exception e) {
             log.error(e);

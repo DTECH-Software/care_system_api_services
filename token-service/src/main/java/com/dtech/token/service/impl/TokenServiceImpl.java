@@ -91,7 +91,7 @@ public class TokenServiceImpl implements TokenService {
 
     @Override
     @Transactional
-    public ResponseEntity<ApiResponse<Object>> validateToken(String token,String username, Locale locale) {
+    public ResponseEntity<ApiResponse<Object>> validateToken(String token, Locale locale) {
 
         try {
             log.info("validate token {}", token);
@@ -99,7 +99,7 @@ public class TokenServiceImpl implements TokenService {
             applicationUserSessionRepository.findByToken(token)
                     .ifPresent(applicationUserSession -> {
                         log.info("validate token present {}", token);
-                        isValid.set(jwtUtil.validateToken(token,username));
+                        isValid.set(jwtUtil.validateToken(token));
                         if (!isValid.get()) {
                             log.info("validate token fail {} user session {}", token, applicationUserSession);
                             applicationUserSession.setStatus(Status.INACTIVE);
@@ -107,7 +107,7 @@ public class TokenServiceImpl implements TokenService {
                             log.info("validate token fail session update success {}", token);
                         }
                     });
-            return ResponseEntity.ok().body(responseUtil.success(new TokenValidResponseDTO(isValid.get(),username), messageSource.getMessage(ResponseMessageUtil.TOKEN_VALIDATE_SUCCESS, null, locale)));
+            return ResponseEntity.ok().body(responseUtil.success(new TokenValidResponseDTO(isValid.get()), messageSource.getMessage(ResponseMessageUtil.TOKEN_VALIDATE_SUCCESS, null, locale)));
         } catch (Exception e) {
             log.error(e);
             throw e;

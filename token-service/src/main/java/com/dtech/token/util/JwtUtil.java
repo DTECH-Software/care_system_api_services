@@ -61,14 +61,14 @@ public class JwtUtil {
     }
 
     //validate token
-    public boolean validateToken(String token,String username) {
+    public boolean validateToken(String token) {
         try {
             log.info("Validate token {}", token);
             Jws<Claims> claimsJws = Jwts.parser()
                     .setSigningKey(getSignInKey())
                     .build().parseSignedClaims(token);
             Date expiration = claimsJws.getPayload().getExpiration();
-            if (expiration.before(new Date()) || !extractUsername(token).equals(username)) {
+            if (expiration.before(new Date())) {
                 log.warn("Token is expired {}", expiration);
                 return false;
             }

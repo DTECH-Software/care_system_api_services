@@ -29,7 +29,7 @@ public class UserCompanyDetails extends Audit implements Serializable {
 
     @ManyToOne(fetch = FetchType.LAZY,cascade = CascadeType.ALL)
     @JoinColumn(name = "company_type",nullable = false,referencedColumnName = "id")
-    private CompanyTypes companyType;
+    private CompanyTypes companyTypes;
 
     @ManyToOne(fetch = FetchType.LAZY,cascade = CascadeType.ALL)
     @JoinColumn(name = "staff_category",nullable = false,referencedColumnName = "id")

@@ -16,9 +16,9 @@ import java.util.Date;
 
 @Data
 public class UserCompanyDetailsResponseDTO {
-    private SimpleBaseDTO companyType;
-    private SimpleBaseDTO staffCategory;
-    private SimpleBaseDTO staffType;
+    private SimpleBaseDTO companyTypes;
+    private SimpleBaseDTO staffCategories;
+    private SimpleBaseDTO staffTypes;
     @JsonFormat(pattern = "yyyy-MM-dd")
     private Date permanentDate;
     @JsonFormat(pattern = "yyyy-MM-dd")

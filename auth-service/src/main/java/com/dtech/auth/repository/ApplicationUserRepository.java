@@ -7,6 +7,7 @@
 
 package com.dtech.auth.repository;
 
+import com.dtech.auth.enums.Status;
 import com.dtech.auth.model.ApplicationUser;
 import com.dtech.auth.model.UserPersonalDetails;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -19,4 +20,5 @@ import java.util.Optional;
 public interface ApplicationUserRepository extends JpaRepository<ApplicationUser, Long> {
     Optional<ApplicationUser> findByUserPersonalDetails(UserPersonalDetails userPersonalDetails);
     boolean existsByUsernameEndingWithIgnoreCase(String username);
+    Optional<ApplicationUser> findByUsernameAndUserPersonalDetails_UserStatus(String username, Status status);
 }

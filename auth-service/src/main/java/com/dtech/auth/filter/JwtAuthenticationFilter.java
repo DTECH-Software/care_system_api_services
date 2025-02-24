@@ -12,8 +12,6 @@ import com.dtech.auth.dto.response.TokenValidResponseDTO;
 import com.dtech.auth.feign.TokenFeignClient;
 import com.dtech.auth.util.ExtractApiResponseUtil;
 import com.google.gson.Gson;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -26,7 +24,6 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
-import java.io.BufferedReader;
 import java.io.IOException;
 import java.util.ArrayList;
 
@@ -55,11 +52,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 String token = authorization.substring(7);
                 log.info("JWT Authentication Filter Token - Auth {}", token);
                 log.info("JWT Authentication Filter request to token server - Auth {}", token);
-                String username = extractUsernameFromRequestBody(request);
-                ResponseEntity<ApiResponse<Object>> validateTokenResponse = tokenFeignClient.validateToken(token, username);
+
+                ResponseEntity<ApiResponse<Object>> validateTokenResponse = tokenFeignClient.validateToken(token);
                 log.info("After response token service Auth {}", validateTokenResponse);
                 Object objectApiResponse = ExtractApiResponseUtil.extractApiResponse(validateTokenResponse);
                 log.info("After response token response Auth {}", objectApiResponse);
+
                 TokenValidResponseDTO tokenValidResponseDTO = gson.fromJson(gson.toJson(objectApiResponse), TokenValidResponseDTO.class);
 
                 if (!token.isBlank() && tokenValidResponseDTO.isValid()) {
@@ -68,37 +66,24 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                             tokenValidResponseDTO.getUsername(), null, new ArrayList<>()
                     );
                     SecurityContextHolder.getContext().setAuthentication(authentication);
-
+                } else {
+                    log.info("JWT Authentication Filter Token invalid or missing - Unauthorized");
+                    response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                    response.getWriter().write("Unauthorized: Invalid or missing token");
+                    return;
                 }
+            } else {
+                log.info("JWT Authentication Filter Missing Authorization Header - Unauthorized");
+                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                response.getWriter().write("Unauthorized: Missing authorization header");
+                return;
             }
+
             filterChain.doFilter(request, response);
-
         } catch (Exception e) {
-            log.error(e);
-            throw e;
-        }
-    }
-
-    private String extractUsernameFromRequestBody(HttpServletRequest request) throws IOException {
-
-        try {
-            log.info("JWT Authentication Filter Request extract username from body- Auth {}", request);
-            String username = "";
-            StringBuilder body = new StringBuilder();
-            String line;
-            BufferedReader reader = request.getReader();
-            while ((line = reader.readLine()) != null) {
-                body.append(line);
-            }
-
-            JsonObject jsonObject = JsonParser.parseString(body.toString()).getAsJsonObject();
-            log.info("JWT Authentication Filter Request extract username from body json reader result - Auth {}",jsonObject);
-            if (jsonObject.has("username")) {
-                username = jsonObject.get("username").getAsString();
-            }
-            return username;
-        } catch (Exception e) {
-            log.error(e);
+            log.error("JWT Authentication Filter Error: ", e);
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            response.getWriter().write("Unauthorized: Error during authentication");
             throw e;
         }
     }
