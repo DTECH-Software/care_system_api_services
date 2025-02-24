@@ -40,7 +40,7 @@ public class ProfileController {
 
     @PostMapping(path = "/",produces = MediaType.APPLICATION_JSON_VALUE,consumes = MediaType.APPLICATION_JSON_VALUE)
     @ApiOperation(value = "Handle profile request request ",notes = "Profile request success or failed")
-    public ResponseEntity<ApiResponse<Object>> profile(@RequestBody ChannelRequestValidatorDTO channelRequestValidatorDTO, Locale locale) {
+    public ResponseEntity<ApiResponse<Object>> profile(@RequestBody @Valid ChannelRequestValidatorDTO channelRequestValidatorDTO, Locale locale) {
         log.info("Profile request controller {} ", channelRequestValidatorDTO);
         return profileService.profile(gson.fromJson(gson.toJson(channelRequestValidatorDTO), ChannelRequestDTO.class), locale);
     }

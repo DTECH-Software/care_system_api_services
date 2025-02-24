@@ -29,19 +29,17 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        http
-                .authorizeRequests(auth -> auth
-                        .requestMatchers("/api/v1/sign-up/**", "/api/v1/login/**")
+
+        http.authorizeHttpRequests(auth -> auth
+                        .requestMatchers("/api/v1/sign-up/**")
                         .permitAll()
-                        .anyRequest()
-                        .authenticated()
-                )
-                .csrf(csrf -> csrf.disable())
+                        .anyRequest().authenticated()
+                ).csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
-                )
-                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+                ).addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
         return http.build();
+
     }
 
 }

@@ -18,7 +18,7 @@ import lombok.Data;
 
 @Data
 @Conditional(selected = "channel" , values = {"MB"} ,required = {"deviceDetails"} ,message = "Device details is required.")
-@Conditional(selected = "message" , values = {"SIGNUP_REGISTERED"} ,required = {"username"} ,message = "Username is required.")
+@Conditional(selected = "message" , values = {"SIGNUP_REGISTERED","SPLASH_SCREEN"} ,required = {"username"} ,message = "Username is required.")
 public class ChannelRequestValidatorDTO {
     @NotBlank(message = "Channel is required.")
     @ValidEnum(enumClass = Channel.class,message = "Invalid channel.")

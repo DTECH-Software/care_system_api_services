@@ -41,7 +41,7 @@ public class ResetPasswordController {
 
     @PostMapping(path = "/reset/otp",produces = MediaType.APPLICATION_JSON_VALUE,consumes = MediaType.APPLICATION_JSON_VALUE)
     @ApiOperation(value = "Handle password request otp generate request ",notes = "Password reset otp request success or failed")
-    public ResponseEntity<ApiResponse<Object>> resetPassword(@RequestBody @Valid ChannelRequestValidatorDTO channelRequestValidatorDTO, Locale locale) {
+    public ResponseEntity<ApiResponse<Object>> resetRequest(@RequestBody @Valid ChannelRequestValidatorDTO channelRequestValidatorDTO, Locale locale) {
         log.info("Password reset otp gen request  controller {} ", channelRequestValidatorDTO);
         return resetPasswordService.resetRequest(gson.fromJson(gson.toJson(channelRequestValidatorDTO), ChannelRequestDTO.class), locale);
     }

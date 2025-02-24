@@ -76,11 +76,11 @@ public class ResetPasswordServiceImpl implements ResetPasswordService {
         try {
             log.info("Processing reset password request gen otp {} ", channelRequestDTO.getUsername());
             String username = channelRequestDTO.getUsername().trim();
-            Optional<ApplicationUser> optionalUser = applicationUserRepository.findByUsername(username);
+            Optional<ApplicationUser> optionalUser = applicationUserRepository.findByUsernameAndUserPersonalDetails_UserStatus(username,Status.ACTIVE);
 
             if (optionalUser.isEmpty()) {
                 log.info("Reset password OTP request find by email {} ", username);
-                optionalUser = applicationUserRepository.findByPrimaryEmail(username);
+                optionalUser = applicationUserRepository.findByUsernameAndUserPersonalDetails_UserStatus(username,Status.ACTIVE);
                 channelRequestDTO.setUsername(optionalUser.isEmpty() ? "" : optionalUser.get().getUsername());
             }
 
@@ -197,11 +197,13 @@ public class ResetPasswordServiceImpl implements ResetPasswordService {
             String username = resetPasswordDTO.getUsername().trim();
             String password = resetPasswordDTO.getConfirmPassword().trim();
 
-            Optional<ApplicationUser> optionalUser = applicationUserRepository.findByUsername(username);
+            Optional<ApplicationUser> optionalUser = applicationUserRepository.
+                    findByUsernameAndUserPersonalDetails_UserStatus(username,Status.ACTIVE);
 
             if (optionalUser.isEmpty()) {
                 log.info("Reset password find by email {} ", username);
-                optionalUser = applicationUserRepository.findByPrimaryEmail(username);
+                optionalUser = applicationUserRepository.
+                        findByPrimaryEmailAndUserPersonalDetails_UserStatus(username,Status.ACTIVE);
                 resetPasswordDTO.setUsername(optionalUser.isEmpty() ? "" : optionalUser.get().getUsername());
             }
 
@@ -239,11 +241,13 @@ public class ResetPasswordServiceImpl implements ResetPasswordService {
         try {
             log.info("processing otp validation request {}", otpRequestDTO);
             String username = otpRequestDTO.getUsername().trim();
-            Optional<ApplicationUser> optionalUser = applicationUserRepository.findByUsername(username);
+            Optional<ApplicationUser> optionalUser = applicationUserRepository
+                    .findByUsernameAndUserPersonalDetails_UserStatus(username,Status.ACTIVE);
 
             if (optionalUser.isEmpty()) {
                 log.info("OTP validate request find by email {} ", username);
-                optionalUser = applicationUserRepository.findByPrimaryEmail(username);
+                optionalUser = applicationUserRepository
+                        .findByPrimaryEmailAndUserPersonalDetails_UserStatus(username,Status.ACTIVE);
                 otpRequestDTO.setUsername(optionalUser.isEmpty() ? "" : optionalUser.get().getUsername());
             }
 

@@ -104,4 +104,8 @@ public class ApplicationUser extends Audit implements Serializable {
     @JoinColumn(name = "device_id",referencedColumnName = "id")
     private ApplicationUserDeviceDetails applicationUserDeviceDetails;
 
+    @OneToOne(fetch = FetchType.LAZY,cascade = CascadeType.ALL)
+    @JoinColumn(name = "user_personal_details",referencedColumnName = "id")
+    private UserPersonalDetails userPersonalDetails;
+
 }

@@ -7,9 +7,9 @@
 
 package com.dtech.login.service.impl;
 
-import com.dtech.login.dto.request.ChannelMbDeviceDetailsDTO;
 import com.dtech.login.dto.request.ChannelRequestDTO;
 import com.dtech.login.dto.request.LoginRequestDTO;
+import com.dtech.login.dto.request.ChannelMbDeviceDetailsDTO;
 import com.dtech.login.dto.response.AccessTokenResponseDTO;
 import com.dtech.login.dto.response.ApiResponse;
 import com.dtech.login.enums.Channel;
@@ -81,11 +81,11 @@ public class LoginServiceImpl implements LoginService {
             String username = loginRequestDTO.getUsername().trim();
             String password = loginRequestDTO.getPassword().trim();
 
-            Optional<ApplicationUser> optionalUser = applicationUserRepository.findByUsername(username);
+            Optional<ApplicationUser> optionalUser = applicationUserRepository.findByUsernameAndUserPersonalDetails_UserStatus(username, Status.ACTIVE);
 
             if (optionalUser.isEmpty()) {
                 log.info("Login request find by email {} ", username);
-                optionalUser = applicationUserRepository.findByPrimaryEmail(username);
+                optionalUser = applicationUserRepository.findByPrimaryEmailAndUserPersonalDetails_UserStatus(username,Status.ACTIVE);
                 loginRequestDTO.setUsername(optionalUser.isEmpty() ? "" : optionalUser.get().getUsername());
             }
             return optionalUser.map(user -> {

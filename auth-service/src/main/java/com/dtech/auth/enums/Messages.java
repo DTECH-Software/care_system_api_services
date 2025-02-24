@@ -8,5 +8,6 @@
 package com.dtech.auth.enums;
 
 public enum Messages {
-   POST,PRE,SIGNUP_REGISTERED
+   SIGNUP_INQUIRY,SIGNUP_OTP_REQUEST,SIGNUP_OTP_VALIDATION,SIGNUP_REGISTERED, //Signup controller
+   SPLASH_SCREEN,
 }

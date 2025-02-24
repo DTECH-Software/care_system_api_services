@@ -66,26 +66,16 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                             tokenValidResponseDTO.getUsername(), null, new ArrayList<>()
                     );
                     SecurityContextHolder.getContext().setAuthentication(authentication);
-                } else {
-                    log.info("JWT Authentication Filter Token invalid or missing - Unauthorized");
-                    response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-                    response.getWriter().write("Unauthorized: Invalid or missing token");
-                    return;
-                }
-            } else {
-                log.info("JWT Authentication Filter Missing Authorization Header - Unauthorized");
-                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-                response.getWriter().write("Unauthorized: Missing authorization header");
-                return;
-            }
 
+                }
+            }
             filterChain.doFilter(request, response);
+
         } catch (Exception e) {
-            log.error("JWT Authentication Filter Error: ", e);
-            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-            response.getWriter().write("Unauthorized: Error during authentication");
+            log.error(e);
             throw e;
         }
     }
+
 
 }
