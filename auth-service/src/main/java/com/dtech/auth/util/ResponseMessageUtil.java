@@ -22,6 +22,8 @@ public class ResponseMessageUtil {
     public final static String OTP_VALIDATION_SUCCESS = "val.application.otp.validation.success";
     public final static String USERNAME_ALREADY_EXISTS = "val.application.username.already.exists";
     public final static String SIGNUP_PROCESS_SUCCESS= "val.application.signup.process.success";
+    public final static String PASSWORD_POLICY_NOT_FOUND= "val.password.policy.notfound";
+    public final static String USERNAME_POLICY_NOT_FOUND= "val.username.policy.notfound";
 
     /*profile*/
     public final static String APPLICATION_USER_NOT_FOUND = "val.application.user.not.found";

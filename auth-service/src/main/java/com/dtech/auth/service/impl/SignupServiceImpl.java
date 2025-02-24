@@ -11,6 +11,7 @@ package com.dtech.auth.service.impl;
 import com.dtech.auth.dto.request.*;
 import com.dtech.auth.dto.response.ApiResponse;
 import com.dtech.auth.dto.response.MessageResponseDTO;
+import com.dtech.auth.dto.response.PolicyResponseDTO;
 import com.dtech.auth.dto.response.UserPersonalDetailsResponseDTO;
 import com.dtech.auth.enums.NotificationsType;
 import com.dtech.auth.enums.Status;
@@ -38,6 +39,7 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Optional;
 
 @Service
@@ -172,36 +174,67 @@ public class SignupServiceImpl implements SignupService {
     @Override
     @Transactional
     public ResponseEntity<ApiResponse<Object>> signupOtpValidation(OtpRequestDTO otpRequestDTO, Locale locale) {
-
         try {
             log.info("Processing SignupOtpValidation {}", otpRequestDTO);
-            return applicationOtpSessionRepository.findByOtpAndValidated(otpRequestDTO.getOtp(), false).map(os -> onboardingVerifiedMobileRepository
-                    .findByApplicationOtpSession(os).map(od -> {
+            return applicationOtpSessionRepository.findByOtpAndValidated(otpRequestDTO.getOtp(), false)
+                    .map(os -> onboardingVerifiedMobileRepository.findByApplicationOtpSession(os)
+                            .map(oss -> applicationPasswordPolicyRepository.findPasswordPolicy()
+                                    .map(pw -> applicationUsernamePolicyRepository.findUsernamePolicy()
+                                            .map(up -> {
+                                                if (DateTimeUtil.getSeconds(os.getCreatedDate(), 60).after(DateTimeUtil.getCurrentDateTime()) &&
+                                                        os.getOtp().equals(otpRequestDTO.getOtp()) && !os.isValidated()) {
+                                                    log.info("Otp request for signup {} ", os);
+                                                    updateOtpData(os, oss);
 
-                        if (DateTimeUtil.getSeconds(os.getCreatedDate(), 60).after(DateTimeUtil.getCurrentDateTime()) &&
-                                os.getOtp().equals(otpRequestDTO.getOtp()) && !os.isValidated()) {
-                            log.info("Otp request  for signup {} ", os);
-                            updateOtpData(os, od);
-                            return ResponseEntity.ok().body(responseUtil.success(null, messageSource.getMessage(ResponseMessageUtil.OTP_VALIDATION_SUCCESS, null, locale)));
-                        }
+                                                    return ResponseEntity.ok().body(
+                                                            responseUtil.success((Object) Map.of("passwordPolicy",gson.fromJson(gson.toJson(pw), PolicyResponseDTO.class), "usernamePolicy", gson.fromJson(gson.toJson(up), PolicyResponseDTO.class)),
+                                                                    messageSource.getMessage(ResponseMessageUtil.OTP_VALIDATION_SUCCESS, null, locale))
+                                                    );
+                                                }
 
-                        log.info("Signup otp request validation fail otp or invalid session {}", os);
-                        return ResponseEntity.ok().body(responseUtil.error(null, 1016, messageSource.getMessage(ResponseMessageUtil.OTP_INVALID_OR_SESSION_TIME_OUT, null, locale)));
-                    })
-                    .orElseGet(() -> {
-                        log.info("Signup otp mobile verified not found {}", otpRequestDTO);
-                        return ResponseEntity.ok().body(responseUtil.error(null, 1020, messageSource.getMessage(ResponseMessageUtil.ONBOARDING_VERIFICATION_OTP_NOT_FOUND, null, locale)));
-                    })).orElseGet(() -> {
-                log.info("Signup otp session not found {}", otpRequestDTO);
-                return ResponseEntity.ok().body(responseUtil.error(null, 1015, messageSource.getMessage(ResponseMessageUtil.OTP_SESSION_NOT_FOUND, null, locale)));
-            });
+                                                log.info("Signup otp request validation fail otp or invalid session {}", os);
+                                                return ResponseEntity.ok().body(
+                                                        responseUtil.error(null, 1016,
+                                                                messageSource.getMessage(ResponseMessageUtil.OTP_INVALID_OR_SESSION_TIME_OUT, null, locale))
+                                                );
+                                            })
+                                            .orElseGet(() -> {
+                                                log.info("Signup otp mobile verified username policy not found {}", otpRequestDTO);
+                                                return ResponseEntity.ok().body(
+                                                        responseUtil.error(null, 1022,
+                                                                messageSource.getMessage(ResponseMessageUtil.USERNAME_POLICY_NOT_FOUND, null, locale))
+                                                );
+                                            })
+                                    )
+                                    .orElseGet(() -> {
+                                        log.info("Signup otp mobile verified password policy not found {}", otpRequestDTO);
+                                        return ResponseEntity.ok().body(
+                                                responseUtil.error(null, 1010,
+                                                        messageSource.getMessage(ResponseMessageUtil.PASSWORD_POLICY_NOT_FOUND, null, locale))
+                                        );
+                                    })
+                            )
+                            .orElseGet(() -> {
+                                log.info("Signup otp mobile verified not found {}", otpRequestDTO);
+                                return ResponseEntity.ok().body(
+                                        responseUtil.error(null, 1020,
+                                                messageSource.getMessage(ResponseMessageUtil.ONBOARDING_VERIFICATION_OTP_NOT_FOUND, null, locale))
+                                );
+                            })
+                    ).orElseGet(() -> {
+                        log.info("Signup otp session not found {}", otpRequestDTO);
+                        return ResponseEntity.ok().body(
+                                responseUtil.error(null, 1015,
+                                        messageSource.getMessage(ResponseMessageUtil.OTP_SESSION_NOT_FOUND, null, locale))
+                        );
+                    });
 
         } catch (Exception e) {
-            log.error(e);
+            log.error("Error during OTP validation: ", e);
             throw e;
         }
-
     }
+
 
     @Override
     @Transactional
@@ -261,12 +294,12 @@ public class SignupServiceImpl implements SignupService {
                                         String jsonString = "";
                                         try {
                                             log.info("processing signup  json {}", userPersonalDetailsRequestDTO);
-                                           jsonString = objectMapper.writeValueAsString(userPersonalDetailsRequestDTO);
+                                            jsonString = objectMapper.writeValueAsString(userPersonalDetailsRequestDTO);
                                         } catch (JsonProcessingException e) {
                                             log.error(e);
                                             throw new RuntimeException(e);
                                         }
-                                        OnboardingRequest onboardingRequest = updateOnboardingRequest(userPersonalDetailsRequestDTO,jsonString);
+                                        OnboardingRequest onboardingRequest = updateOnboardingRequest(userPersonalDetailsRequestDTO, jsonString);
                                         ApplicationUser applicationUser = updateApplicationUser(userPersonalDetailsRequestDTO, hashPassword, saltKey, onboardingRequest, pd);
                                         updateApplicationUserPasswordHistory(applicationUser, hashPassword);
                                         log.info("Signup register success {}", applicationUser);
@@ -329,7 +362,7 @@ public class SignupServiceImpl implements SignupService {
     }
 
     @Transactional
-    protected OnboardingRequest updateOnboardingRequest(UserPersonalDetailsRequestDTO userPersonalDetailsRequestDTO,String jsonString) {
+    protected OnboardingRequest updateOnboardingRequest(UserPersonalDetailsRequestDTO userPersonalDetailsRequestDTO, String jsonString) {
         try {
             log.info("Processing signup updateOnboardingRequest {}", userPersonalDetailsRequestDTO);
             OnboardingRequest onboardingRequest = new OnboardingRequest();
