@@ -49,6 +49,9 @@ public class UserPersonalDetails extends Audit implements Serializable {
     @Column(name = "mobile_no",nullable = false)
     private String mobileNo;
 
+    @Column(name = "marital_status",nullable = false)
+    private boolean maritalStatus;
+
     @Column(name = "dob",nullable = false)
     @Temporal(TemporalType.DATE)
     private Date dob;

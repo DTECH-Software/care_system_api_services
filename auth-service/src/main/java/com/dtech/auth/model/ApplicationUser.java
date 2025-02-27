@@ -77,9 +77,6 @@ public class ApplicationUser extends Audit implements Serializable {
     @Column(name = "expecting_first_time_loging",nullable = false)
     private boolean expectingFirstTimeLogging;
 
-    @Column(name = "mb_expecting_first_time_loging",nullable = false)
-    private boolean mbExpectingFirstTimeLogging;
-
     @Column(name = "expecting_dependents_register",nullable = false)
     private boolean expectingDependentsRegister;
 
@@ -112,4 +109,9 @@ public class ApplicationUser extends Audit implements Serializable {
     @ManyToOne(fetch = FetchType.LAZY,cascade = CascadeType.ALL)
     @JoinColumn(name = "device_id",referencedColumnName = "id")
     private ApplicationUserDeviceDetails applicationUserDeviceDetails;
+
+    @ManyToOne(fetch = FetchType.LAZY,cascade = CascadeType.ALL)
+    @JoinColumn(name = "document")
+    private ClaimsDependentsVerificationDocument profile;
+
 }

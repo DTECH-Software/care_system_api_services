@@ -40,6 +40,6 @@ public class OnboardingRequest extends Audit implements Serializable {
 //    private OnboardingVerifiedMobile onboardingVerifiedMobile;
 
     @OneToOne(mappedBy = "onboardingRequest")
-    private ApplicationUser onboardingRequest;
+    private ApplicationUser applicationUser;
 
 }

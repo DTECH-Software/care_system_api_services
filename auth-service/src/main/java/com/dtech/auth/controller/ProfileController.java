@@ -8,7 +8,9 @@
 package com.dtech.auth.controller;
 
 import com.dtech.auth.dto.request.ChannelRequestDTO;
+import com.dtech.auth.dto.request.DependentRequestDTO;
 import com.dtech.auth.dto.request.validator.ChannelRequestValidatorDTO;
+import com.dtech.auth.dto.request.validator.DependentRequestValidatorDTO;
 import com.dtech.auth.dto.response.ApiResponse;
 import com.dtech.auth.service.ProfileService;
 import com.google.gson.Gson;
@@ -39,9 +41,17 @@ public class ProfileController {
     private final Gson gson;
 
     @PostMapping(path = "/",produces = MediaType.APPLICATION_JSON_VALUE,consumes = MediaType.APPLICATION_JSON_VALUE)
-    @ApiOperation(value = "Handle profile request request ",notes = "Profile request success or failed")
+    @ApiOperation(value = "Handle profile request ",notes = "Profile request success or failed")
     public ResponseEntity<ApiResponse<Object>> profile(@RequestBody @Valid ChannelRequestValidatorDTO channelRequestValidatorDTO, Locale locale) {
         log.info("Profile request controller {} ", channelRequestValidatorDTO);
         return profileService.profile(gson.fromJson(gson.toJson(channelRequestValidatorDTO), ChannelRequestDTO.class), locale);
     }
+
+    @PostMapping(path = "/dependent",consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @ApiOperation(value = "Handle profile dependent request ",notes = "Handle profile dependent success or failed")
+    public ResponseEntity<ApiResponse<Object>> addDependents(@RequestBody @Valid DependentRequestValidatorDTO dependentRequestValidatorDTO, Locale locale) {
+        log.info("Profile add dependent request controller {} ", dependentRequestValidatorDTO);
+        return profileService.addDependents(gson.fromJson(gson.toJson(dependentRequestValidatorDTO), DependentRequestDTO.class), locale);
+    }
+
 }

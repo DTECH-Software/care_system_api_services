@@ -348,7 +348,6 @@ public class SignupServiceImpl implements SignupService {
             applicationUser.setAttemptCount(0);
             applicationUser.setOtpAttemptCount(0);
             applicationUser.setExpectingFirstTimeLogging(true);
-            applicationUser.setMbExpectingFirstTimeLogging(true);
             applicationUser.setExpectingDependentsRegister(true);
             applicationUser.setOnboardingRequest(onboardingRequest);
             applicationUser.setUserPersonalDetails(userPersonalDetails);
@@ -515,24 +514,24 @@ public class SignupServiceImpl implements SignupService {
 
             //company type
             Optional<CompanyTypes> companyTypes = companyTypesRepository.findByCodeAndStatus(userCompanyDetailsRequestDTO
-                    .getCompanyType().getCode(), Status.ACTIVE);
+                    .getCompanyTypes().getCode(), Status.ACTIVE);
 
             //staff category
             Optional<StaffCategories> staffCategories = staffCategoriesRepository.findByCodeAndStatus(userCompanyDetailsRequestDTO
-                    .getStaffCategory().getCode(), Status.ACTIVE);
+                    .getStaffCategories().getCode(), Status.ACTIVE);
 
             //staff type
             Optional<StaffTypes> staffTypes = staffTypesRepository.findByCodeAndStatus(userCompanyDetailsRequestDTO
-                    .getStaffType().getCode(), Status.ACTIVE);
+                    .getStaffTypes().getCode(), Status.ACTIVE);
 
             if (companyTypes.isEmpty()) {
-                log.info("Signup company types not found {}", userCompanyDetailsRequestDTO.getCompanyType());
+                log.info("Signup company types not found {}", userCompanyDetailsRequestDTO.getCompanyTypes());
                 return messageSource.getMessage("val.company.types.notfound", null, null);
             } else if (staffCategories.isEmpty()) {
-                log.info("Signup staff category types not found {}", userCompanyDetailsRequestDTO.getStaffCategory());
+                log.info("Signup staff category types not found {}", userCompanyDetailsRequestDTO.getStaffCategories());
                 return messageSource.getMessage("val.staff.category.notfound", null, null);
             } else if (staffTypes.isEmpty()) {
-                log.info("Signup staff types not found {}", userCompanyDetailsRequestDTO.getStaffType());
+                log.info("Signup staff types not found {}", userCompanyDetailsRequestDTO.getStaffTypes());
                 return messageSource.getMessage("val.staff.type.notfound", null, null);
             }
             return "";

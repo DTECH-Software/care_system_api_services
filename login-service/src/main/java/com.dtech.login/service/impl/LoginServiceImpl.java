@@ -155,7 +155,7 @@ public class LoginServiceImpl implements LoginService {
         }
     }
 
-    @org.springframework.transaction.annotation.Transactional(readOnly = true)
+    @Transactional(readOnly = true)
     protected Optional<Integer> getPasswordPolicyAttemptCount() {
         try {
             log.info("Processing password policy attemptCount ");
@@ -175,16 +175,10 @@ public class LoginServiceImpl implements LoginService {
             applicationUser.setLastLoggedDate(DateTimeUtil.getCurrentDateTime());
             if (loginRequestDTO.getChannel().equals(Channel.MB.name())) {
                 applicationUser.setMbLastLoggedDate(DateTimeUtil.getCurrentDateTime());
-                if (applicationUser.isMbExpectingFirstTimeLogging()) {
-                    applicationUser.setMbExpectingFirstTimeLogging(false);
-                }
                 ApplicationUserDeviceDetails applicationUserDeviceDetails = updateUserDeviceDetails(loginRequestDTO.getDeviceDetails());
                 applicationUser.setApplicationUserDeviceDetails(applicationUserDeviceDetails);
             } else {
                 applicationUser.setOpLastLoggedDate(DateTimeUtil.getCurrentDateTime());
-            }
-            if (applicationUser.isExpectingFirstTimeLogging()) {
-                applicationUser.setExpectingFirstTimeLogging(false);
             }
             applicationUser.setPasswordExpiredDate(DateTimeUtil.get30FutureDate());
             applicationUser.setAttemptCount(0);

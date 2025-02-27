@@ -27,5 +27,8 @@ public class ResponseMessageUtil {
 
     /*profile*/
     public final static String APPLICATION_USER_NOT_FOUND = "val.application.user.not.found";
-    public final static String APPLICATION_PROFILE_SPLASH_SUCCESS = "val.application.profile.splash.success";
+    public final static String APPLICATION_PROFILE_SUCCESS = "val.application.profile.success";
+    public final static String CLAIM_DEPENDENT_MOTHER_FOUND = "val.claim.dependent.mother.found";
+    public final static String CLAIM_DEPENDENT_FATHER_FOUND = "val.claim.dependent.father.found";
+    public final static String CLAIM_DEPENDENT_ADDED_SUCCESS = "val.claim.dependent.added.success";
 }

@@ -16,11 +16,11 @@ import java.util.Date;
 @Data
 public class UserCompanyDetailsRequestValidatorDTO {
     @NotNull(message = "Company type is required.")
-    private SimpleBaseValidatorDTO companyType;
+    private SimpleBaseValidatorDTO companyTypes;
     @NotNull(message = "Staff category is required.")
-    private SimpleBaseValidatorDTO staffCategory;
+    private SimpleBaseValidatorDTO staffCategories;
     @NotNull(message = "Staff type is required.")
-    private SimpleBaseValidatorDTO staffType;
+    private SimpleBaseValidatorDTO staffTypes;
     @NotNull(message = "Permanent date is required.")
     @JsonFormat(pattern = "yyyy-MM-dd")
     private Date permanentDate;

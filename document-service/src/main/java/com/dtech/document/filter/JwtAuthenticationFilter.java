@@ -1,0 +1,82 @@
+/**
+ * User: Himal_J
+ * Date: 2/23/2025
+ * Time: 2:24 PM
+ * <p>
+ */
+
+package com.dtech.document.filter;
+
+
+import com.google.gson.Gson;
+import com.dtech.document.dto.response.ApiResponse;
+import com.dtech.document.dto.response.TokenValidResponseDTO;
+import com.dtech.document.feign.TokenFeignClient;
+import com.dtech.document.util.ExtractApiResponseUtil;
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import lombok.extern.log4j.Log4j2;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.stereotype.Component;
+import org.springframework.web.filter.OncePerRequestFilter;
+
+import java.io.IOException;
+import java.util.ArrayList;
+
+@Log4j2
+@Component
+public class JwtAuthenticationFilter extends OncePerRequestFilter {
+
+    private static final String AUTHORIZATION_HEADER = "Authorization";
+    private static final String BEARER_PREFIX = "Bearer ";
+
+    private final TokenFeignClient tokenFeignClient;
+    private final Gson gson;
+
+    public JwtAuthenticationFilter(TokenFeignClient tokenFeignClient, Gson gson) {
+        this.tokenFeignClient = tokenFeignClient;
+        this.gson = gson;
+    }
+
+    @Override
+    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
+        log.info("JWT Authentication Filter Started {}, {}", request.getRequestURI(), request);
+        try {
+            String authorization = request.getHeader(AUTHORIZATION_HEADER);
+            if (authorization != null && authorization.startsWith(BEARER_PREFIX)) {
+                log.info("JWT Authentication Filter Authorized - Document");
+                String token = authorization.substring(7);
+                log.info("JWT Authentication Filter Token - Document {}", token);
+                log.info("JWT Authentication Filter request to token server - Document {}", token);
+
+                ResponseEntity<ApiResponse<Object>> validateTokenResponse = tokenFeignClient.validateToken(token);
+                log.info("After response token service Document {}", validateTokenResponse);
+                Object objectApiResponse = ExtractApiResponseUtil.extractApiResponse(validateTokenResponse);
+                log.info("After response token response Document {}", objectApiResponse);
+
+                TokenValidResponseDTO tokenValidResponseDTO = gson.fromJson(gson.toJson(objectApiResponse), TokenValidResponseDTO.class);
+
+                if (!token.isBlank() && tokenValidResponseDTO.isValid()) {
+                    log.info("JWT Authentication Filter Token valid - Document {}", tokenValidResponseDTO);
+                    Authentication authentication = new UsernamePasswordAuthenticationToken(
+                            tokenValidResponseDTO.getUsername(), null, new ArrayList<>()
+                    );
+                    SecurityContextHolder.getContext().setAuthentication(authentication);
+
+                }
+            }
+            filterChain.doFilter(request, response);
+
+        } catch (Exception e) {
+            log.error(e);
+            throw e;
+        }
+    }
+
+
+}
