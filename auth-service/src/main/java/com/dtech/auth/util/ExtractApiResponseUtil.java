@@ -32,4 +32,23 @@ public class ExtractApiResponseUtil {
             throw e;
         }
     }
+
+    public static byte[] extractApiImageResponse(ResponseEntity<byte[]> responseEntity) {
+        try {
+            log.info("call api image response {}", responseEntity.getStatusCode());
+            if (responseEntity.getStatusCode() == HttpStatus.OK && responseEntity.getBody() != null) {
+                log.info("call api image response inside body {}", responseEntity.getBody());
+                byte[] body = responseEntity.getBody();
+                if (body != null) {
+                    log.info("call api image response inside api response body data" );
+                    return body;
+                }
+            }
+            log.info("call api image response without body response {}", responseEntity.getBody());
+            return new byte[0];
+        } catch (Exception e) {
+            log.error(e);
+            throw e;
+        }
+    }
 }

@@ -10,13 +10,13 @@ package com.dtech.auth.model;
 
 import com.dtech.auth.enums.Channel;
 import com.dtech.auth.enums.Status;
-import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
 import java.io.Serializable;
 import java.util.Date;
+import java.util.List;
 
 @EqualsAndHashCode(callSuper = true)
 @Entity
@@ -111,5 +111,8 @@ public class ApplicationUser extends Audit implements Serializable {
     @ManyToOne(fetch = FetchType.LAZY,cascade = CascadeType.ALL)
     @JoinColumn(name = "device_id",referencedColumnName = "id")
     private ApplicationUserDeviceDetails applicationUserDeviceDetails;
+
+    @OneToMany(mappedBy = "applicationUser")
+    private List<ClaimsDependents> claimsDependents;
 
 }

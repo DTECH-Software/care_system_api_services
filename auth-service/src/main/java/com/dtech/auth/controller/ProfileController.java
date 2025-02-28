@@ -8,9 +8,9 @@
 package com.dtech.auth.controller;
 
 import com.dtech.auth.dto.request.ChannelRequestDTO;
-import com.dtech.auth.dto.request.DependentRequestDTO;
+import com.dtech.auth.dto.request.ClaimDependentRequestDTO;
 import com.dtech.auth.dto.request.validator.ChannelRequestValidatorDTO;
-import com.dtech.auth.dto.request.validator.DependentRequestValidatorDTO;
+import com.dtech.auth.dto.request.validator.ClaimDependentRequestValidatorDTO;
 import com.dtech.auth.dto.response.ApiResponse;
 import com.dtech.auth.service.ProfileService;
 import com.google.gson.Gson;
@@ -49,9 +49,16 @@ public class ProfileController {
 
     @PostMapping(path = "/dependent",produces = MediaType.APPLICATION_JSON_VALUE,consumes = MediaType.APPLICATION_JSON_VALUE)
     @ApiOperation(value = "Handle profile dependent request ",notes = "Handle profile dependent success or failed")
-    public ResponseEntity<ApiResponse<Object>> addDependents(@RequestBody @Valid DependentRequestValidatorDTO dependentRequestValidatorDTO, Locale locale) {
-        log.info("Profile add dependent request controller {} ", dependentRequestValidatorDTO);
-        return profileService.addDependents(gson.fromJson(gson.toJson(dependentRequestValidatorDTO), DependentRequestDTO.class), locale);
+    public ResponseEntity<ApiResponse<Object>> addDependents(@RequestBody @Valid ClaimDependentRequestValidatorDTO claimDependentRequestValidatorDTO, Locale locale) {
+        log.info("Profile add dependent request controller {} ", claimDependentRequestValidatorDTO);
+        return profileService.addDependents(gson.fromJson(gson.toJson(claimDependentRequestValidatorDTO), ClaimDependentRequestDTO.class), locale);
+    }
+
+    @PostMapping(path = "/dependent-list-view",produces = MediaType.APPLICATION_JSON_VALUE,consumes = MediaType.APPLICATION_JSON_VALUE)
+    @ApiOperation(value = "Handle profile dependent view list request ",notes = "Handle profile dependent view list success or failed")
+    public ResponseEntity<ApiResponse<Object>> addDependents(@RequestBody @Valid ChannelRequestValidatorDTO channelRequestValidatorDTO, Locale locale) {
+        log.info("Profile view list dependent request controller {} ", channelRequestValidatorDTO);
+        return profileService.getDependentsDetails(gson.fromJson(gson.toJson(channelRequestValidatorDTO), ChannelRequestDTO.class), locale);
     }
 
 }

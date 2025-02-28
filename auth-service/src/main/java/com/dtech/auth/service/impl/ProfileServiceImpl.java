@@ -7,17 +7,14 @@
 
 package com.dtech.auth.service.impl;
 
-import com.dtech.auth.dto.request.ChannelRequestDTO;
-import com.dtech.auth.dto.request.DependentDetailsRequestDTO;
-import com.dtech.auth.dto.request.DependentRequestDTO;
-import com.dtech.auth.dto.request.SupportingDocumentDTO;
-import com.dtech.auth.dto.response.ApiResponse;
-import com.dtech.auth.dto.response.ApplicationUserDetailsResponseDTO;
-import com.dtech.auth.dto.response.UserPersonalDetailsResponseDTO;
+import com.dtech.auth.dto.request.*;
+import com.dtech.auth.dto.response.*;
 import com.dtech.auth.enums.DependentCategory;
 import com.dtech.auth.enums.RelationCategory;
 import com.dtech.auth.enums.Status;
 import com.dtech.auth.enums.Workflow;
+import com.dtech.auth.feign.DocumentFeignClient;
+import com.dtech.auth.mapper.EntityToDto.ProfileMapper;
 import com.dtech.auth.model.ApplicationUser;
 import com.dtech.auth.model.ClaimsDependents;
 import com.dtech.auth.model.Document;
@@ -71,6 +68,9 @@ public class ProfileServiceImpl implements ProfileService {
     @Autowired
     private final DocumentRepository documentRepository;
 
+    @Autowired
+    private final DocumentFeignClient documentFeignClient;
+
     @Override
     @Transactional
     public ResponseEntity<ApiResponse<Object>> profile(ChannelRequestDTO channelRequestDTO, Locale locale) {
@@ -100,14 +100,14 @@ public class ProfileServiceImpl implements ProfileService {
 
     @Override
     @Transactional
-    public ResponseEntity<ApiResponse<Object>> addDependents(DependentRequestDTO dependentRequestDTO, Locale locale) {
+    public ResponseEntity<ApiResponse<Object>> addDependents(ClaimDependentRequestDTO claimDependentRequestDTO, Locale locale) {
         try {
-            log.info("User profile add dependant request {} ", dependentRequestDTO);
+            log.info("User profile add dependant request {} ", claimDependentRequestDTO);
             return applicationUserRepository.
-                    findByUsernameAndUserPersonalDetails_UserStatus(dependentRequestDTO.getUsername().trim(), Status.ACTIVE)
+                    findByUsernameAndUserPersonalDetails_UserStatus(claimDependentRequestDTO.getUsername().trim(), Status.ACTIVE)
                     .map(applicationUser -> {
 
-                        for (DependentDetailsRequestDTO detailsRequestDTO : dependentRequestDTO.getDependents()) {
+                        for (ClaimDependentDetailsRequestDTO detailsRequestDTO : claimDependentRequestDTO.getDependents()) {
 
                             if (detailsRequestDTO.getRelationCategory().equalsIgnoreCase(RelationCategory.MOTHER.name())) {
                                 List<ClaimsDependents> claimsDependents = claimDependentsRepository
@@ -130,25 +130,25 @@ public class ProfileServiceImpl implements ProfileService {
 
                             if (detailsRequestDTO.getDependentCategory().equalsIgnoreCase(DependentCategory.WIFE.name())) {
                                 if (detailsRequestDTO.getDocuments().size() != 2) {
-                                    log.info("User profile add dependent request out of wife document {} ", dependentRequestDTO);
+                                    log.info("User profile add dependent request out of wife document {} ", claimDependentRequestDTO);
                                     return ResponseEntity.ok().body(responseUtil.error(null, 1023, messageSource.getMessage(ResponseMessageUtil.CLAIM_DEPENDENT_WIFE_DOCUMENT_IS_EMPTY_OR_OUT_OF_RANGE, new Object[]{detailsRequestDTO.getFirstName()}, locale)));
 
                                 }
                             } else if (detailsRequestDTO.getDependentCategory().equalsIgnoreCase(DependentCategory.PARENTS.name())
                                     || detailsRequestDTO.getDependentCategory().equalsIgnoreCase(DependentCategory.CHILDREN.name())) {
                                 if (detailsRequestDTO.getDocuments().size() != 1) {
-                                    log.info("User profile add dependent request out of parent or child document {} ", dependentRequestDTO);
+                                    log.info("User profile add dependent request out of parent or child document {} ", claimDependentRequestDTO);
                                     return ResponseEntity.ok().body(responseUtil.error(null, 1023, messageSource.getMessage(ResponseMessageUtil.CLAIM_DEPENDENT_OTHER_RELATION_CATEGORY_DOCUMENT_IS_EMPTY_OR_OUT_OF_RANGE, new Object[]{detailsRequestDTO.getFirstName()}, locale)));
 
                                 }
                             }
 
                         }
-                        saveClaimDependent(dependentRequestDTO.getDependents(), applicationUser);
+                        saveClaimDependent(claimDependentRequestDTO.getDependents(), applicationUser);
                         return ResponseEntity.ok().body(responseUtil.success(null, messageSource.getMessage(ResponseMessageUtil.CLAIM_DEPENDENT_ADDED_SUCCESS, null, locale)));
                     })
                     .orElseGet(() -> {
-                        log.info("User profile add dependant request application user not found {} ", dependentRequestDTO);
+                        log.info("User profile add dependant request application user not found {} ", claimDependentRequestDTO);
                         return ResponseEntity.ok().body(responseUtil.error(null, 1014, messageSource.getMessage(ResponseMessageUtil.APPLICATION_USER_NOT_FOUND, null, locale)));
                     });
         } catch (Exception e) {
@@ -158,18 +158,43 @@ public class ProfileServiceImpl implements ProfileService {
 
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public ResponseEntity<ApiResponse<Object>> getDependentsDetails(ChannelRequestDTO channelRequestDTO, Locale locale) {
+
+        try {
+            log.info("User profile view dependent request {} ", channelRequestDTO);
+            return applicationUserRepository
+                    .findByUsernameAndUserPersonalDetails_UserStatus(channelRequestDTO.getUsername(), Status.ACTIVE)
+                    .map((user) -> {
+                        log.info("User profile view dependent available {} ", user);
+                        List<ClaimDependentDetailsResponseDTO> claimDependentDetailsResponseDTOS = ProfileMapper
+                                .mapDependentList(user.getClaimsDependents(),documentFeignClient);
+                        ClaimDependentResponseDTO dependentResponseDTO = new ClaimDependentResponseDTO();
+                        dependentResponseDTO.setDependents(claimDependentDetailsResponseDTOS);
+                        return ResponseEntity.ok().body(responseUtil.success((Object) dependentResponseDTO, messageSource.getMessage(ResponseMessageUtil.CLAIM_DEPENDENT_LIST_VIEW_SUCCESS, null, locale)));
+                    }).orElseGet(() -> {
+                        log.info("User profile view dependent request application user not found {} ", channelRequestDTO.getUsername());
+                        return ResponseEntity.ok().body(responseUtil.error(null, 1014, messageSource.getMessage(ResponseMessageUtil.APPLICATION_USER_NOT_FOUND, null, locale)));
+                    });
+        } catch (Exception e) {
+            log.error(e);
+            throw e;
+        }
+    }
+
     @Transactional
-    protected void saveClaimDependent(List<DependentDetailsRequestDTO> dependents, ApplicationUser applicationUser) {
+    protected void saveClaimDependent(List<ClaimDependentDetailsRequestDTO> dependents, ApplicationUser applicationUser) {
         try {
             log.info("User claim dependent save {} ", dependents);
-            dependents.forEach(dependentDetailsRequestDTO -> {
-                ClaimsDependents claimsDependents = gson.fromJson(gson.toJson(dependentDetailsRequestDTO), ClaimsDependents.class);
+            dependents.forEach(claimDependentDetailsRequestDTO -> {
+                ClaimsDependents claimsDependents = gson.fromJson(gson.toJson(claimDependentDetailsRequestDTO), ClaimsDependents.class);
                 claimsDependents.setStatus(Workflow.UNDER_REVIEW);
                 claimsDependents.setApplicationUser(applicationUser);
                 claimsDependents.setDocuments(
-                        saveClaimDocument(dependentDetailsRequestDTO.getDocuments())
+                        saveClaimDocument(claimDependentDetailsRequestDTO.getDocuments())
                 );
-                log.info("User claim dependent attachment  save {} ", dependentDetailsRequestDTO);
+                log.info("User claim dependent attachment  save {} ", claimDependentDetailsRequestDTO);
                 claimDependentsRepository.saveAndFlush(claimsDependents);
             });
         } catch (Exception e) {
@@ -179,12 +204,12 @@ public class ProfileServiceImpl implements ProfileService {
     }
 
     @Transactional
-    protected Set<Document> saveClaimDocument(List<SupportingDocumentDTO> supportingDocumentDTO) {
+    protected List<Document> saveClaimDocument(List<SupportingDocumentDTO> supportingDocumentDTO) {
         try {
             log.info("User dependent document save {} ", supportingDocumentDTO);
 
-            return supportingDocumentDTO.stream().map(val -> documentRepository.findById(Long.valueOf(val.getId()))
-                    .orElseThrow(() -> new RuntimeException("Document not found with id " + val.getId()))).collect(Collectors.toSet());
+            return supportingDocumentDTO.stream().map(val -> documentRepository.findById(val.getId())
+                    .orElseThrow(() -> new RuntimeException("Document not found with id " + val.getId()))).collect(Collectors.toList());
 
         } catch (Exception e) {
             log.error(e);

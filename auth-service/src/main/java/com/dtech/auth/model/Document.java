@@ -14,8 +14,8 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 
 import java.io.Serializable;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.ArrayList;
+import java.util.List;
 
 @EqualsAndHashCode(callSuper = true)
 @Entity
@@ -46,5 +46,5 @@ public class Document extends Audit implements Serializable {
 
     @ManyToMany(mappedBy = "documents")
     @JsonBackReference
-    private Set<ClaimsDependents> claimsDependents = new HashSet<>();
+    private List<ClaimsDependents> claimsDependents = new ArrayList<>();
 }

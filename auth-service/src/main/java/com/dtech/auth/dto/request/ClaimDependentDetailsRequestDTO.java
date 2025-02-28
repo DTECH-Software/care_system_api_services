@@ -7,14 +7,13 @@
 
 package com.dtech.auth.dto.request;
 
-import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.Data;
 
 import java.util.Date;
 import java.util.List;
 
 @Data
-public class DependentDetailsRequestDTO {
+public class ClaimDependentDetailsRequestDTO {
     private String dependentCategory;
     private String initials;
     private String firstName;

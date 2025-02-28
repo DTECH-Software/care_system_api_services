@@ -8,23 +8,18 @@
 package com.dtech.auth.model;
 
 import com.dtech.auth.enums.*;
-import com.fasterxml.jackson.annotation.JsonBackReference;
-import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 
 import java.io.Serializable;
-import java.util.Date;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
 
-@EqualsAndHashCode(callSuper = true, exclude = "applicationUser")
+@EqualsAndHashCode(callSuper = true)
 @Entity
 @Table(name = "claims_dependents")
 @Data
-@ToString(exclude = "applicationUser")
 public class ClaimsDependents extends Audit implements Serializable {
 
     private static final long serialVersionUID = 1L;
@@ -79,6 +74,6 @@ public class ClaimsDependents extends Audit implements Serializable {
             joinColumns = @JoinColumn(name = "claims_dependents_id",referencedColumnName = "id"),
             inverseJoinColumns = @JoinColumn(name = "document_id",referencedColumnName = "id")
     )
-    private Set<Document> documents = new HashSet<>();
+    private List<Document> documents = new ArrayList<>();
 
 }

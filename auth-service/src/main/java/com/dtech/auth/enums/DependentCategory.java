@@ -8,5 +8,17 @@
 package com.dtech.auth.enums;
 
 public enum DependentCategory {
-    PARENTS,CHILDREN,WIFE
+    PARENTS("Parents"),
+    CHILDREN("Children"),
+    WIFE("Wife");
+
+    private final String description;
+
+    DependentCategory(String description) {
+        this.description = description;
+    }
+
+    public String getDescription() {
+        return description;
+    }
 }

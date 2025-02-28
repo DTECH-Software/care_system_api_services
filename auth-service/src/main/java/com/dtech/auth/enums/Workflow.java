@@ -8,5 +8,17 @@
 package com.dtech.auth.enums;
 
 public enum Workflow {
-    PENDING,UNDER_REVIEW,ACTIVE
+    PENDING("Pending"),
+    UNDER_REVIEW("Under Review"),
+    ACTIVE("Active");
+
+    private final String description;
+
+    Workflow(String description) {
+        this.description = description;
+    }
+
+    public String getDescription() {
+        return description;
+    }
 }

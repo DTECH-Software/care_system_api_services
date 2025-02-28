@@ -42,4 +42,8 @@ public class StringUtil {
             throw e;
         }
     }
+
+    public static String ifNotOrEmpty(String str) {
+        return str == null || str.isEmpty() ? "" : str;
+    }
 }

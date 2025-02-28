@@ -19,4 +19,5 @@ import java.util.List;
 @Repository
 public interface ClaimDependentsRepository extends JpaRepository<ClaimsDependents,Long> {
     List<ClaimsDependents> findAllByApplicationUserAndRelationCategoryAndStatusIn(ApplicationUser applicationUser, RelationCategory relationCategory, List<Workflow> workflow);
+    List<ClaimsDependents> findAllByApplicationUser(ApplicationUser applicationUser);
 }

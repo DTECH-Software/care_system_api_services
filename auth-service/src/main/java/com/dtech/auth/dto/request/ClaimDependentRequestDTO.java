@@ -14,6 +14,6 @@ import java.util.List;
 
 @EqualsAndHashCode(callSuper = true)
 @Data
-public class DependentRequestDTO extends ChannelRequestDTO {
-    private List<DependentDetailsRequestDTO> dependents;
+public class ClaimDependentRequestDTO extends ChannelRequestDTO {
+    private List<ClaimDependentDetailsRequestDTO> dependents;
 }

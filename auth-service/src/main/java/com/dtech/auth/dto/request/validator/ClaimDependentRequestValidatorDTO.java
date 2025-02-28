@@ -17,9 +17,9 @@ import java.util.List;
 
 @EqualsAndHashCode(callSuper = true)
 @Data
-public class DependentRequestValidatorDTO extends ChannelRequestValidatorDTO {
+public class ClaimDependentRequestValidatorDTO extends ChannelRequestValidatorDTO {
     @NotNull(message = "Dependent(s) is required.")
     @NotEmpty(message = "Dependent(s) is required.")
     @Valid
-    private List<DependentDetailsRequestValidatorDTO> dependents;
+    private List<ClaimDependentDetailsRequestValidatorDTO> dependents;
 }

@@ -40,7 +40,7 @@ public class DateTimeUtil {
 
     public static String getYyyyMMddHHMmSsTimeFormatter(Date date) {
         log.info("get time formatter");
-        SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+        SimpleDateFormat simpleDateFormat = new SimpleDateFormat("E MMM dd HH:mm:ss Z yyyy");
         return simpleDateFormat.format(date);
     }
 
@@ -59,6 +59,5 @@ public class DateTimeUtil {
         LocalDate currentDate = LocalDate.now();
         return Period.between(givenDate, currentDate).getYears();
     }
-
 
 }
