@@ -25,7 +25,6 @@ public class UserPersonalDetailsRequestDTO extends ChannelRequestDTO{
     private String nic;
     private String email;
     private String mobileNo;
-    @JsonFormat(pattern = "yyyy-MM-dd")
     private Date dob;
     private UserAddressRequestDTO userAddress;
     private UserCompanyDetailsRequestDTO userCompanyDetails;

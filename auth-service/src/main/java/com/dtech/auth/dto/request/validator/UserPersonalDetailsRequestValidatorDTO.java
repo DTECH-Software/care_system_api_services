@@ -44,7 +44,6 @@ public class UserPersonalDetailsRequestValidatorDTO extends ChannelRequestValida
     @Pattern(regexp = "^(071|070|077|075|078|072|076)[0-9]{7}$", message = "Invalid mobile number. It must start with 071, 070, 077, 075, 078, 072, or 076, and be followed by 7 digits.")
     private String mobileNo;
     @NotNull(message = "DOB is required.")
-    @JsonFormat(pattern = "yyyy-MM-dd")
     private Date dob;
     @NotNull(message = "Address is required.")
     @Valid

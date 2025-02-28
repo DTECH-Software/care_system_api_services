@@ -16,19 +16,20 @@ import com.dtech.auth.validator.ValidEnum;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import lombok.Data;
-
+import java.util.Date;
 import java.util.List;
 
 @Data
 @Conditional(selected = "dependentCategory" ,values = {"PARENTS,WIFE"},required = {"jobTitle"},message = "Job title is required.")
 @Conditional(selected = "dependentCategory" ,values = {"PARENTS,WIFE"},required = {"nic"},message = "NIC is required.")
-public class DependentDetailsRequestValidatorDTO {
+public class DependentDetailsRequestValidatorDTO{
     @NotBlank(message = "Dependent category is required.")
     @ValidEnum(enumClass = DependentCategory.class,message = "Invalid dependent category.")
-    private DependentCategory dependentCategory;
+    private String dependentCategory;
     @NotBlank(message = "Initials is required.")
     private String initials;
     @NotBlank(message = "First name is required.")
@@ -36,9 +37,9 @@ public class DependentDetailsRequestValidatorDTO {
     @NotBlank(message = "Last name is required.")
     private String lastName;
     @NotNull(message = "DOB is required.")
-    @JsonFormat(pattern = "yyyy-MM-dd")
     @ValidAge(message = "Age must be below 65.")
-    private String dob;
+    @JsonFormat(pattern = "yyyy-MM-dd")
+    private Date dob;
     @NotBlank(message = "Gender is required.")
     @ValidEnum(enumClass = Gender.class,message = "Invalid gender type.")
     private String gender;
@@ -47,8 +48,9 @@ public class DependentDetailsRequestValidatorDTO {
     private String nic;
     @NotNull(message = "Relation category is required.")
     @ValidEnum(enumClass = RelationCategory.class,message = "Invalid relation category.")
-    private RelationCategory relationCategory;
+    private String relationCategory;
     @NotNull(message = "Supporting document is required.")
+    @NotEmpty(message = "Supporting document is required.")
     @Valid
-    private List<SupportingDocumentValidatorDTO> document;
+    private List<SupportingDocumentValidatorDTO> documents;
 }

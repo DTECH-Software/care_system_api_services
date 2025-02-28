@@ -9,5 +9,5 @@ package com.dtech.auth.enums;
 
 public enum Messages {
    SIGNUP_INQUIRY,SIGNUP_OTP_REQUEST,SIGNUP_OTP_VALIDATION,SIGNUP_REGISTERED, //Signup controller
-   SPLASH_SCREEN,
+   DASHBOARD,PROFILE_DETAILS,ADD_DEPENDENT //Profile controller
 }

@@ -8,6 +8,7 @@
 package com.dtech.auth.dto.request.validator;
 
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -18,6 +19,7 @@ import java.util.List;
 @Data
 public class DependentRequestValidatorDTO extends ChannelRequestValidatorDTO {
     @NotNull(message = "Dependent(s) is required.")
+    @NotEmpty(message = "Dependent(s) is required.")
     @Valid
     private List<DependentDetailsRequestValidatorDTO> dependents;
 }

@@ -8,15 +8,15 @@
 package com.dtech.auth.repository;
 
 import com.dtech.auth.enums.RelationCategory;
-import com.dtech.auth.enums.Status;
+import com.dtech.auth.enums.Workflow;
 import com.dtech.auth.model.ApplicationUser;
 import com.dtech.auth.model.ClaimsDependents;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
-import java.util.Optional;
+import java.util.List;
 
 @Repository
 public interface ClaimDependentsRepository extends JpaRepository<ClaimsDependents,Long> {
-    Optional<ClaimsDependents> findByApplicationUserAndRelationCategoryAndStatus(ApplicationUser applicationUser, RelationCategory relationCategory, Status status);
+    List<ClaimsDependents> findAllByApplicationUserAndRelationCategoryAndStatusIn(ApplicationUser applicationUser, RelationCategory relationCategory, List<Workflow> workflow);
 }

@@ -1,6 +1,6 @@
 package com.dtech.auth.validator;
 
-import com.dtech.auth.validator.validators.ConditionalValidator;
+import com.dtech.auth.validator.validators.ConditionalValidators;
 import jakarta.validation.Constraint;
 import jakarta.validation.Payload;
 
@@ -9,7 +9,7 @@ import java.lang.annotation.*;
 @Repeatable(Conditionals.class)
 @Target({ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
-@Constraint(validatedBy = {ConditionalValidator.class})
+@Constraint(validatedBy = {ConditionalValidators.class})
 public @interface Conditional {
     String message() default "This field is required.";
     Class<?>[] groups() default {};

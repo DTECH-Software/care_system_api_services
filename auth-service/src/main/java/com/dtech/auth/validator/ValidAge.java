@@ -1,5 +1,6 @@
 package com.dtech.auth.validator;
 
+import com.dtech.auth.validator.validators.AgeValidators;
 import jakarta.validation.Constraint;
 import jakarta.validation.Payload;
 
@@ -10,7 +11,7 @@ import java.lang.annotation.Target;
 
 @Target({ElementType.FIELD,ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
-@Constraint(validatedBy = {})
+@Constraint(validatedBy = {AgeValidators.class})
 public @interface ValidAge {
     String message() default "Age must be below 65.";
     Class<?>[] groups() default {};

@@ -1,5 +1,5 @@
 package com.dtech.auth.enums;
 
 public enum RelationCategory {
-    MOTHER,FATHER,CHILD
+    MOTHER,FATHER,CHILD,WIFE
 }

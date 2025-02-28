@@ -8,18 +8,23 @@
 package com.dtech.auth.model;
 
 import com.dtech.auth.enums.*;
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.ToString;
 
 import java.io.Serializable;
 import java.util.Date;
-import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 
-@EqualsAndHashCode(callSuper = true)
+@EqualsAndHashCode(callSuper = true, exclude = "applicationUser")
 @Entity
 @Table(name = "claims_dependents")
 @Data
+@ToString(exclude = "applicationUser")
 public class ClaimsDependents extends Audit implements Serializable {
 
     private static final long serialVersionUID = 1L;
@@ -29,7 +34,7 @@ public class ClaimsDependents extends Audit implements Serializable {
     @Column(name = "id",nullable = false,updatable = false,unique = true)
     private Long id;
 
-    @Column(name = "dependentCategory",nullable = false)
+    @Column(name = "dependent_category",nullable = false)
     @Enumerated(EnumType.STRING)
     private DependentCategory dependentCategory;
 
@@ -60,10 +65,6 @@ public class ClaimsDependents extends Audit implements Serializable {
     @Enumerated(EnumType.STRING)
     private RelationCategory relationCategory;
 
-    @OneToMany(fetch = FetchType.LAZY,cascade = CascadeType.ALL)
-    @JoinColumn(name = "document",nullable = false)
-    private List<ClaimsDependentsVerificationDocument> claimsDependentsVerificationDocuments;
-
     @Column(name = "status",nullable = false)
     @Enumerated(EnumType.STRING)
     private Workflow status;
@@ -71,5 +72,13 @@ public class ClaimsDependents extends Audit implements Serializable {
     @ManyToOne(fetch = FetchType.LAZY,cascade = CascadeType.ALL)
     @JoinColumn(name = "application_user",nullable = false)
     private ApplicationUser applicationUser;
+
+    @ManyToMany
+    @JoinTable(
+            name = "claims_dependents_document",
+            joinColumns = @JoinColumn(name = "claims_dependents_id",referencedColumnName = "id"),
+            inverseJoinColumns = @JoinColumn(name = "document_id",referencedColumnName = "id")
+    )
+    private Set<Document> documents = new HashSet<>();
 
 }

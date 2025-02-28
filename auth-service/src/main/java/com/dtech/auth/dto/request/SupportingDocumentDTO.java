@@ -8,10 +8,8 @@
 package com.dtech.auth.dto.request;
 
 import lombok.Data;
-import org.springframework.web.multipart.MultipartFile;
 
 @Data
 public class SupportingDocumentDTO {
-    private String type;
-    private MultipartFile doc;
+    private Long id;
 }

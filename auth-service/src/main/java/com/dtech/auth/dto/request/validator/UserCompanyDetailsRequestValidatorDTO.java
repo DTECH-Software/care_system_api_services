@@ -22,6 +22,5 @@ public class UserCompanyDetailsRequestValidatorDTO {
     @NotNull(message = "Staff type is required.")
     private SimpleBaseValidatorDTO staffTypes;
     @NotNull(message = "Permanent date is required.")
-    @JsonFormat(pattern = "yyyy-MM-dd")
     private Date permanentDate;
 }

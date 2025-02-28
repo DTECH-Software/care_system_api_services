@@ -17,11 +17,17 @@ import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 
 @Data
-@Conditional(selected = "channel" , values = {"MB"} ,required = {"deviceDetails"} ,message = "Device details is required.")
-@Conditional(selected = "message" , values = {"SIGNUP_REGISTERED","SPLASH_SCREEN"} ,required = {"username"} ,message = "Username is required.")
+@Conditional(selected = "channel", values = {"MB"}, required = {"deviceDetails"}, message = "Device details is required.")
+@Conditional(selected = "message",
+        values = {
+                "SIGNUP_REGISTERED",
+                "DASHBOARD",
+                "PROFILE_DETAILS",
+                "ADD_DEPENDENT"
+        }, required = {"username"}, message = "Username is required.")
 public class ChannelRequestValidatorDTO {
     @NotBlank(message = "Channel is required.")
-    @ValidEnum(enumClass = Channel.class,message = "Invalid channel.")
+    @ValidEnum(enumClass = Channel.class, message = "Invalid channel.")
     private String channel;
     @NotBlank(message = "IP is required.")
     private String ip;

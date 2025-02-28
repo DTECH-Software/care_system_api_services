@@ -18,6 +18,5 @@ public class UserCompanyDetailsRequestDTO {
     private SimpleBaseDTO companyTypes;
     private SimpleBaseDTO staffCategories;
     private SimpleBaseDTO staffTypes;
-    @JsonFormat(pattern = "yyyy-MM-dd")
     private Date permanentDate;
 }

@@ -7,31 +7,37 @@
 
 package com.dtech.auth.validator.validators;
 
-import com.dtech.auth.util.DateTimeUtil;
 import com.dtech.auth.validator.ValidAge;
 import jakarta.validation.ConstraintValidator;
 import jakarta.validation.ConstraintValidatorContext;
 import lombok.extern.log4j.Log4j2;
 
+import java.time.LocalDate;
+import java.time.Period;
+import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
+import java.util.Date;
+
 
 @Log4j2
-public class AgeValidator implements ConstraintValidator<ValidAge, String> {
+public class AgeValidators implements ConstraintValidator<ValidAge, Date> {
     @Override
     public void initialize(ValidAge constraintAnnotation) {
         ConstraintValidator.super.initialize(constraintAnnotation);
     }
 
     @Override
-    public boolean isValid(String dob, ConstraintValidatorContext constraintValidatorContext) {
+    public boolean isValid(Date dob, ConstraintValidatorContext constraintValidatorContext) {
         log.info("call age validator");
 
         try {
-            if (dob == null || dob.isEmpty()) {
+            if (dob == null) {
                 return true;
             }
-
-            int age = DateTimeUtil.getAge(dob);
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("EEE MMM dd HH:mm:ss z yyyy");
+            LocalDate givenDate = LocalDate.parse(String.valueOf(dob), formatter);
+            LocalDate currentDate = LocalDate.now();
+            int age = Period.between(givenDate, currentDate).getYears();
             return age < 65;
         } catch (DateTimeParseException e) {
             log.error(e);

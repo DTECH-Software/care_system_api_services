@@ -8,5 +8,5 @@
 package com.dtech.auth.enums;
 
 public enum Workflow {
-    PENDING,UNDER_REVIEW
+    PENDING,UNDER_REVIEW,ACTIVE
 }

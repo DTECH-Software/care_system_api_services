@@ -31,4 +31,6 @@ public class ResponseMessageUtil {
     public final static String CLAIM_DEPENDENT_MOTHER_FOUND = "val.claim.dependent.mother.found";
     public final static String CLAIM_DEPENDENT_FATHER_FOUND = "val.claim.dependent.father.found";
     public final static String CLAIM_DEPENDENT_ADDED_SUCCESS = "val.claim.dependent.added.success";
+    public final static String CLAIM_DEPENDENT_WIFE_DOCUMENT_IS_EMPTY_OR_OUT_OF_RANGE = "val.claim.dependent.wife.document.is.empty.or.out.of.range";
+    public final static String CLAIM_DEPENDENT_OTHER_RELATION_CATEGORY_DOCUMENT_IS_EMPTY_OR_OUT_OF_RANGE = "val.claim.dependent.other.relation.category.document.is.empty.or.out.of.range";
 }

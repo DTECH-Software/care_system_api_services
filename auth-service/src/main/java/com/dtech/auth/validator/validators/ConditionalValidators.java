@@ -12,7 +12,7 @@ import java.util.Arrays;
 import static org.springframework.util.ObjectUtils.isEmpty;
 
 @Log4j2
-public class ConditionalValidator implements ConstraintValidator<Conditional, Object> {
+public class ConditionalValidators implements ConstraintValidator<Conditional, Object> {
 
     private String selected;
     private String[] required;
@@ -39,7 +39,6 @@ public class ConditionalValidator implements ConstraintValidator<Conditional, Ob
                 beanWrapper = new BeanWrapperImpl(objectToValidate);
                 Object requiredValue = beanWrapper.getPropertyValue(propName);
                 valid = requiredValue != null && !isEmpty(requiredValue);
-                System.out.println("value: " + "" + requiredValue);
                 if (!valid) {
                     context.disableDefaultConstraintViolation();
                     context.buildConstraintViolationWithTemplate(message).addPropertyNode(propName).addConstraintViolation();
