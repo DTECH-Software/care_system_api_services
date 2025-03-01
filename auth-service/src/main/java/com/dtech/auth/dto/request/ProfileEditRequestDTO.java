@@ -1,7 +1,7 @@
 /**
  * User: Himal_J
  * Date: 3/1/2025
- * Time: 3:29 PM
+ * Time: 4:42 PM
  * <p>
  */
 
@@ -12,8 +12,8 @@ import lombok.EqualsAndHashCode;
 
 @EqualsAndHashCode(callSuper = true)
 @Data
-public class ProfileEditOtpRequestDTO extends ChannelRequestDTO{
-    private String primaryEmail;
+public class ProfileEditRequestDTO extends ChannelRequestDTO{
     private String primaryMobile;
+    private String primaryEmail;
     private String otp;
 }

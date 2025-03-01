@@ -76,9 +76,15 @@ public class ProfileController {
     @PostMapping(path = "/update-profile/otp-validation",produces = MediaType.APPLICATION_JSON_VALUE,consumes = MediaType.APPLICATION_JSON_VALUE)
     @ApiOperation(value = "Handle OTP validation request ",notes = "OTP validation request success or failed")
     public ResponseEntity<ApiResponse<Object>> updateProfileOtpValidation(@RequestBody @Valid OtpRequestValidatorDTO otpRequestValidatorDTO, Locale locale) {
-        log.info("OTP validation request request controller {} ", otpRequestValidatorDTO);
+        log.info("OTP validation request controller {} ", otpRequestValidatorDTO);
         return profileService.updateProfileOtpValidation(gson.fromJson(gson.toJson(otpRequestValidatorDTO), OtpRequestDTO.class), locale);
     }
 
+    @PostMapping(path = "/update-profile",produces = MediaType.APPLICATION_JSON_VALUE,consumes = MediaType.APPLICATION_JSON_VALUE)
+    @ApiOperation(value = "Handle update profile details request ",notes = "Update profile details request success or failed")
+    public ResponseEntity<ApiResponse<Object>> updateProfileDetails(@RequestBody @Valid ProfileEditRequestValidatorDTO profileEditRequestValidatorDTO, Locale locale) {
+        log.info("Update profile details request controller {} ", profileEditRequestValidatorDTO);
+        return profileService.updateProfileDetails(gson.fromJson(gson.toJson(profileEditRequestValidatorDTO), ProfileEditRequestDTO.class), locale);
+    }
 
 }

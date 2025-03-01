@@ -41,5 +41,8 @@ public class ResponseMessageUtil {
     public final static String APPLICATION_USER_OTP_REQUEST_TRY_TO_AFTER_60S = "val.application.user.otp.session.60s";
     public final static String APPLICATION_USER_OTP_SESSION_NOT_FOUND = "val.application.user.otp.session.not.found";
     public final static String APPLICATION_USER_OTP_SEND_SUCCESS = "val.application.user.otp.send.success";
+    public final static String APPLICATION_USER_DETAILS_NOT_CHANGE = "val.application.user.details.not.change";
+    public final static String APPLICATION_USER_DETAILS_UPDATE_SUCCESS = "val.application.user.details.update.success";
+    public final static String APPLICATION_USER_DETAILS_OTP_VERIFICATION_FAILED = "val.application.user.otp.verification.failed";
 
 }

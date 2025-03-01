@@ -13,4 +13,5 @@ public interface ProfileService {
     ResponseEntity<ApiResponse<Object>> updateProfileImage(ProfileImageUpdateRequestDTO profileImageUpdateRequestDTO, Locale locale);
     ResponseEntity<ApiResponse<Object>> updateProfileDetailsOtpRequest(ProfileEditOtpRequestDTO profileEditOtpRequestDTO, Locale locale);
     ResponseEntity<ApiResponse<Object>> updateProfileOtpValidation(OtpRequestDTO otpRequestDTO, Locale locale);
+    ResponseEntity<ApiResponse<Object>> updateProfileDetails(ProfileEditRequestDTO profileEditRequestDTO, Locale locale);
 }

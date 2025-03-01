@@ -220,7 +220,12 @@ public class ProfileServiceImpl implements ProfileService {
             return applicationUserRepository.findByUsernameAndUserPersonalDetails_UserStatus(username, Status.ACTIVE).map(user ->
                     applicationPasswordPolicyRepository.findPasswordPolicy().map((policy) -> {
 
-                        if (user.getOtpAttemptCount() > policy.getOtpExceedCount()) {
+                        String primaryEmail = profileEditOtpRequestDTO.getPrimaryEmail().trim();
+                        String primaryMobile = profileEditOtpRequestDTO.getPrimaryMobile().trim();
+                        if (user.getPrimaryEmail().equalsIgnoreCase(primaryEmail) && user.getPrimaryMobile().equalsIgnoreCase(primaryMobile)) {
+                            log.info("User profile update request details not change {} ", profileEditOtpRequestDTO);
+                            return ResponseEntity.ok().body(responseUtil.error(null, 1027, messageSource.getMessage(ResponseMessageUtil.APPLICATION_USER_DETAILS_NOT_CHANGE, null, locale)));
+                        } else if (user.getOtpAttemptCount() > policy.getOtpExceedCount()) {
                             log.info("Profile details update OTP request attempt exceed {} , {}", user.getOtpAttemptCount()
                                     , policy.getAttemptExceedCount());
                             long minutes = DateTimeUtil.getMinutes(DateTimeUtil.getYyyyMMddHHMmSsTimeFormatter(DateTimeUtil.getSeconds(user.getOtpAttemptResetTime(), 2700)));
@@ -245,7 +250,7 @@ public class ProfileServiceImpl implements ProfileService {
 
                         log.info("Profile update send otp session send message {}", user);
                         Optional<ApplicationPasswordPolicy> passwordPolicy = applicationPasswordPolicyRepository.findPasswordPolicy();
-                        return sendMessage(user, profileEditOtpRequestDTO.getMobileNo(), locale, policy.getOtpExceedCount() - user.getOtpAttemptCount());
+                        return sendMessage(user, profileEditOtpRequestDTO.getPrimaryMobile(), locale, policy.getOtpExceedCount() - user.getOtpAttemptCount());
                     }).orElseGet(() -> {
                         log.info("Profile update request policy not found for username {} ", username);
                         return ResponseEntity.ok().body(responseUtil.error(null, 1010, messageSource.getMessage(ResponseMessageUtil.APPLICATION_USER_PASSWORD_POLICY_NOT_FOUND, null, locale)));
@@ -266,7 +271,7 @@ public class ProfileServiceImpl implements ProfileService {
         try {
             log.info("User profile update otp validation request {} ", otpRequestDTO);
             String username = otpRequestDTO.getUsername().trim();
-          return applicationUserRepository
+            return applicationUserRepository
                     .findByUsernameAndUserPersonalDetails_UserStatus(username, Status.ACTIVE).map(user -> {
 
                         if (user.getApplicationOtpSession() != null) {
@@ -296,8 +301,53 @@ public class ProfileServiceImpl implements ProfileService {
         }
     }
 
+    @Override
     @Transactional
-    protected void updateApplicationUserOtpData(ApplicationUser applicationUser,ApplicationOtpSession applicationOtpSession) {
+    public ResponseEntity<ApiResponse<Object>> updateProfileDetails(ProfileEditRequestDTO profileEditRequestDTO, Locale locale) {
+        try {
+            log.info("User profile update details request {} ", profileEditRequestDTO);
+            String username = profileEditRequestDTO.getUsername().trim();
+            return applicationUserRepository.findByUsernameAndUserPersonalDetails_UserStatus(username, Status.ACTIVE).map(user -> {
+
+                String primaryEmail = profileEditRequestDTO.getPrimaryEmail().trim();
+                String primaryMobile = profileEditRequestDTO.getPrimaryMobile().trim();
+                if (user.getPrimaryEmail().equalsIgnoreCase(primaryEmail) && user.getPrimaryMobile().equalsIgnoreCase(primaryMobile)) {
+                    log.info("User profile update request details not change {} ", profileEditRequestDTO);
+                    return ResponseEntity.ok().body(responseUtil.error(null, 1027, messageSource.getMessage(ResponseMessageUtil.APPLICATION_USER_DETAILS_NOT_CHANGE, null, locale)));
+                }else if(user.getApplicationOtpSession() != null) {
+                    ApplicationOtpSession applicationOtpSession = user.getApplicationOtpSession();
+                    if(!applicationOtpSession.getOtp().equalsIgnoreCase(profileEditRequestDTO.getOtp()) || !applicationOtpSession.isValidated()){
+                        log.info("User profile update request details not change {} ", profileEditRequestDTO);
+                        return ResponseEntity.ok().body(responseUtil.error(null, 1028, messageSource.getMessage(ResponseMessageUtil.APPLICATION_USER_DETAILS_OTP_VERIFICATION_FAILED, null, locale)));
+                    }
+                }
+                updateDetailsApplicationUser(user, primaryEmail, primaryMobile);
+                return ResponseEntity.ok().body(responseUtil.success(null, messageSource.getMessage(ResponseMessageUtil.APPLICATION_USER_DETAILS_UPDATE_SUCCESS, null, locale)));
+            }).orElseGet(() -> {
+                log.info("User profile add dependant request application user not found {} ", profileEditRequestDTO);
+                return ResponseEntity.ok().body(responseUtil.error(null, 1014, messageSource.getMessage(ResponseMessageUtil.APPLICATION_USER_NOT_FOUND, null, locale)));
+            });
+        } catch (Exception e) {
+            log.error(e);
+            throw e;
+        }
+    }
+
+    @Transactional
+    protected void updateDetailsApplicationUser(ApplicationUser applicationUser, String email, String mobile) {
+        try {
+            log.info("Update profile details {} ", applicationUser);
+            applicationUser.setPrimaryEmail(email);
+            applicationUser.setPrimaryMobile(mobile);
+            applicationUserRepository.saveAndFlush(applicationUser);
+        } catch (Exception e) {
+            log.error(e);
+            throw e;
+        }
+    }
+
+    @Transactional
+    protected void updateApplicationUserOtpData(ApplicationUser applicationUser, ApplicationOtpSession applicationOtpSession) {
         log.info("Update otp validation request otp records");
         applicationUser.setOtpAttemptCount(0);
         applicationOtpSession.setValidated(true);
