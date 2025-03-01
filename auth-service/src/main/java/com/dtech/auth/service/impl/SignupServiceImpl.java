@@ -137,7 +137,16 @@ public class SignupServiceImpl implements SignupService {
             return userPersonalDetailsRepository.findByEpfNoAndNicIgnoreCaseAndUserStatus(signupOtpRequestDTO.getEpfNo().trim(), signupOtpRequestDTO.getNic().trim(), Status.ACTIVE)
                     .map(userPersonalDetails -> applicationPasswordPolicyRepository.findPasswordPolicy()
                             .map(pw -> {
-                                if (pw.getOnboardingOtpHistory() > 0) {
+
+                                //check user's mobile already in use
+                                boolean alreadyUser = applicationUserRepository.
+                                        existsByPrimaryMobileAndUserPersonalDetails_UserStatus(
+                                                signupOtpRequestDTO.getMobileNo(), Status.ACTIVE);
+
+                                if (alreadyUser) {
+                                    log.info("Signup request mobile already in use {} ", signupOtpRequestDTO.getMobileNo());
+                                    return ResponseEntity.ok().body(responseUtil.error(null, 1025, messageSource.getMessage(ResponseMessageUtil.PRIMARY_MOBILE_ALREADY_IN_USE, null, locale)));
+                                } else if (pw.getOnboardingOtpHistory() > 0) {
                                     log.info("Signup otp request policy - {}", pw.getOnboardingOtpHistory());
 
                                     Sort sort = Sort.by(Sort.Order.desc("createdDate"));
@@ -187,7 +196,7 @@ public class SignupServiceImpl implements SignupService {
                                                     updateOtpData(os, oss);
 
                                                     return ResponseEntity.ok().body(
-                                                            responseUtil.success((Object) Map.of("passwordPolicy",gson.fromJson(gson.toJson(pw), PolicyResponseDTO.class), "usernamePolicy", gson.fromJson(gson.toJson(up), PolicyResponseDTO.class)),
+                                                            responseUtil.success((Object) Map.of("passwordPolicy", gson.fromJson(gson.toJson(pw), PolicyResponseDTO.class), "usernamePolicy", gson.fromJson(gson.toJson(up), PolicyResponseDTO.class)),
                                                                     messageSource.getMessage(ResponseMessageUtil.OTP_VALIDATION_SUCCESS, null, locale))
                                                     );
                                                 }
@@ -250,73 +259,87 @@ public class SignupServiceImpl implements SignupService {
             if (alignUsername == null || alignUsername.trim().isEmpty()) {
                 log.info("username validation  success {}", username);
                 boolean exists = applicationUserRepository
-                        .existsByUsernameEndingWithIgnoreCase(userPersonalDetailsRequestDTO.getUsername().trim());
+                        .existsByUsernameEqualsIgnoreCase(userPersonalDetailsRequestDTO.getUsername().trim());
 
-                if (!exists) {
-                    //check password sta¤tus
-                    String alignPassword = validAlignCurrentPasswordPolicy(password);
-                    log.info("After signup password validation process {}", alignPassword);
-                    if (alignPassword == null || alignPassword.trim().isEmpty()) {
+                boolean existsMobile = applicationUserRepository
+                        .existsByPrimaryMobileAndUserPersonalDetails_UserStatus(userPersonalDetailsRequestDTO.getMobileNo().trim(), Status.ACTIVE);
 
-                        //check company details
-                        String alignCompanyDetails = validCompanyDetails(userPersonalDetailsRequestDTO.getUserCompanyDetails());
+                boolean existsEmail = applicationUserRepository
+                        .existsByPrimaryEmail(userPersonalDetailsRequestDTO.getEmail().trim());
 
-                        if (alignCompanyDetails == null || alignCompanyDetails.trim().isEmpty()) {
-                            return userPersonalDetailsRepository
-                                    .findByEpfNoAndNicIgnoreCaseAndUserStatus(userPersonalDetailsRequestDTO.getEpfNo().trim(),
-                                            userPersonalDetailsRequestDTO.getNic().trim(), Status.ACTIVE).map(pd -> {
-                                        Optional<ApplicationUser> userPersonalDetails = applicationUserRepository.findByUserPersonalDetails(pd);
-
-                                        if (userPersonalDetails.isPresent()) {
-                                            log.info("User already sign up {}", userPersonalDetails.get());
-                                            return ResponseEntity.ok().body(responseUtil.error(null, 1018, messageSource.getMessage(ResponseMessageUtil.EMPLOYEE_ALREADY_SIGN_UP, null, locale)));
-                                        }
-
-                                        String hashPassword = "";
-                                        String saltKey = "";
-                                        try {
-                                            log.info("processing signup generate salt key {}", password);
-                                            saltKey = PasswordUtil.generateSaltKey(
-                                                    userPersonalDetailsRequestDTO.getNic().trim()
-                                                            + DateTimeUtil.getCurrentDateTime());
-                                        } catch (NoSuchAlgorithmException e) {
-                                            log.error(e);
-                                            throw new RuntimeException(e);
-                                        }
-
-                                        try {
-                                            log.info("processing signup password hash {}", password);
-                                            hashPassword = PasswordUtil.passwordEncoder(saltKey, password);
-                                        } catch (NoSuchAlgorithmException e) {
-                                            log.error(e);
-                                            throw new RuntimeException(e);
-                                        }
-                                        String jsonString = "";
-                                        try {
-                                            log.info("processing signup  json {}", userPersonalDetailsRequestDTO);
-                                            jsonString = objectMapper.writeValueAsString(userPersonalDetailsRequestDTO);
-                                        } catch (JsonProcessingException e) {
-                                            log.error(e);
-                                            throw new RuntimeException(e);
-                                        }
-                                        OnboardingRequest onboardingRequest = updateOnboardingRequest(userPersonalDetailsRequestDTO, jsonString);
-                                        ApplicationUser applicationUser = updateApplicationUser(userPersonalDetailsRequestDTO, hashPassword, saltKey, onboardingRequest, pd);
-                                        updateApplicationUserPasswordHistory(applicationUser, hashPassword);
-                                        log.info("Signup register success {}", applicationUser);
-                                        return ResponseEntity.ok().body(responseUtil.success(null, messageSource.getMessage(ResponseMessageUtil.SIGNUP_PROCESS_SUCCESS, null, locale)));
-
-                                    }).orElseGet(() -> {
-                                        log.info("Signup inquiry user not found {}", userPersonalDetailsRequestDTO);
-                                        return ResponseEntity.ok().body(responseUtil.error(null, 1017, messageSource.getMessage(ResponseMessageUtil.EMPLOYEE_DETAILS_NOT_FOUND_ON_SYSTEM, new Object[]{clientMobile}, locale)));
-                                    });
-                        }
-                        log.info("Signup not align company details {}", alignCompanyDetails);
-                        return ResponseEntity.ok().body(responseUtil.error(null, 1022, alignCompanyDetails));
-                    }
-                    return ResponseEntity.ok().body(responseUtil.error(null, 1007, alignPassword));
+                if (exists) {
+                    log.info("Signup exists username {}", userPersonalDetailsRequestDTO.getUsername());
+                    return ResponseEntity.ok().body(responseUtil.error(null, 1021, messageSource.getMessage(ResponseMessageUtil.USERNAME_ALREADY_EXISTS, null, locale)));
+                } else if (existsMobile) {
+                    log.info("Signup exists mobile {}", userPersonalDetailsRequestDTO.getMobileNo());
+                    return ResponseEntity.ok().body(responseUtil.error(null, 1025, messageSource.getMessage(ResponseMessageUtil.PRIMARY_MOBILE_ALREADY_IN_USE, null, locale)));
+                } else if (existsEmail) {
+                    log.info("Signup exists email {}", userPersonalDetailsRequestDTO.getMobileNo());
+                    return ResponseEntity.ok().body(responseUtil.error(null, 1026, messageSource.getMessage(ResponseMessageUtil.PRIMARY_EMAIL_ALREADY_IN_USE, null, locale)));
                 }
-                log.info("Signup exists username {}", userPersonalDetailsRequestDTO.getUsername());
-                return ResponseEntity.ok().body(responseUtil.error(null, 1021, messageSource.getMessage(ResponseMessageUtil.USERNAME_ALREADY_EXISTS, null, locale)));
+
+                //check password sta¤tus
+                String alignPassword = validAlignCurrentPasswordPolicy(password);
+                log.info("After signup password validation process {}", alignPassword);
+                if (alignPassword == null || alignPassword.trim().isEmpty()) {
+
+                    //check company details
+                    String alignCompanyDetails = validCompanyDetails(userPersonalDetailsRequestDTO.getUserCompanyDetails());
+
+                    if (alignCompanyDetails == null || alignCompanyDetails.trim().isEmpty()) {
+                        return userPersonalDetailsRepository
+                                .findByEpfNoAndNicIgnoreCaseAndUserStatus(userPersonalDetailsRequestDTO.getEpfNo().trim(),
+                                        userPersonalDetailsRequestDTO.getNic().trim(), Status.ACTIVE).map(pd -> {
+                                    Optional<ApplicationUser> userPersonalDetails = applicationUserRepository.findByUserPersonalDetails(pd);
+
+                                    if (userPersonalDetails.isPresent()) {
+                                        log.info("User already sign up {}", userPersonalDetails.get());
+                                        return ResponseEntity.ok().body(responseUtil.error(null, 1018, messageSource.getMessage(ResponseMessageUtil.EMPLOYEE_ALREADY_SIGN_UP, null, locale)));
+                                    }
+
+                                    String hashPassword = "";
+                                    String saltKey = "";
+                                    try {
+                                        log.info("processing signup generate salt key {}", password);
+                                        saltKey = PasswordUtil.generateSaltKey(
+                                                userPersonalDetailsRequestDTO.getNic().trim()
+                                                        + DateTimeUtil.getCurrentDateTime());
+                                    } catch (NoSuchAlgorithmException e) {
+                                        log.error(e);
+                                        throw new RuntimeException(e);
+                                    }
+
+                                    try {
+                                        log.info("processing signup password hash {}", password);
+                                        hashPassword = PasswordUtil.passwordEncoder(saltKey, password);
+                                    } catch (NoSuchAlgorithmException e) {
+                                        log.error(e);
+                                        throw new RuntimeException(e);
+                                    }
+                                    String jsonString = "";
+                                    try {
+                                        log.info("processing signup  json {}", userPersonalDetailsRequestDTO);
+                                        jsonString = objectMapper.writeValueAsString(userPersonalDetailsRequestDTO);
+                                    } catch (JsonProcessingException e) {
+                                        log.error(e);
+                                        throw new RuntimeException(e);
+                                    }
+                                    OnboardingRequest onboardingRequest = updateOnboardingRequest(userPersonalDetailsRequestDTO, jsonString);
+                                    ApplicationUser applicationUser = updateApplicationUser(userPersonalDetailsRequestDTO, hashPassword, saltKey, onboardingRequest, pd);
+                                    updateApplicationUserPasswordHistory(applicationUser, hashPassword);
+                                    log.info("Signup register success {}", applicationUser);
+                                    return ResponseEntity.ok().body(responseUtil.success(null, messageSource.getMessage(ResponseMessageUtil.SIGNUP_PROCESS_SUCCESS, null, locale)));
+
+                                }).orElseGet(() -> {
+                                    log.info("Signup inquiry user not found {}", userPersonalDetailsRequestDTO);
+                                    return ResponseEntity.ok().body(responseUtil.error(null, 1017, messageSource.getMessage(ResponseMessageUtil.EMPLOYEE_DETAILS_NOT_FOUND_ON_SYSTEM, new Object[]{clientMobile}, locale)));
+                                });
+                    }
+                    log.info("Signup not align company details {}", alignCompanyDetails);
+                    return ResponseEntity.ok().body(responseUtil.error(null, 1022, alignCompanyDetails));
+                }
+                return ResponseEntity.ok().body(responseUtil.error(null, 1007, alignPassword));
+
 
             }
             log.info("Signup username not valid {}", username);

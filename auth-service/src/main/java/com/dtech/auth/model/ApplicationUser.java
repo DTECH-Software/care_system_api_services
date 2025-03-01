@@ -41,7 +41,7 @@ public class ApplicationUser extends Audit implements Serializable {
     @Column(name = "primary_email",unique = true,nullable = false)
     private String primaryEmail;
 
-    @Column(name = "primary_mobile",unique = true,nullable = false)
+    @Column(name = "primary_mobile",nullable = false)
     private String primaryMobile;
 
     @Column(name = "login_status",nullable = false)

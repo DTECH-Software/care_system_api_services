@@ -24,6 +24,8 @@ public class ResponseMessageUtil {
     public final static String SIGNUP_PROCESS_SUCCESS= "val.application.signup.process.success";
     public final static String PASSWORD_POLICY_NOT_FOUND= "val.password.policy.notfound";
     public final static String USERNAME_POLICY_NOT_FOUND= "val.username.policy.notfound";
+    public final static String PRIMARY_MOBILE_ALREADY_IN_USE= "val.primary.mobile.already.in.use";
+    public final static String PRIMARY_EMAIL_ALREADY_IN_USE= "val.primary.email.already.in.use";
 
     /*profile*/
     public final static String APPLICATION_USER_NOT_FOUND = "val.application.user.not.found";
