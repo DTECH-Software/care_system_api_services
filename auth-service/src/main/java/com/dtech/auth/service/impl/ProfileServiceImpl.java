@@ -196,12 +196,11 @@ public class ProfileServiceImpl implements ProfileService {
                         Document document = gson.fromJson(gson.toJson(objectApiResponse), Document.class);
                         log.info("User profile image inquiry success {} ", profileImageUpdateRequestDTO);
                         user.setProfileImg(document);
-                        System.out.println("jj");
-                        ApplicationUser applicationUser = applicationUserRepository.saveAndFlush(user);
-                        log.info("User profile update successful {} ", applicationUser);
-                        DocumentDownloadRequestDTO documentDownloadRequestDTO = gson.fromJson(String.valueOf(applicationUser.getProfileImg()), DocumentDownloadRequestDTO.class);
-                        log.info("User profile update profile load success {} ", applicationUser);
-                        return ResponseEntity.ok().body(responseUtil.success((Object) documentDownloadRequestDTO, messageSource.getMessage(ResponseMessageUtil.PROFILE_IMAGE_UPDATE_SUCCESS, null, locale)));
+                        applicationUserRepository.saveAndFlush(user);
+                        log.info("User profile update successful {} ",user.getUsername());
+                        DocumentDownloadResponseDTO documentDownloadResponseDTO = gson.fromJson(gson.toJson(document), DocumentDownloadResponseDTO.class);
+                        log.info("User profile update profile load success {} ", user.getUsername());
+                        return ResponseEntity.ok().body(responseUtil.success((Object) documentDownloadResponseDTO, messageSource.getMessage(ResponseMessageUtil.PROFILE_IMAGE_UPDATE_SUCCESS, null, locale)));
                     }).orElseGet(() -> {
                         log.info("User profile update request application user not found {} ", profileImageUpdateRequestDTO.getUsername());
                         return ResponseEntity.ok().body(responseUtil.error(null, 1014, messageSource.getMessage(ResponseMessageUtil.APPLICATION_USER_NOT_FOUND, null, locale)));
