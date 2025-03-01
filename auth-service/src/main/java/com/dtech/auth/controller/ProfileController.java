@@ -7,14 +7,8 @@
 
 package com.dtech.auth.controller;
 
-import com.dtech.auth.dto.request.ChannelRequestDTO;
-import com.dtech.auth.dto.request.ClaimDependentRequestDTO;
-import com.dtech.auth.dto.request.ProfileEditOtpRequestDTO;
-import com.dtech.auth.dto.request.ProfileImageUpdateRequestDTO;
-import com.dtech.auth.dto.request.validator.ChannelRequestValidatorDTO;
-import com.dtech.auth.dto.request.validator.ClaimDependentRequestValidatorDTO;
-import com.dtech.auth.dto.request.validator.ProfileEditOtpRequestValidatorDTO;
-import com.dtech.auth.dto.request.validator.ProfileImageUpdateRequestValidatorDTO;
+import com.dtech.auth.dto.request.*;
+import com.dtech.auth.dto.request.validator.*;
 import com.dtech.auth.dto.response.ApiResponse;
 import com.dtech.auth.service.ProfileService;
 import com.google.gson.Gson;
@@ -78,5 +72,13 @@ public class ProfileController {
         log.info("Profile details update otp request controller {} ", profileEditOtpRequestValidatorDTO);
         return profileService.updateProfileDetailsOtpRequest(gson.fromJson(gson.toJson(profileEditOtpRequestValidatorDTO), ProfileEditOtpRequestDTO.class), locale);
     }
+
+    @PostMapping(path = "/update-profile/otp-validation",produces = MediaType.APPLICATION_JSON_VALUE,consumes = MediaType.APPLICATION_JSON_VALUE)
+    @ApiOperation(value = "Handle OTP validation request ",notes = "OTP validation request success or failed")
+    public ResponseEntity<ApiResponse<Object>> updateProfileOtpValidation(@RequestBody @Valid OtpRequestValidatorDTO otpRequestValidatorDTO, Locale locale) {
+        log.info("OTP validation request request controller {} ", otpRequestValidatorDTO);
+        return profileService.updateProfileOtpValidation(gson.fromJson(gson.toJson(otpRequestValidatorDTO), OtpRequestDTO.class), locale);
+    }
+
 
 }
