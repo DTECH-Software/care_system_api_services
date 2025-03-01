@@ -2,6 +2,7 @@ package com.dtech.auth.service;
 
 import com.dtech.auth.dto.request.ChannelRequestDTO;
 import com.dtech.auth.dto.request.ClaimDependentRequestDTO;
+import com.dtech.auth.dto.request.ProfileEditOtpRequestDTO;
 import com.dtech.auth.dto.request.ProfileImageUpdateRequestDTO;
 import com.dtech.auth.dto.response.ApiResponse;
 import org.springframework.http.ResponseEntity;
@@ -13,4 +14,5 @@ public interface ProfileService {
     ResponseEntity<ApiResponse<Object>> addDependents(ClaimDependentRequestDTO claimDependentRequestDTO, Locale locale);
     ResponseEntity<ApiResponse<Object>> getDependentsDetails(ChannelRequestDTO channelRequestDTO, Locale locale);
     ResponseEntity<ApiResponse<Object>> updateProfileImage(ProfileImageUpdateRequestDTO profileImageUpdateRequestDTO, Locale locale);
+    ResponseEntity<ApiResponse<Object>> updateProfileDetailsOtpRequest(ProfileEditOtpRequestDTO profileEditOtpRequestDTO, Locale locale);
 }

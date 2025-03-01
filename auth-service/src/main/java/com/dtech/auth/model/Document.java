@@ -8,19 +8,20 @@
 package com.dtech.auth.model;
 
 import com.dtech.auth.enums.DocType;
-import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.ToString;
 
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
-@EqualsAndHashCode(callSuper = true)
+@EqualsAndHashCode(callSuper = true,exclude = "claimsDependents")
 @Entity
 @Table(name = "document")
 @Data
+@ToString(exclude = "claimsDependents")
 public class Document extends Audit implements Serializable {
 
     private static final long serialVersionUID = 1L;
@@ -45,6 +46,5 @@ public class Document extends Audit implements Serializable {
     private String fileType;
 
     @ManyToMany(mappedBy = "documents")
-    @JsonBackReference
     private List<ClaimsDependents> claimsDependents = new ArrayList<>();
 }

@@ -9,9 +9,11 @@ package com.dtech.auth.controller;
 
 import com.dtech.auth.dto.request.ChannelRequestDTO;
 import com.dtech.auth.dto.request.ClaimDependentRequestDTO;
+import com.dtech.auth.dto.request.ProfileEditOtpRequestDTO;
 import com.dtech.auth.dto.request.ProfileImageUpdateRequestDTO;
 import com.dtech.auth.dto.request.validator.ChannelRequestValidatorDTO;
 import com.dtech.auth.dto.request.validator.ClaimDependentRequestValidatorDTO;
+import com.dtech.auth.dto.request.validator.ProfileEditOtpRequestValidatorDTO;
 import com.dtech.auth.dto.request.validator.ProfileImageUpdateRequestValidatorDTO;
 import com.dtech.auth.dto.response.ApiResponse;
 import com.dtech.auth.service.ProfileService;
@@ -63,11 +65,18 @@ public class ProfileController {
         return profileService.getDependentsDetails(gson.fromJson(gson.toJson(channelRequestValidatorDTO), ChannelRequestDTO.class), locale);
     }
 
-    @PostMapping(path = "/update-profile-image",produces = MediaType.APPLICATION_JSON_VALUE,consumes = MediaType.APPLICATION_JSON_VALUE)
+    @PostMapping(path = "/update-profile/edit-image",produces = MediaType.APPLICATION_JSON_VALUE,consumes = MediaType.APPLICATION_JSON_VALUE)
     @ApiOperation(value = "Handle profile image update request ",notes = "Handle profile image update success or failed")
     public ResponseEntity<ApiResponse<Object>> updateProfileImage(@RequestBody @Valid ProfileImageUpdateRequestValidatorDTO profileImageUpdateRequestValidatorDTO, Locale locale) {
         log.info("Profile image update request controller {} ", profileImageUpdateRequestValidatorDTO);
         return profileService.updateProfileImage(gson.fromJson(gson.toJson(profileImageUpdateRequestValidatorDTO), ProfileImageUpdateRequestDTO.class), locale);
+    }
+
+    @PostMapping(path = "/update-profile/otp-request",produces = MediaType.APPLICATION_JSON_VALUE,consumes = MediaType.APPLICATION_JSON_VALUE)
+    @ApiOperation(value = "Handle profile details update otp  request ",notes = "Handle profile details update otp request success or failed")
+    public ResponseEntity<ApiResponse<Object>> updateProfileDetailsOtpRequest(@RequestBody @Valid ProfileEditOtpRequestValidatorDTO profileEditOtpRequestValidatorDTO, Locale locale) {
+        log.info("Profile details update otp request controller {} ", profileEditOtpRequestValidatorDTO);
+        return profileService.updateProfileDetailsOtpRequest(gson.fromJson(gson.toJson(profileEditOtpRequestValidatorDTO), ProfileEditOtpRequestDTO.class), locale);
     }
 
 }

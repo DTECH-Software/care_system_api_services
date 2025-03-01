@@ -40,7 +40,7 @@ public class DateTimeUtil {
 
     public static String getYyyyMMddHHMmSsTimeFormatter(Date date) {
         log.info("get time formatter");
-        SimpleDateFormat simpleDateFormat = new SimpleDateFormat("E MMM dd HH:mm:ss Z yyyy");
+        SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
         return simpleDateFormat.format(date);
     }
 

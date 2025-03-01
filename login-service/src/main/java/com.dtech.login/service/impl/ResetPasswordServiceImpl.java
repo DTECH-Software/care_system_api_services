@@ -135,8 +135,6 @@ public class ResetPasswordServiceImpl implements ResetPasswordService {
             messageRequestDTO.setValue(otp);
             messageRequestDTO.setMobileNo(applicationUser.getPrimaryMobile());
             messageRequestDTO.setType(NotificationsType.PASSWORD_RESET.name());
-
-            log.info("Before token request mapper {} ", messageRequestDTO);
             log.info("Before calling message service {}", messageFeignClient);
             ResponseEntity<ApiResponse<Object>> messageResponse = messageFeignClient.sendMessage(messageRequestDTO);
             log.info("After response message service {}", messageResponse);
@@ -150,7 +148,7 @@ public class ResetPasswordServiceImpl implements ResetPasswordService {
             if(objectApiResponse != null) {
                 return ResponseEntity.ok().body(responseUtil.success(Map.of("otpRequestAttempt", otpExceedCount,"passwordPolicy",passwordPolicy), messageSource.getMessage(ResponseMessageUtil.APPLICATION_USER_OTP_SEND_SUCCESS, null, locale)));
             }
-            return ResponseEntity.ok().body(responseUtil.error(null, 1019, messageSource.getMessage(ResponseMessageUtil.OTP_SENT_FAILED, null, locale)));
+            return ResponseEntity.ok().body(responseUtil.error(null, 1019, messageSource.getMessage(ResponseMessageUtil.OTP_SEND_FAILED, null, locale)));
         } catch (Exception e) {
             log.error(e);
             throw e;

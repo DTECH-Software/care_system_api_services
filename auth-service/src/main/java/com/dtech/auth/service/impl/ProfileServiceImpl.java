@@ -9,25 +9,17 @@ package com.dtech.auth.service.impl;
 
 import com.dtech.auth.dto.request.*;
 import com.dtech.auth.dto.response.*;
-import com.dtech.auth.enums.DependentCategory;
-import com.dtech.auth.enums.RelationCategory;
-import com.dtech.auth.enums.Status;
-import com.dtech.auth.enums.Workflow;
+import com.dtech.auth.enums.*;
 import com.dtech.auth.feign.DocumentFeignClient;
+import com.dtech.auth.feign.MessageFeignClient;
 import com.dtech.auth.mapper.EntityToDto.ProfileMapper;
-import com.dtech.auth.model.ApplicationUser;
-import com.dtech.auth.model.ClaimsDependents;
-import com.dtech.auth.model.Document;
-import com.dtech.auth.repository.ApplicationUserRepository;
-import com.dtech.auth.repository.ClaimDependentsRepository;
-import com.dtech.auth.repository.DocumentRepository;
+import com.dtech.auth.model.*;
+import com.dtech.auth.repository.*;
 import com.dtech.auth.service.ProfileService;
-import com.dtech.auth.util.ResponseMessageUtil;
-import com.dtech.auth.util.ResponseUtil;
+import com.dtech.auth.util.*;
 import com.google.gson.Gson;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
-import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.MessageSource;
@@ -53,9 +45,6 @@ public class ProfileServiceImpl implements ProfileService {
     private final ResponseUtil responseUtil;
 
     @Autowired
-    private final ModelMapper modelMapper;
-
-    @Autowired
     private final ClaimDependentsRepository claimDependentsRepository;
 
     @Value("${client.mobile}")
@@ -69,6 +58,15 @@ public class ProfileServiceImpl implements ProfileService {
 
     @Autowired
     private final DocumentFeignClient documentFeignClient;
+
+    @Autowired
+    private final ApplicationPasswordPolicyRepository applicationPasswordPolicyRepository;
+
+    @Autowired
+    private final ApplicationOtpSessionRepository applicationOtpSessionRepository;
+
+    @Autowired
+    private final MessageFeignClient messageFeignClient;
 
     @Override
     @Transactional
@@ -206,6 +204,116 @@ public class ProfileServiceImpl implements ProfileService {
                         return ResponseEntity.ok().body(responseUtil.error(null, 1014, messageSource.getMessage(ResponseMessageUtil.APPLICATION_USER_NOT_FOUND, null, locale)));
                     });
 
+        } catch (Exception e) {
+            log.error(e);
+            throw e;
+        }
+    }
+
+    @Override
+    @Transactional
+    public ResponseEntity<ApiResponse<Object>> updateProfileDetailsOtpRequest(ProfileEditOtpRequestDTO profileEditOtpRequestDTO, Locale locale) {
+        try {
+            log.info("User profile update request {} ", profileEditOtpRequestDTO);
+            String username = profileEditOtpRequestDTO.getUsername().trim();
+
+            return applicationUserRepository.findByUsernameAndUserPersonalDetails_UserStatus(username,Status.ACTIVE).map(user ->
+                    applicationPasswordPolicyRepository.findPasswordPolicy().map((policy) -> {
+
+                if (user.getOtpAttemptCount() > policy.getOtpExceedCount()) {
+                    log.info("Profile details update OTP request attempt exceed {} , {}", user.getOtpAttemptCount()
+                            , policy.getAttemptExceedCount());
+                    long minutes = DateTimeUtil.getMinutes(DateTimeUtil.getYyyyMMddHHMmSsTimeFormatter(DateTimeUtil.getSeconds(user.getOtpAttemptResetTime(), 2700)));
+                    return ResponseEntity.ok().body(responseUtil.error(null, 1010, messageSource.getMessage(ResponseMessageUtil.APPLICATION_USER_OTP_EXCEED, new Object[]{minutes}, locale)));
+                } else if (user.getOtpAttemptCount() > 0) {
+                    log.info("Profile Details request otp session {}", user.getApplicationOtpSession());
+                    Optional<ApplicationOtpSession> applicationOtpSession = applicationOtpSessionRepository.
+                            findById(user.getApplicationOtpSession() != null ? user.getApplicationOtpSession().getId() : 0);
+
+                    if (applicationOtpSession.isPresent()) {
+                        log.info("Profile update request otp session {}", applicationOtpSession.get());
+                        if (DateTimeUtil.getSeconds(applicationOtpSession.get().getCreatedDate(),60).after(DateTimeUtil.getCurrentDateTime())) {
+                            log.info("Profile update request otp session valid this moment {}", DateTimeUtil.getSeconds(applicationOtpSession.get().getCreatedDate(),60));
+                            return ResponseEntity.ok().body(responseUtil.error(null, 1012, messageSource.getMessage(ResponseMessageUtil.APPLICATION_USER_OTP_REQUEST_TRY_TO_AFTER_60S, null, locale)));
+                        }
+                        log.info("Profile update send otp session attempt exceed greater than 0 {}", user);
+                    } else {
+                        log.info("Profile update otp session not found {}", applicationOtpSession);
+                        return ResponseEntity.ok().body(responseUtil.error(null, 1011, messageSource.getMessage(ResponseMessageUtil.APPLICATION_USER_OTP_SESSION_NOT_FOUND, null, locale)));
+                    }
+                }
+
+                log.info("Profile update send otp session send message {}", user);
+                Optional<ApplicationPasswordPolicy> passwordPolicy = applicationPasswordPolicyRepository.findPasswordPolicy();
+                return sendMessage(user,profileEditOtpRequestDTO.getMobileNo() ,locale, policy.getOtpExceedCount() - user.getOtpAttemptCount());
+            }).orElseGet(() -> {
+                log.info("Profile update request policy not found for username {} ", username);
+                return ResponseEntity.ok().body(responseUtil.error(null, 1010, messageSource.getMessage(ResponseMessageUtil.APPLICATION_USER_PASSWORD_POLICY_NOT_FOUND, null, locale)));
+            })).orElseGet(() -> {
+                log.info("Profile update request user not found for username {} ", profileEditOtpRequestDTO.getUsername());
+                return ResponseEntity.ok().body(responseUtil.error(null, 1009, messageSource.getMessage(ResponseMessageUtil.APPLICATION_USER_NOT_FOUND, null, locale)));
+            });
+
+        }catch (Exception e) {
+            log.error(e);
+            throw e;
+        }
+    }
+
+    @Transactional
+    protected ResponseEntity<ApiResponse<Object>> sendMessage(ApplicationUser applicationUser,String mobileNo, Locale locale, int otpExceedCount) {
+        try {
+            log.info("Processing profile update request gen otp {} ", applicationUser.getUsername());
+            String otp = RandomGeneratorUtil.getRandom6DigitNumber();
+            log.info("Generate otp {} ", otp);
+            MessageRequestDTO messageRequestDTO = new MessageRequestDTO();
+            messageRequestDTO.setValue(otp);
+            messageRequestDTO.setMobileNo(mobileNo);
+            messageRequestDTO.setType(NotificationsType.PROFILE_UPDATE.name());
+            log.info("Before calling message service {}", messageFeignClient);
+            ResponseEntity<ApiResponse<Object>> messageResponse = messageFeignClient.sendMessage(messageRequestDTO);
+            log.info("After response message service {}", messageResponse);
+            Object objectApiResponse = ExtractApiResponseUtil.extractApiResponse(messageResponse);
+            log.info("After message mapper response {}", objectApiResponse);
+            MessageResponseDTO messageResponseDTO = gson.fromJson(gson.toJson(objectApiResponse), MessageResponseDTO.class);
+            log.info("Otp send status {}", messageResponseDTO);
+            ApplicationOtpSession applicationOtpSession = updateOtpSession(otp, messageResponseDTO != null ? messageResponseDTO.getSuccess() : 0);
+            updateApplicationUser(applicationUser, applicationOtpSession);
+            log.info("Application OTP session updated successfully");
+            if(objectApiResponse != null) {
+                return ResponseEntity.ok().body(responseUtil.success(Map.of("otpRequestAttempt", otpExceedCount), messageSource.getMessage(ResponseMessageUtil.APPLICATION_USER_OTP_SEND_SUCCESS, null, locale)));
+            }
+            return ResponseEntity.ok().body(responseUtil.error(null, 1019, messageSource.getMessage(ResponseMessageUtil.OTP_SEND_FAILED, null, locale)));
+        } catch (Exception e) {
+            log.error(e);
+            throw e;
+        }
+    }
+
+    @Transactional
+    protected ApplicationOtpSession updateOtpSession(String otp, int state) {
+        try {
+            log.info("Processing profile edt request gen otp application otp session update {} ", otp);
+            ApplicationOtpSession applicationOtpSession = new ApplicationOtpSession();
+            applicationOtpSession.setOtp(otp);
+            applicationOtpSession.setSuccess(state);
+            ApplicationOtpSession otpSession = applicationOtpSessionRepository.saveAndFlush(applicationOtpSession);
+            log.info("Profile edit request otp session update {} ", otpSession);
+            return otpSession;
+        } catch (Exception e) {
+            log.error(e);
+            throw e;
+        }
+    }
+
+    @Transactional
+    protected void updateApplicationUser(ApplicationUser applicationUser, ApplicationOtpSession applicationOtpSession) {
+        try {
+            log.info("Profile edit otp request update application user {}", applicationUser);
+            applicationUser.setApplicationOtpSession(applicationOtpSession);
+            applicationUser.setOtpAttemptCount(applicationUser.getOtpAttemptCount() + 1);
+            applicationUser.setOtpAttemptResetTime(DateTimeUtil.getCurrentDateTime());
+            applicationUserRepository.saveAndFlush(applicationUser);
         } catch (Exception e) {
             log.error(e);
             throw e;

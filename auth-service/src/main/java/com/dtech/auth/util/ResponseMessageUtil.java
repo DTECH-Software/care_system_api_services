@@ -15,7 +15,7 @@ public class ResponseMessageUtil {
     public final static String APPLICATION_USER_PASSWORD_POLICY_NOT_FOUND = "val.application.user.password.policy.not.found";
     public final static String OTP_SEND_SUCCESS = "val.otp.send.success";
     public final static String OTP_ALREADY_VERIFIED = "val.otp.already.verified";
-    public final static String OTP_SENT_FAILED = "val.otp.send.failed";
+    public final static String OTP_SEND_FAILED = "val.otp.send.failed";
     public final static String OTP_SESSION_NOT_FOUND = "val.application.otp.not.found";
     public final static String ONBOARDING_VERIFICATION_OTP_NOT_FOUND = "val.application.onboarding.verification.otp.not.found";
     public final static String OTP_INVALID_OR_SESSION_TIME_OUT = "val.application.otp.invalid.or.session.timeout";
@@ -37,4 +37,9 @@ public class ResponseMessageUtil {
     public final static String CLAIM_DEPENDENT_OTHER_RELATION_CATEGORY_DOCUMENT_IS_EMPTY_OR_OUT_OF_RANGE = "val.claim.dependent.other.relation.category.document.is.empty.or.out.of.range";
     public final static String CLAIM_DEPENDENT_LIST_VIEW_SUCCESS = "val.claim.dependent.list.view.success";
     public final static String PROFILE_IMAGE_UPDATE_SUCCESS = "val.profile.image.update.success";
+    public final static String APPLICATION_USER_OTP_EXCEED = "val.application.user.otp.exceed";
+    public final static String APPLICATION_USER_OTP_REQUEST_TRY_TO_AFTER_60S = "val.application.user.otp.session.60s";
+    public final static String APPLICATION_USER_OTP_SESSION_NOT_FOUND = "val.application.user.otp.session.not.found";
+    public final static String APPLICATION_USER_OTP_SEND_SUCCESS = "val.application.user.otp.send.success";
+
 }
