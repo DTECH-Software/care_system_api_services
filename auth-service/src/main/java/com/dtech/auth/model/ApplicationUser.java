@@ -10,6 +10,7 @@ package com.dtech.auth.model;
 
 import com.dtech.auth.enums.Channel;
 import com.dtech.auth.enums.Status;
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -101,7 +102,6 @@ public class ApplicationUser extends Audit implements Serializable {
 
     @OneToOne(fetch = FetchType.LAZY,cascade = CascadeType.ALL)
     @JoinColumn(name = "onboarding_request",referencedColumnName = "id")
-
     private OnboardingRequest onboardingRequest;
 
     @OneToOne(fetch = FetchType.LAZY,cascade = CascadeType.ALL)
@@ -113,6 +113,7 @@ public class ApplicationUser extends Audit implements Serializable {
     private ApplicationUserDeviceDetails applicationUserDeviceDetails;
 
     @OneToMany(mappedBy = "applicationUser")
+    @JsonBackReference
     private List<ClaimsDependents> claimsDependents;
 
     @OneToOne(fetch = FetchType.LAZY,cascade = CascadeType.ALL)

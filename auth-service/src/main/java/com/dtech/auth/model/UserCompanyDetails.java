@@ -7,6 +7,7 @@
 
 package com.dtech.auth.model;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -51,6 +52,7 @@ public class UserCompanyDetails extends Audit implements Serializable {
     private Date terminateDate;
 
     @OneToOne(mappedBy = "userCompanyDetails")
+    @JsonBackReference
     private UserPersonalDetails userCompanyDetails;
 
 }

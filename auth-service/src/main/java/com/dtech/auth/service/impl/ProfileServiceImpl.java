@@ -22,7 +22,6 @@ import com.dtech.auth.repository.ApplicationUserRepository;
 import com.dtech.auth.repository.ClaimDependentsRepository;
 import com.dtech.auth.repository.DocumentRepository;
 import com.dtech.auth.service.ProfileService;
-import com.dtech.auth.util.DateTimeUtil;
 import com.dtech.auth.util.ResponseMessageUtil;
 import com.dtech.auth.util.ResponseUtil;
 import com.google.gson.Gson;
@@ -171,7 +170,7 @@ public class ProfileServiceImpl implements ProfileService {
                                 (c1, c2) ->
                                         c2.getLastModifiedDate().compareTo(c1.getLastModifiedDate())).collect(Collectors.toList());
                         List<ClaimDependentDetailsResponseDTO> claimDependentDetailsResponseDTOS = ProfileMapper
-                                .mapDependentList(collect,documentFeignClient);
+                                .mapDependentList(collect, documentFeignClient);
                         ClaimDependentResponseDTO dependentResponseDTO = new ClaimDependentResponseDTO();
                         dependentResponseDTO.setDependents(claimDependentDetailsResponseDTOS);
                         return ResponseEntity.ok().body(responseUtil.success((Object) dependentResponseDTO, messageSource.getMessage(ResponseMessageUtil.CLAIM_DEPENDENT_LIST_VIEW_SUCCESS, null, locale)));
@@ -179,6 +178,35 @@ public class ProfileServiceImpl implements ProfileService {
                         log.info("User profile view dependent request application user not found {} ", channelRequestDTO.getUsername());
                         return ResponseEntity.ok().body(responseUtil.error(null, 1014, messageSource.getMessage(ResponseMessageUtil.APPLICATION_USER_NOT_FOUND, null, locale)));
                     });
+        } catch (Exception e) {
+            log.error(e);
+            throw e;
+        }
+    }
+
+    @Override
+    @Transactional
+    public ResponseEntity<ApiResponse<Object>> updateProfileImage(ProfileImageUpdateRequestDTO profileImageUpdateRequestDTO, Locale locale) {
+
+        try {
+            log.info("User profile update request {} ", profileImageUpdateRequestDTO);
+            return applicationUserRepository.
+                    findByUsernameAndUserPersonalDetails_UserStatus(profileImageUpdateRequestDTO.getUsername(), Status.ACTIVE).map((user) -> {
+                        Object objectApiResponse = ProfileMapper.getDocuments(profileImageUpdateRequestDTO.getId(), documentFeignClient,true);
+                        Document document = gson.fromJson(gson.toJson(objectApiResponse), Document.class);
+                        log.info("User profile image inquiry success {} ", profileImageUpdateRequestDTO);
+                        user.setProfileImg(document);
+                        System.out.println("jj");
+                        ApplicationUser applicationUser = applicationUserRepository.saveAndFlush(user);
+                        log.info("User profile update successful {} ", applicationUser);
+                        DocumentDownloadRequestDTO documentDownloadRequestDTO = gson.fromJson(String.valueOf(applicationUser.getProfileImg()), DocumentDownloadRequestDTO.class);
+                        log.info("User profile update profile load success {} ", applicationUser);
+                        return ResponseEntity.ok().body(responseUtil.success((Object) documentDownloadRequestDTO, messageSource.getMessage(ResponseMessageUtil.PROFILE_IMAGE_UPDATE_SUCCESS, null, locale)));
+                    }).orElseGet(() -> {
+                        log.info("User profile update request application user not found {} ", profileImageUpdateRequestDTO.getUsername());
+                        return ResponseEntity.ok().body(responseUtil.error(null, 1014, messageSource.getMessage(ResponseMessageUtil.APPLICATION_USER_NOT_FOUND, null, locale)));
+                    });
+
         } catch (Exception e) {
             log.error(e);
             throw e;
@@ -194,11 +222,13 @@ public class ProfileServiceImpl implements ProfileService {
                 claimsDependents.setStatus(Workflow.UNDER_REVIEW);
                 claimsDependents.setApplicationUser(applicationUser);
                 claimsDependents.setDocuments(
-                        saveClaimDocument(claimDependentDetailsRequestDTO.getDocuments())
+                        saveClaimDependentDocument(claimDependentDetailsRequestDTO.getDocuments())
                 );
                 log.info("User claim dependent attachment  save {} ", claimDependentDetailsRequestDTO);
                 claimDependentsRepository.saveAndFlush(claimsDependents);
             });
+            applicationUser.setExpectingDependentsRegister(false);
+            applicationUserRepository.saveAndFlush(applicationUser);
         } catch (Exception e) {
             log.error(e);
             throw e;
@@ -206,7 +236,7 @@ public class ProfileServiceImpl implements ProfileService {
     }
 
     @Transactional
-    protected List<Document> saveClaimDocument(List<SupportingDocumentDTO> supportingDocumentDTO) {
+    protected List<Document> saveClaimDependentDocument(List<SupportingDocumentDTO> supportingDocumentDTO) {
         try {
             log.info("User dependent document save {} ", supportingDocumentDTO);
 

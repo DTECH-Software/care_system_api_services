@@ -28,5 +28,5 @@ public class ApplicationUserDetailsResponseDTO {
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private Date passwordExpiredDate;
     private UserPersonalDetailsResponseDTO userPersonalDetails;
-    private DocumentResponseDTO profileImg;
+    private DocumentDownloadResponseDTO profileImg;
 }

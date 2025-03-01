@@ -12,4 +12,5 @@ import lombok.Data;
 @Data
 public class DocumentDownloadRequestDTO{
     private Long id;
+    private boolean state;
 }

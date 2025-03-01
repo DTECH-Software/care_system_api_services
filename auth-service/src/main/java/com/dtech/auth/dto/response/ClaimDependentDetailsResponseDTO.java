@@ -29,5 +29,5 @@ public class ClaimDependentDetailsResponseDTO {
     private String relationCategoryDescription;
     private String status;
     private String statusDescription;
-    private List<DocumentResponseDTO> documents;
+    private List<DocumentDownloadResponseDTO> documents;
 }

@@ -74,10 +74,16 @@ public class DocumentController {
 
             return ResponseEntity.ok()
                     .headers(headers)
-                    .body(downloadResponseDTO.getDocument());
+                    .body(downloadResponseDTO.getDoc().getBytes());
         }
 
         return ResponseEntity.ok().build();
    }
 
+    @PostMapping(path = "/find",produces = MediaType.APPLICATION_JSON_VALUE,consumes = MediaType.APPLICATION_JSON_VALUE)
+    @ApiOperation(value = "Handle document find request ",notes = "Handle document find success or failed")
+    public ResponseEntity<ApiResponse<Object>> getDocument(@RequestBody @Valid DocumentDownloadRequestValidatorDTO documentDownloadRequestValidatorDTO, Locale locale) {
+        log.info("Document find request controller {} ", documentDownloadRequestValidatorDTO);
+        return documentService.getDocument(gson.fromJson(gson.toJson(documentDownloadRequestValidatorDTO), DocumentDownloadRequestDTO.class), locale);
+    }
 }

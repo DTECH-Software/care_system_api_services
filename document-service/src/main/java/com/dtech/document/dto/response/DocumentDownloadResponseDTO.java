@@ -13,7 +13,7 @@ import lombok.Data;
 @Data
 public class DocumentDownloadResponseDTO {
     private String type;
-    private byte[] document;
+    private String doc;
     private String fileName;
     private String fileType;
 }

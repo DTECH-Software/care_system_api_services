@@ -15,4 +15,5 @@ import lombok.EqualsAndHashCode;
 public class DocumentDownloadRequestValidatorDTO{
     @NotNull(message = "Id is required.")
     private Long id;
+    private boolean state = false;
 }

@@ -24,7 +24,8 @@ import lombok.Data;
                 "DASHBOARD",
                 "PROFILE_DETAILS",
                 "ADD_DEPENDENT",
-                "DETAILS_DEPENDENT"
+                "DETAILS_DEPENDENT",
+                "PROFILE_IMAGE_UPDATE"
         }, required = {"username"}, message = "Username is required.")
 public class ChannelRequestValidatorDTO {
     @NotBlank(message = "Channel is required.")

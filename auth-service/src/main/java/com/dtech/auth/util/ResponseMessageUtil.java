@@ -36,4 +36,5 @@ public class ResponseMessageUtil {
     public final static String CLAIM_DEPENDENT_WIFE_DOCUMENT_IS_EMPTY_OR_OUT_OF_RANGE = "val.claim.dependent.wife.document.is.empty.or.out.of.range";
     public final static String CLAIM_DEPENDENT_OTHER_RELATION_CATEGORY_DOCUMENT_IS_EMPTY_OR_OUT_OF_RANGE = "val.claim.dependent.other.relation.category.document.is.empty.or.out.of.range";
     public final static String CLAIM_DEPENDENT_LIST_VIEW_SUCCESS = "val.claim.dependent.list.view.success";
+    public final static String PROFILE_IMAGE_UPDATE_SUCCESS = "val.profile.image.update.success";
 }

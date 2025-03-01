@@ -9,8 +9,10 @@ package com.dtech.auth.controller;
 
 import com.dtech.auth.dto.request.ChannelRequestDTO;
 import com.dtech.auth.dto.request.ClaimDependentRequestDTO;
+import com.dtech.auth.dto.request.ProfileImageUpdateRequestDTO;
 import com.dtech.auth.dto.request.validator.ChannelRequestValidatorDTO;
 import com.dtech.auth.dto.request.validator.ClaimDependentRequestValidatorDTO;
+import com.dtech.auth.dto.request.validator.ProfileImageUpdateRequestValidatorDTO;
 import com.dtech.auth.dto.response.ApiResponse;
 import com.dtech.auth.service.ProfileService;
 import com.google.gson.Gson;
@@ -59,6 +61,13 @@ public class ProfileController {
     public ResponseEntity<ApiResponse<Object>> getDependentsDetails(@RequestBody @Valid ChannelRequestValidatorDTO channelRequestValidatorDTO, Locale locale) {
         log.info("Profile view list dependent request controller {} ", channelRequestValidatorDTO);
         return profileService.getDependentsDetails(gson.fromJson(gson.toJson(channelRequestValidatorDTO), ChannelRequestDTO.class), locale);
+    }
+
+    @PostMapping(path = "/update-profile-image",produces = MediaType.APPLICATION_JSON_VALUE,consumes = MediaType.APPLICATION_JSON_VALUE)
+    @ApiOperation(value = "Handle profile image update request ",notes = "Handle profile image update success or failed")
+    public ResponseEntity<ApiResponse<Object>> updateProfileImage(@RequestBody @Valid ProfileImageUpdateRequestValidatorDTO profileImageUpdateRequestValidatorDTO, Locale locale) {
+        log.info("Profile image update request controller {} ", profileImageUpdateRequestValidatorDTO);
+        return profileService.updateProfileImage(gson.fromJson(gson.toJson(profileImageUpdateRequestValidatorDTO), ProfileImageUpdateRequestDTO.class), locale);
     }
 
 }

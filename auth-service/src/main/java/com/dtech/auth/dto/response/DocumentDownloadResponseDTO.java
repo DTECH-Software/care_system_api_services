@@ -10,9 +10,9 @@ package com.dtech.auth.dto.response;
 import lombok.Data;
 
 @Data
-public class DocumentResponseDTO {
+public class DocumentDownloadResponseDTO {
     private String type;
     private String fileName;
     private String fileType;
-    private byte[] doc;
+    private String doc;
 }

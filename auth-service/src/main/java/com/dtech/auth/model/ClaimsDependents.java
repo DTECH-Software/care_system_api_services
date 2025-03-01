@@ -8,10 +8,10 @@
 package com.dtech.auth.model;
 
 import com.dtech.auth.enums.*;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import lombok.ToString;
 
 import java.io.Serializable;
 import java.util.*;
@@ -74,6 +74,7 @@ public class ClaimsDependents extends Audit implements Serializable {
             joinColumns = @JoinColumn(name = "claims_dependents_id",referencedColumnName = "id"),
             inverseJoinColumns = @JoinColumn(name = "document_id",referencedColumnName = "id")
     )
+    @JsonManagedReference
     private List<Document> documents = new ArrayList<>();
 
 }

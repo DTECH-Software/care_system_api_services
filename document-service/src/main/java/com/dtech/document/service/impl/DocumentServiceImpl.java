@@ -29,6 +29,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Base64;
 import java.util.Locale;
 import java.util.Optional;
@@ -82,13 +83,43 @@ public class DocumentServiceImpl implements DocumentService {
                 log.info("Download document found from document service");
                 byte[] bytes = ImageUtils.decodeFromBase64(document.getDoc());
                 DocumentDownloadResponseDTO downloadResponseDTO = ImageDownloadMapper.imageDownloadMapper(document);
-                downloadResponseDTO.setDocument(bytes);
+                downloadResponseDTO.setDoc(Arrays.toString(bytes));
                 return downloadResponseDTO;
             }).orElseGet(() -> {
                 log.error("Document not found with ID: " + documentDownloadRequestDTO.getId());
                 return null;
             });
 
+        } catch (Exception e) {
+            log.error(e);
+            throw e;
+        }
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public ResponseEntity<ApiResponse<Object>> getDocument(DocumentDownloadRequestDTO documentDownloadRequestDTO, Locale locale) {
+        try {
+            log.info("find document from document service {}", documentDownloadRequestDTO);
+            return documentRepository.findById(documentDownloadRequestDTO.getId()).map((doc) -> {
+                log.info("Document found from document service");
+                Object response = null;
+                if (documentDownloadRequestDTO.isState()) {
+                    log.info("Document true state found with ID: " + documentDownloadRequestDTO.getId());
+                    response = doc;
+                } else {
+                    log.info("Document false state found with ID: " + documentDownloadRequestDTO.getId());
+                 //   byte[] bytes = ImageUtils.decodeFromBase64(doc.getDoc());
+                   response = ImageDownloadMapper.imageDownloadMapper(doc);
+
+                   // response = downloadResponseDTO;
+                }
+                log.info("download document from document service success");
+                return ResponseEntity.ok().body(responseUtil.success(response, messageSource.getMessage(ResponseMessageUtil.DOCUMENT_DOWNLOAD_SUCCESS, null, locale)));
+            }).orElseGet(() -> {
+                log.error("Document not found with ID: " + documentDownloadRequestDTO.getId());
+                return ResponseEntity.ok().body(responseUtil.error(null, 1026, messageSource.getMessage(ResponseMessageUtil.DOCUMENT_NOT_FOUND, null, locale)));
+            });
         } catch (Exception e) {
             log.error(e);
             throw e;
