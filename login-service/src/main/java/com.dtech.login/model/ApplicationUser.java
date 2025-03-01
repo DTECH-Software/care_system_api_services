@@ -76,9 +76,6 @@ public class ApplicationUser extends Audit implements Serializable {
     @Column(name = "expecting_first_time_loging",nullable = false)
     private boolean expectingFirstTimeLogging;
 
-    @Column(name = "mb_expecting_first_time_loging",nullable = false)
-    private boolean mbExpectingFirstTimeLogging;
-
     @Column(name = "expecting_dependents_register",nullable = false)
     private boolean expectingDependentsRegister;
 
