@@ -56,7 +56,7 @@ public class ProfileController {
 
     @PostMapping(path = "/dependent-list-view",produces = MediaType.APPLICATION_JSON_VALUE,consumes = MediaType.APPLICATION_JSON_VALUE)
     @ApiOperation(value = "Handle profile dependent view list request ",notes = "Handle profile dependent view list success or failed")
-    public ResponseEntity<ApiResponse<Object>> addDependents(@RequestBody @Valid ChannelRequestValidatorDTO channelRequestValidatorDTO, Locale locale) {
+    public ResponseEntity<ApiResponse<Object>> getDependentsDetails(@RequestBody @Valid ChannelRequestValidatorDTO channelRequestValidatorDTO, Locale locale) {
         log.info("Profile view list dependent request controller {} ", channelRequestValidatorDTO);
         return profileService.getDependentsDetails(gson.fromJson(gson.toJson(channelRequestValidatorDTO), ChannelRequestDTO.class), locale);
     }

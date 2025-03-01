@@ -115,4 +115,8 @@ public class ApplicationUser extends Audit implements Serializable {
     @OneToMany(mappedBy = "applicationUser")
     private List<ClaimsDependents> claimsDependents;
 
+    @OneToOne(fetch = FetchType.LAZY,cascade = CascadeType.ALL)
+    @JoinColumn(name = "profile_img",referencedColumnName = "id")
+    private Document profileImg;
+
 }

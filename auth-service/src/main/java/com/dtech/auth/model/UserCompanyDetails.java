@@ -39,6 +39,9 @@ public class UserCompanyDetails extends Audit implements Serializable {
     @JoinColumn(name = "staff_type",nullable = false,referencedColumnName = "id")
     private StaffTypes staffTypes;
 
+    @Column(name = "designation",nullable = false)
+    private String designation;
+
     @Column(name = "permanent_date",nullable = false,updatable = false)
     @Temporal(TemporalType.TIMESTAMP)
     private Date permanentDate;

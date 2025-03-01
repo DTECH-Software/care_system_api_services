@@ -12,5 +12,7 @@ import lombok.Data;
 @Data
 public class DocumentResponseDTO {
     private String type;
+    private String fileName;
+    private String fileType;
     private byte[] doc;
 }

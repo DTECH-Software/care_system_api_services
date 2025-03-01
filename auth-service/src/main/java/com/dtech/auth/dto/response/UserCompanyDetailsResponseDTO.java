@@ -21,4 +21,5 @@ public class UserCompanyDetailsResponseDTO {
     private SimpleBaseDTO staffTypes;
     private Date permanentDate;
     private Date terminateDate;
+    private String designation;
 }

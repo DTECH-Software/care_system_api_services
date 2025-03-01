@@ -9,13 +9,17 @@ package com.dtech.auth.mapper.EntityToDto;
 
 
 import com.dtech.auth.dto.request.DocumentDownloadRequestDTO;
+import com.dtech.auth.dto.response.ApplicationUserDetailsResponseDTO;
 import com.dtech.auth.dto.response.ClaimDependentDetailsResponseDTO;
 import com.dtech.auth.dto.response.DocumentResponseDTO;
 import com.dtech.auth.feign.DocumentFeignClient;
+import com.dtech.auth.model.ApplicationUser;
 import com.dtech.auth.model.ClaimsDependents;
+import com.dtech.auth.util.DateTimeUtil;
 import com.dtech.auth.util.ExtractApiResponseUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
+import org.modelmapper.ModelMapper;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
@@ -30,11 +34,34 @@ import static com.dtech.auth.util.StringUtil.ifNotOrEmpty;
 @RequiredArgsConstructor
 public class ProfileMapper {
 
-    public static List<ClaimDependentDetailsResponseDTO> mapDependentList(List<ClaimsDependents> claimsDependentsList,DocumentFeignClient documentFeignClient) {
+    private static final ModelMapper modelMapper = new ModelMapper();
+
+    public static ApplicationUserDetailsResponseDTO mapApplicationUser(ApplicationUser applicationUser, DocumentFeignClient documentFeignClient) {
+        try {
+            log.info("application user mapper");
+            ApplicationUserDetailsResponseDTO applicationUserDetailsResponseDTO = modelMapper.map(applicationUser, ApplicationUserDetailsResponseDTO.class);
+            log.info("application user get age");
+            applicationUserDetailsResponseDTO.getUserPersonalDetails().setAge(DateTimeUtil.getAge(
+                    String.valueOf(applicationUser.getUserPersonalDetails().getDob())));
+            if (applicationUser.getProfileImg() != null) {
+                log.info("application user get profile img");
+                byte[] documents = getDocuments(applicationUser.getProfileImg().getId(), documentFeignClient);
+                applicationUserDetailsResponseDTO.getProfileImg().setDoc(documents);
+                log.info("application user get profile img downloaded");
+            }
+
+            return applicationUserDetailsResponseDTO;
+        } catch (Exception e) {
+            log.error(e);
+            throw e;
+        }
+    }
+
+    public static List<ClaimDependentDetailsResponseDTO> mapDependentList(List<ClaimsDependents> claimsDependentsList, DocumentFeignClient documentFeignClient) {
         try {
             log.info("dependent list mapper");
 
-           return claimsDependentsList.stream().map((dependents -> {
+            return claimsDependentsList.stream().map((dependents -> {
                 ClaimDependentDetailsResponseDTO claimDependentDetailsResponseDTO = new ClaimDependentDetailsResponseDTO();
                 claimDependentDetailsResponseDTO.setId(Long.valueOf(ifNotOrEmpty(String.valueOf(dependents.getId()))));
                 claimDependentDetailsResponseDTO.setDependentCategory(ifNotOrEmpty(String.valueOf(dependents.getDependentCategory())));
@@ -58,6 +85,8 @@ public class ProfileMapper {
                     DocumentResponseDTO responseDTO = new DocumentResponseDTO();
                     responseDTO.setDoc(documents);
                     responseDTO.setType(document.getType().toString());
+                    responseDTO.setFileName(document.getFileName());
+                    responseDTO.setFileType(document.getFileType());
                     return responseDTO;
                 })).collect(Collectors.toList());
                 claimDependentDetailsResponseDTO.setDocuments(collect);
@@ -70,7 +99,7 @@ public class ProfileMapper {
         }
     }
 
-    private static byte[] getDocuments(Long id,DocumentFeignClient documentFeignClient) {
+    private static byte[] getDocuments(Long id, DocumentFeignClient documentFeignClient) {
         try {
             log.info("documents download from auth {} ", id);
             id = id != null ? id : 0;

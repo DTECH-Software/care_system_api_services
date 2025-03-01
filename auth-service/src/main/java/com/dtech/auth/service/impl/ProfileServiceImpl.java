@@ -81,8 +81,7 @@ public class ProfileServiceImpl implements ProfileService {
                     findByUsernameAndUserPersonalDetails_UserStatus(channelRequestDTO.getUsername().trim(),
                             Status.ACTIVE).map((ap) -> {
                         log.info("User profile request user found {} ", ap);
-                        ApplicationUserDetailsResponseDTO applicationUserDetailsResponseDTO = modelMapper.map(ap, ApplicationUserDetailsResponseDTO.class);
-                        getAge(applicationUserDetailsResponseDTO.getUserPersonalDetails());
+                        ApplicationUserDetailsResponseDTO applicationUserDetailsResponseDTO = ProfileMapper.mapApplicationUser(ap, documentFeignClient);
                         if (ap.isExpectingFirstTimeLogging()) {
                             updateApplicationUserDetails(ap);
                         }
@@ -168,8 +167,11 @@ public class ProfileServiceImpl implements ProfileService {
                     .findByUsernameAndUserPersonalDetails_UserStatus(channelRequestDTO.getUsername(), Status.ACTIVE)
                     .map((user) -> {
                         log.info("User profile view dependent available {} ", user);
+                        List<ClaimsDependents> collect = user.getClaimsDependents().stream().sorted(
+                                (c1, c2) ->
+                                        c2.getLastModifiedDate().compareTo(c1.getLastModifiedDate())).collect(Collectors.toList());
                         List<ClaimDependentDetailsResponseDTO> claimDependentDetailsResponseDTOS = ProfileMapper
-                                .mapDependentList(user.getClaimsDependents(),documentFeignClient);
+                                .mapDependentList(collect,documentFeignClient);
                         ClaimDependentResponseDTO dependentResponseDTO = new ClaimDependentResponseDTO();
                         dependentResponseDTO.setDependents(claimDependentDetailsResponseDTOS);
                         return ResponseEntity.ok().body(responseUtil.success((Object) dependentResponseDTO, messageSource.getMessage(ResponseMessageUtil.CLAIM_DEPENDENT_LIST_VIEW_SUCCESS, null, locale)));
@@ -229,15 +231,4 @@ public class ProfileServiceImpl implements ProfileService {
         }
     }
 
-    @Transactional(readOnly = true)
-    protected void getAge(UserPersonalDetailsResponseDTO userPersonalDetailsResponseDTO) {
-        try {
-            log.info("Processing getAge {}", userPersonalDetailsResponseDTO);
-            userPersonalDetailsResponseDTO.setAge(DateTimeUtil.getAge(
-                    String.valueOf(userPersonalDetailsResponseDTO.getDob())));
-        } catch (Exception e) {
-            log.error(e);
-            throw e;
-        }
-    }
 }
