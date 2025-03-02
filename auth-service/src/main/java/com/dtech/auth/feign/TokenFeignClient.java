@@ -1,5 +1,6 @@
 package com.dtech.auth.feign;
 
+import com.dtech.auth.config.FeignConfig;
 import com.dtech.auth.dto.request.ChannelRequestDTO;
 import com.dtech.auth.dto.response.ApiResponse;
 import org.springframework.cloud.openfeign.FeignClient;
@@ -11,7 +12,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 
-@FeignClient(name = "token-service", fallback = TokenFeignClientFallback.class)
+@FeignClient(name = "token-service", fallback = TokenFeignClientFallback.class,configuration = FeignConfig.class)
 public interface TokenFeignClient {
 
     @PostMapping("/token-service/api/v1/token/issuer-token")

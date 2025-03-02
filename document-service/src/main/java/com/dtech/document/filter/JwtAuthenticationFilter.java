@@ -49,20 +49,20 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         try {
             String authorization = request.getHeader(AUTHORIZATION_HEADER);
             if (authorization != null && authorization.startsWith(BEARER_PREFIX)) {
-                log.info("JWT Authentication Filter Authorized - Document");
+                log.info("JWT Authentication Filter Authorized - Auth");
                 String token = authorization.substring(7);
-                log.info("JWT Authentication Filter Token - Document {}", token);
-                log.info("JWT Authentication Filter request to token server - Document {}", token);
+                log.info("JWT Authentication Filter Token - Auth {}", token);
+                log.info("JWT Authentication Filter request to token server - Auth {}", token);
 
                 ResponseEntity<ApiResponse<Object>> validateTokenResponse = tokenFeignClient.validateToken(token);
-                log.info("After response token service Document {}", validateTokenResponse);
+                log.info("After response token service Auth {}", validateTokenResponse);
                 Object objectApiResponse = ExtractApiResponseUtil.extractApiResponse(validateTokenResponse);
-                log.info("After response token response Document {}", objectApiResponse);
+                log.info("After response token response Auth {}", objectApiResponse);
 
                 TokenValidResponseDTO tokenValidResponseDTO = gson.fromJson(gson.toJson(objectApiResponse), TokenValidResponseDTO.class);
 
                 if (!token.isBlank() && tokenValidResponseDTO.isValid()) {
-                    log.info("JWT Authentication Filter Token valid - Document {}", tokenValidResponseDTO);
+                    log.info("JWT Authentication Filter Token valid - Auth {}", tokenValidResponseDTO);
                     Authentication authentication = new UsernamePasswordAuthenticationToken(
                             tokenValidResponseDTO.getUsername(), null, new ArrayList<>()
                     );
@@ -74,9 +74,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         } catch (Exception e) {
             log.error(e);
-            throw e;
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            response.setContentType("application/json");
+            response.getWriter().write("{\"message\": \"Unauthorized: An error occurred while processing the token\"}");
         }
     }
-
-
 }
