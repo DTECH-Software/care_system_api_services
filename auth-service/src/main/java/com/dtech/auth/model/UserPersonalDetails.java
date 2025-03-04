@@ -7,6 +7,7 @@
 
 package com.dtech.auth.model;
 
+import com.dtech.auth.enums.Gender;
 import com.dtech.auth.enums.Status;
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
@@ -50,6 +51,10 @@ public class UserPersonalDetails extends Audit implements Serializable {
 
     @Column(name = "mobile_no",nullable = false)
     private String mobileNo;
+
+    @Column(name = "gender",nullable = false)
+    @Enumerated(EnumType.STRING)
+    private Gender gender;
 
     @Column(name = "marital_status",nullable = false)
     private boolean maritalStatus;

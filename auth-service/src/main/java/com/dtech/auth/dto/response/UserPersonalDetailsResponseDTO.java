@@ -23,6 +23,8 @@ public class UserPersonalDetailsResponseDTO {
     private String mobileNo;
     private Date dob;
     private long age;
+    private String gender;
+    private String genderDescription;
     private UserAddressResponseDTO userAddress;
     private UserCompanyDetailsResponseDTO userCompanyDetails;
 }
