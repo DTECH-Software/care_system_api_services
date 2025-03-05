@@ -13,6 +13,7 @@ import com.dtech.auth.enums.RelationCategory;
 import com.dtech.auth.validator.Conditional;
 import com.dtech.auth.validator.ValidAge;
 import com.dtech.auth.validator.ValidEnum;
+import com.dtech.auth.validator.ValidPastDays;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
@@ -38,7 +39,7 @@ public class ClaimDependentDetailsRequestValidatorDTO {
     private String lastName;
     @NotNull(message = "DOB is required.")
     @ValidAge(message = "Age must be below 65.")
-    @JsonFormat(pattern = "yyyy-MM-dd")
+    @ValidPastDays(message = "DOB must be past date")
     private Date dob;
     @NotBlank(message = "Gender is required.")
     @ValidEnum(enumClass = Gender.class,message = "Invalid gender type.")
