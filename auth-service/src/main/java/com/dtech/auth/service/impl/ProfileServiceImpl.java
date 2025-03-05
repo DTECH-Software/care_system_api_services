@@ -249,7 +249,6 @@ public class ProfileServiceImpl implements ProfileService {
                         }
 
                         log.info("Profile update send otp session send message {}", user);
-                        Optional<ApplicationPasswordPolicy> passwordPolicy = applicationPasswordPolicyRepository.findPasswordPolicy();
                         return sendMessage(user, profileEditOtpRequestDTO.getPrimaryMobile(), locale, policy.getOtpExceedCount() - user.getOtpAttemptCount());
                     }).orElseGet(() -> {
                         log.info("Profile update request policy not found for username {} ", username);
@@ -309,7 +308,7 @@ public class ProfileServiceImpl implements ProfileService {
             String username = profileEditRequestDTO.getUsername().trim();
             return applicationUserRepository.findByUsernameAndUserPersonalDetails_UserStatus(username, Status.ACTIVE).map(user -> {
 
-                String primaryEmail = profileEditRequestDTO.getPrimaryEmail().trim();
+                String primaryEmail = profileEditRequestDTO.getPrimaryEmail().trim().toLowerCase();
                 String primaryMobile = profileEditRequestDTO.getPrimaryMobile().trim();
                 if (user.getPrimaryEmail().equalsIgnoreCase(primaryEmail) && user.getPrimaryMobile().equalsIgnoreCase(primaryMobile)) {
                     log.info("User profile update request details not change {} ", profileEditRequestDTO);

@@ -266,7 +266,7 @@ public class SignupServiceImpl implements SignupService {
                         .existsByPrimaryMobileAndUserPersonalDetails_UserStatus(userPersonalDetailsRequestDTO.getMobileNo().trim(), Status.ACTIVE);
 
                 boolean existsEmail = applicationUserRepository
-                        .existsByPrimaryEmail(userPersonalDetailsRequestDTO.getEmail().trim());
+                        .existsByPrimaryEmailIgnoreCase(userPersonalDetailsRequestDTO.getEmail().trim());
 
                 if (exists) {
                     log.info("Signup exists username {}", userPersonalDetailsRequestDTO.getUsername());
@@ -364,7 +364,7 @@ public class SignupServiceImpl implements SignupService {
             applicationUser.setUsername(userPersonalDetailsRequestDTO.getUsername().trim());
             applicationUser.setPassword(hashPassword);
             applicationUser.setUserKey(saltKey);
-            applicationUser.setPrimaryEmail(userPersonalDetailsRequestDTO.getEmail().trim());
+            applicationUser.setPrimaryEmail(userPersonalDetailsRequestDTO.getEmail().trim().toLowerCase());
             applicationUser.setPrimaryMobile(userPersonalDetailsRequestDTO.getMobileNo().trim());
             applicationUser.setLoginStatus(Status.ACTIVE);
             applicationUser.setReset(false);
