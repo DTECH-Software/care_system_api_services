@@ -45,4 +45,12 @@ public class ResponseMessageUtil {
     public final static String APPLICATION_USER_DETAILS_UPDATE_SUCCESS = "val.application.user.details.update.success";
     public final static String APPLICATION_USER_DETAILS_OTP_VERIFICATION_FAILED = "val.application.user.otp.verification.failed";
 
+    /*Claim request*/
+    public final static String CLAIM_DEPENDENT_NOT_FOUND = "val.claim.dependent.not.found";
+    public final static String USER_NOT_ELIGIBLE_TO_CLAIM_REQUEST = "val.user.not.eligible.to.claim.request";
+    public final static String INSURANCE_POLICY_NOT_FOUND = "val.insurance.policy.not.found";
+    public final static String INSURANCE_PERIOD_NOT_FOUND = "val.insurance.period.not.found";
+    public final static String TREATMENT_NOT_FOUND = "val.treatment.not.found";
+    public final static String CLAIM_REQUEST_SUBMIT_SUCCESS = "val.claim.request.submit.success";
+    public final static String POLICY_TREATMENT_PERIOD_NOT_FOUND_OR_INACTIVE = "val.policy.treatment.period.not.found.or.inactive";
 }

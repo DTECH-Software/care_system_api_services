@@ -1,0 +1,15 @@
+/**
+ * User: Himal_J
+ * Date: 2/25/2025
+ * Time: 1:50 PM
+ * <p>
+ */
+
+package com.dtech.claim.dto.request;
+
+import lombok.Data;
+
+@Data
+public class SupportingDocumentDTO {
+    private Long id;
+}

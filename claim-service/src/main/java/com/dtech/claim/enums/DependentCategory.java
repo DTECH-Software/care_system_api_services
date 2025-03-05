@@ -1,0 +1,24 @@
+/**
+ * User: Himal_J
+ * Date: 2/25/2025
+ * Time: 2:10 PM
+ * <p>
+ */
+
+package com.dtech.claim.enums;
+
+public enum DependentCategory {
+    PARENTS("Parents"),
+    CHILDREN("Children"),
+    WIFE("Wife");
+
+    private final String description;
+
+    DependentCategory(String description) {
+        this.description = description;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+}
