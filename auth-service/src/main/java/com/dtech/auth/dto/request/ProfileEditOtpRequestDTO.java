@@ -13,7 +13,5 @@ import lombok.EqualsAndHashCode;
 @EqualsAndHashCode(callSuper = true)
 @Data
 public class ProfileEditOtpRequestDTO extends ChannelRequestDTO{
-    private String primaryEmail;
     private String primaryMobile;
-    private String otp;
 }

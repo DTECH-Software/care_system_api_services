@@ -220,12 +220,13 @@ public class ProfileServiceImpl implements ProfileService {
             return applicationUserRepository.findByUsernameAndUserPersonalDetails_UserStatus(username, Status.ACTIVE).map(user ->
                     applicationPasswordPolicyRepository.findPasswordPolicy().map((policy) -> {
 
-                        String primaryEmail = profileEditOtpRequestDTO.getPrimaryEmail().trim();
                         String primaryMobile = profileEditOtpRequestDTO.getPrimaryMobile().trim();
-                        if (user.getPrimaryEmail().equalsIgnoreCase(primaryEmail) && user.getPrimaryMobile().equalsIgnoreCase(primaryMobile)) {
-                            log.info("User profile update request details not change {} ", profileEditOtpRequestDTO);
-                            return ResponseEntity.ok().body(responseUtil.error(null, 1027, messageSource.getMessage(ResponseMessageUtil.APPLICATION_USER_DETAILS_NOT_CHANGE, null, locale)));
-                        } else if (user.getOtpAttemptCount() > policy.getOtpExceedCount()) {
+//                        if (user.getPrimaryEmail().equalsIgnoreCase(primaryEmail) && user.getPrimaryMobile().equalsIgnoreCase(primaryMobile)) {
+//                            log.info("User profile update request details not change {} ", profileEditOtpRequestDTO);
+//                            return ResponseEntity.ok().body(responseUtil.error(null, 1027, messageSource.getMessage(ResponseMessageUtil.APPLICATION_USER_DETAILS_NOT_CHANGE, null, locale)));
+//                        } else
+
+                            if (user.getOtpAttemptCount() > policy.getOtpExceedCount()) {
                             log.info("Profile details update OTP request attempt exceed {} , {}", user.getOtpAttemptCount()
                                     , policy.getAttemptExceedCount());
                             long minutes = DateTimeUtil.getMinutes(DateTimeUtil.getYyyyMMddHHMmSsTimeFormatter(DateTimeUtil.getSeconds(user.getOtpAttemptResetTime(), 2700)));
@@ -249,7 +250,7 @@ public class ProfileServiceImpl implements ProfileService {
                         }
 
                         log.info("Profile update send otp session send message {}", user);
-                        return sendMessage(user, profileEditOtpRequestDTO.getPrimaryMobile(), locale, policy.getOtpExceedCount() - user.getOtpAttemptCount());
+                       return sendMessage(user, profileEditOtpRequestDTO.getPrimaryMobile(), locale, policy.getOtpExceedCount() - user.getOtpAttemptCount());
                     }).orElseGet(() -> {
                         log.info("Profile update request policy not found for username {} ", username);
                         return ResponseEntity.ok().body(responseUtil.error(null, 1010, messageSource.getMessage(ResponseMessageUtil.APPLICATION_USER_PASSWORD_POLICY_NOT_FOUND, null, locale)));
@@ -308,7 +309,7 @@ public class ProfileServiceImpl implements ProfileService {
             String username = profileEditRequestDTO.getUsername().trim();
             return applicationUserRepository.findByUsernameAndUserPersonalDetails_UserStatus(username, Status.ACTIVE).map(user -> {
 
-                String primaryEmail = profileEditRequestDTO.getPrimaryEmail().trim().toLowerCase();
+                String primaryEmail = profileEditRequestDTO.getPrimaryEmail().trim();
                 String primaryMobile = profileEditRequestDTO.getPrimaryMobile().trim();
                 if (user.getPrimaryEmail().equalsIgnoreCase(primaryEmail) && user.getPrimaryMobile().equalsIgnoreCase(primaryMobile)) {
                     log.info("User profile update request details not change {} ", profileEditRequestDTO);
