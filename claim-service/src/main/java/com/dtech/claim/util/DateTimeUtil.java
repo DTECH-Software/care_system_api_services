@@ -37,7 +37,11 @@ public class DateTimeUtil {
         calendar.add(Calendar.SECOND, amount);
         return calendar.getTime();
     }
-
+    public static Date getMinuesDate(int dayCount) {
+        log.info("get minus date future DateTime {}", dayCount);
+        LocalDateTime minuseDays = LocalDateTime.now().minusDays(dayCount);
+        return Date.from(minuseDays.atZone(ZoneId.systemDefault()).toInstant());
+    }
     public static String getYyyyMMddHHMmSsTimeFormatter(Date date) {
         log.info("get time formatter");
         SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");

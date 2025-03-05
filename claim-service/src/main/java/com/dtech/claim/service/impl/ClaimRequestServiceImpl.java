@@ -12,6 +12,7 @@ import com.dtech.claim.dto.ClaimRequestIdGen;
 import com.dtech.claim.dto.request.ClaimRequestDTO;
 import com.dtech.claim.dto.request.SupportingDocumentDTO;
 import com.dtech.claim.dto.response.ApiResponse;
+import com.dtech.claim.enums.CommonParam;
 import com.dtech.claim.enums.Status;
 import com.dtech.claim.enums.Workflow;
 import com.dtech.claim.model.*;
@@ -33,6 +34,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
@@ -82,6 +84,9 @@ public class ClaimRequestServiceImpl implements ClaimRequestService {
     @Autowired
     private final ClaimsRequestRepository claimsRequestRepository;
 
+    @Autowired
+    private final CommonParameterRepository commonParameterRepository;
+
     @Override
     @Transactional
     public ResponseEntity<ApiResponse<Object>> claimRequest(ClaimRequestDTO claimRequestDTO, Locale locale) {
@@ -93,52 +98,66 @@ public class ClaimRequestServiceImpl implements ClaimRequestService {
                     log.info("User not eligible to claim request {}", claimRequestDTO.getUsername());
                     return ResponseEntity.ok().body(responseUtil.error(null, 1029, messageSource.getMessage(ResponseMessageUtil.USER_NOT_ELIGIBLE_TO_CLAIM_REQUEST, null, locale)));
                 }
-                return insuranceRepository.findByIdAndStatus(user.getInsurancePolicy().getId(), Status.ACTIVE).map((policy) -> {
-                    return insurancePeriodRepository.findByYearAndStatus(String.valueOf(LocalDate.now().getYear()), Status.ACTIVE).map((period) -> {
-                        return treatmentRepository.findByTreatmentCode(claimRequestDTO.getTreatment()).map((treatment) -> {
-                            return insuranceDetailsRepository.findByInsurancePolicyAndInsurancePeriodAndTreatmentAndStatus(policy, period, treatment, Status.ACTIVE).map((insuranceDetails) -> {
+                return commonParameterRepository.findByCode(CommonParam.CLIM_REQUEST_PERIOD.name()).map((param) -> {
+                            log.info("get - date from claim request {}", param);
+                            Date minuesDate = DateTimeUtil.getMinuesDate(param.getValue());
+                            if (claimRequestDTO.getToDate().before(minuesDate)) {
+                                log.info("older than claim request {}", claimRequestDTO.getUsername());
+                                return ResponseEntity.ok().body(responseUtil.error(null, 1037, messageSource.getMessage(ResponseMessageUtil.OLDER_DATE_CLAIM_REQUEST, null, locale)));
+                            }
+                            return insuranceRepository.findByIdAndStatus(user.getInsurancePolicy().getId(), Status.ACTIVE).map((policy) -> {
+                                return insurancePeriodRepository.findByYearAndStatus(String.valueOf(LocalDate.now().getYear()), Status.ACTIVE).map((period) -> {
+                                    return treatmentRepository.findByTreatmentCode(claimRequestDTO.getTreatment()).map((treatment) -> {
+                                        return insuranceDetailsRepository.findByInsurancePolicyAndInsurancePeriodAndTreatmentAndStatus(policy, period, treatment, Status.ACTIVE).map((insuranceDetails) -> {
 
-                                Optional<ClaimsDependents> claimsDependents = Optional.empty();
+                                            Optional<ClaimsDependents> claimsDependents = Optional.empty();
 
-                                if (!claimRequestDTO.getIsEmployee()) {
-                                    log.info("Claim dependent found for request {}", true);
-                                    claimsDependents = claimDependentsRepository.findByIdAndApplicationUserAndStatus(claimRequestDTO.getClaimsDependentId(), user, Workflow.ACTIVE);
+                                            if (!claimRequestDTO.getIsEmployee()) {
+                                                log.info("Claim dependent found for request {}", true);
+                                                claimsDependents = claimDependentsRepository.findByIdAndApplicationUserAndStatus(claimRequestDTO.getClaimsDependentId(), user, Workflow.ACTIVE);
 
-                                    if (claimsDependents.isEmpty()) {
-                                        log.info("Claim dependent not found");
-                                        return ResponseEntity.ok().body(responseUtil.error(null, 1034, messageSource.getMessage(ResponseMessageUtil.CLAIM_DEPENDENT_NOT_FOUND, null, locale)));
-                                    }
-                                }
+                                                if (claimsDependents.isEmpty()) {
+                                                    log.info("Claim dependent not found");
+                                                    return ResponseEntity.ok().body(responseUtil.error(null, 1034, messageSource.getMessage(ResponseMessageUtil.CLAIM_DEPENDENT_NOT_FOUND, null, locale)));
+                                                }
+                                            }
 
-                                Optional<ClaimsAccountBalance> claimsAccountBalance = claimsAccountBalanceRepository.findByEmployeeAndTreatmentAndInsurancePeriod(user, treatment, period);
+                                            Optional<ClaimsAccountBalance> claimsAccountBalance = claimsAccountBalanceRepository.findByEmployeeAndTreatmentAndInsurancePeriod(user, treatment, period);
 
-                                //check available fund
-                                String message = checkFundLimits(insuranceDetails, claimRequestDTO, claimsAccountBalance.orElse(null));
+                                            //check available fund
+                                            String message = checkFundLimits(insuranceDetails, claimRequestDTO, claimsAccountBalance.orElse(null));
 
-                                if (message != null && !message.isEmpty()) {
-                                    log.info("validation filed {} ", message);
-                                    return ResponseEntity.ok().body(responseUtil.error(null, 1035, message));
-                                }
-                                saveClaimRequest(claimRequestDTO, period, user, claimsDependents, treatment);
-                                updateAccountBalance(claimsAccountBalance.orElse(null), claimRequestDTO, treatment, insuranceDetails, user, period);
-                                return ResponseEntity.ok().body(responseUtil.success(null, messageSource.getMessage(ResponseMessageUtil.CLAIM_REQUEST_SUBMIT_SUCCESS, null, locale)));
+                                            if (message != null && !message.isEmpty()) {
+                                                log.info("validation filed {} ", message);
+                                                return ResponseEntity.ok().body(responseUtil.error(null, 1035, message));
+                                            }
+                                            saveClaimRequest(claimRequestDTO, period, user, claimsDependents, treatment);
+                                            updateAccountBalance(claimsAccountBalance.orElse(null), claimRequestDTO, treatment, insuranceDetails, user, period);
+                                            return ResponseEntity.ok().body(responseUtil.success(null, messageSource.getMessage(ResponseMessageUtil.CLAIM_REQUEST_SUBMIT_SUCCESS, null, locale)));
 
+                                        }).orElseGet(() -> {
+                                            log.info("User insurance policy period treatment not found");
+                                            return ResponseEntity.ok().body(responseUtil.error(null, 1033, messageSource.getMessage(ResponseMessageUtil.POLICY_TREATMENT_PERIOD_NOT_FOUND_OR_INACTIVE, null, locale)));
+                                        });
+                                    }).orElseGet(() -> {
+                                        log.info("User insurance treatment not found {} ", DateTimeUtil.getCurrentDateTime());
+                                        return ResponseEntity.ok().body(responseUtil.error(null, 1032, messageSource.getMessage(ResponseMessageUtil.TREATMENT_NOT_FOUND, null, locale)));
+                                    });
+                                }).orElseGet(() -> {
+                                    log.info("User insurance period not found {} ", DateTimeUtil.getCurrentDateTime());
+                                    return ResponseEntity.ok().body(responseUtil.error(null, 1031, messageSource.getMessage(ResponseMessageUtil.INSURANCE_PERIOD_NOT_FOUND, null, locale)));
+                                });
                             }).orElseGet(() -> {
-                                log.info("User insurance policy period treatment not found");
-                                return ResponseEntity.ok().body(responseUtil.error(null, 1033, messageSource.getMessage(ResponseMessageUtil.POLICY_TREATMENT_PERIOD_NOT_FOUND_OR_INACTIVE, null, locale)));
+                                log.info("User insurance policy not found {} ", user.getInsurancePolicy().getId());
+                                return ResponseEntity.ok().body(responseUtil.error(null, 1030, messageSource.getMessage(ResponseMessageUtil.INSURANCE_POLICY_NOT_FOUND, null, locale)));
                             });
-                        }).orElseGet(() -> {
-                            log.info("User insurance treatment not found {} ", DateTimeUtil.getCurrentDateTime());
-                            return ResponseEntity.ok().body(responseUtil.error(null, 1032, messageSource.getMessage(ResponseMessageUtil.TREATMENT_NOT_FOUND, null, locale)));
+                        })
+                        .orElseGet(() -> {
+                            log.info("User common param claim request {}", claimRequestDTO.getUsername());
+                            return ResponseEntity.ok().body(responseUtil.error(null, 1036, messageSource.getMessage(ResponseMessageUtil.COMMON_PARAM_NOT_FOUND, null, locale)));
+
                         });
-                    }).orElseGet(() -> {
-                        log.info("User insurance period not found {} ", DateTimeUtil.getCurrentDateTime());
-                        return ResponseEntity.ok().body(responseUtil.error(null, 1031, messageSource.getMessage(ResponseMessageUtil.INSURANCE_PERIOD_NOT_FOUND, null, locale)));
-                    });
-                }).orElseGet(() -> {
-                    log.info("User insurance policy not found {} ", user.getInsurancePolicy().getId());
-                    return ResponseEntity.ok().body(responseUtil.error(null, 1030, messageSource.getMessage(ResponseMessageUtil.INSURANCE_POLICY_NOT_FOUND, null, locale)));
-                });
+
             }).orElseGet(() -> {
                 log.info("User claim request user not found {} ", claimRequestDTO);
                 return ResponseEntity.ok().body(responseUtil.error(null, 1014, messageSource.getMessage(ResponseMessageUtil.APPLICATION_USER_NOT_FOUND, null, locale)));
