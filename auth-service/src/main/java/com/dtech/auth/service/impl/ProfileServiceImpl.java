@@ -220,7 +220,6 @@ public class ProfileServiceImpl implements ProfileService {
             return applicationUserRepository.findByUsernameAndUserPersonalDetails_UserStatus(username, Status.ACTIVE).map(user ->
                     applicationPasswordPolicyRepository.findPasswordPolicy().map((policy) -> {
 
-                        String primaryMobile = profileEditOtpRequestDTO.getPrimaryMobile().trim();
 //                        if (user.getPrimaryEmail().equalsIgnoreCase(primaryEmail) && user.getPrimaryMobile().equalsIgnoreCase(primaryMobile)) {
 //                            log.info("User profile update request details not change {} ", profileEditOtpRequestDTO);
 //                            return ResponseEntity.ok().body(responseUtil.error(null, 1027, messageSource.getMessage(ResponseMessageUtil.APPLICATION_USER_DETAILS_NOT_CHANGE, null, locale)));
@@ -364,7 +363,7 @@ public class ProfileServiceImpl implements ProfileService {
             MessageRequestDTO messageRequestDTO = new MessageRequestDTO();
             messageRequestDTO.setValue(otp);
             messageRequestDTO.setMobileNo(mobileNo);
-            messageRequestDTO.setType(NotificationsType.PROFILE_UPDATE.name());
+            messageRequestDTO.setType(NotificationsType.OTP.name());
             log.info("Before calling message service {}", messageFeignClient);
             ResponseEntity<ApiResponse<Object>> messageResponse = messageFeignClient.sendMessage(messageRequestDTO);
             log.info("After response message service {}", messageResponse);

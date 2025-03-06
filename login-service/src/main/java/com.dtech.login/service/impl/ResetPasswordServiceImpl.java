@@ -134,7 +134,7 @@ public class ResetPasswordServiceImpl implements ResetPasswordService {
             MessageRequestDTO messageRequestDTO = new MessageRequestDTO();
             messageRequestDTO.setValue(otp);
             messageRequestDTO.setMobileNo(applicationUser.getPrimaryMobile());
-            messageRequestDTO.setType(NotificationsType.PASSWORD_RESET.name());
+            messageRequestDTO.setType(NotificationsType.OTP.name());
             log.info("Before calling message service {}", messageFeignClient);
             ResponseEntity<ApiResponse<Object>> messageResponse = messageFeignClient.sendMessage(messageRequestDTO);
             log.info("After response message service {}", messageResponse);

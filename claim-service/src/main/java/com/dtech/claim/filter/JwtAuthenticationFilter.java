@@ -5,12 +5,12 @@
  * <p>
  */
 
-package com.dtech.auth.filter;
+package com.dtech.claim.filter;
 
-import com.dtech.auth.dto.response.ApiResponse;
-import com.dtech.auth.dto.response.TokenValidResponseDTO;
-import com.dtech.auth.feign.TokenFeignClient;
-import com.dtech.auth.util.ExtractApiResponseUtil;
+import com.dtech.claim.dto.response.ApiResponse;
+import com.dtech.claim.dto.response.TokenValidResponseDTO;
+import com.dtech.claim.feign.TokenFeignClient;
+import com.dtech.claim.util.ExtractApiResponseUtil;
 import com.google.gson.Gson;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;

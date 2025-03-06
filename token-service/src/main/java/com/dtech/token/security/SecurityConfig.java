@@ -8,6 +8,7 @@
 package com.dtech.token.security;
 
 import com.dtech.token.filter.ApiKeyAuthenticationFilter;
+import lombok.extern.log4j.Log4j2;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -19,6 +20,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 
 @Configuration
 @EnableWebSecurity
+@Log4j2
 public class SecurityConfig {
 
     private final ApiKeyAuthenticationFilter apiKeyAuthenticationFilter;
@@ -29,7 +31,7 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-
+        log.info("Security filter chain {}",http);
         http.authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/v1/token/issuer-token").permitAll()
                         .anyRequest().authenticated()

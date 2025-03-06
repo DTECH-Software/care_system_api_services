@@ -583,7 +583,7 @@ public class SignupServiceImpl implements SignupService {
             MessageRequestDTO messageRequestDTO = new MessageRequestDTO();
             messageRequestDTO.setValue(otp);
             messageRequestDTO.setMobileNo(signupOtpRequestDTO.getMobileNo());
-            messageRequestDTO.setType(NotificationsType.ONBOARDING_OTP.name());
+            messageRequestDTO.setType(NotificationsType.OTP.name());
 
             log.info("Before token request mapper {} ", messageRequestDTO);
             log.info("Before calling message service {}", messageFeignClient);

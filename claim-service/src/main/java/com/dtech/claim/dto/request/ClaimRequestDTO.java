@@ -26,4 +26,5 @@ public class ClaimRequestDTO extends ChannelRequestDTO {
     private Date toDate;
     private String disease;
     private List<SupportingDocumentDTO> documents;
+    private String otp;
 }
