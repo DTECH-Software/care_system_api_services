@@ -11,6 +11,7 @@ package com.dtech.auth.mapper.EntityToDto;
 import com.dtech.auth.dto.request.DocumentDownloadRequestDTO;
 import com.dtech.auth.dto.response.*;
 import com.dtech.auth.enums.Gender;
+import com.dtech.auth.enums.Title;
 import com.dtech.auth.feign.DocumentFeignClient;
 import com.dtech.auth.model.ApplicationUser;
 import com.dtech.auth.model.ClaimsDependents;
@@ -45,6 +46,7 @@ public class ProfileMapper {
             applicationUserDetailsResponseDTO.getUserPersonalDetails().setAge(DateTimeUtil.getAge(
                     String.valueOf(applicationUser.getUserPersonalDetails().getDob())));
             applicationUserDetailsResponseDTO.getUserPersonalDetails().setGenderDescription(Gender.valueOf(applicationUserDetailsResponseDTO.getUserPersonalDetails().getGender()).getDescription());
+            applicationUserDetailsResponseDTO.getUserPersonalDetails().setTitleDescription(Title.valueOf(applicationUserDetailsResponseDTO.getUserPersonalDetails().getTitle()).getDescription());
 
             if (applicationUser.getProfileImg() != null) {
                 log.info("application user get profile img");

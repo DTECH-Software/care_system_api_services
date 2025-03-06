@@ -19,6 +19,7 @@ public class UserPersonalDetailsRequestDTO extends ChannelRequestDTO{
     private String password;
     private String confirmPassword;
     private String epfNo;
+    private String title;
     private String initials;
     private String firstName;
     private String lastName;

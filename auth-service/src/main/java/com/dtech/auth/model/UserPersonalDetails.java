@@ -9,6 +9,7 @@ package com.dtech.auth.model;
 
 import com.dtech.auth.enums.Gender;
 import com.dtech.auth.enums.Status;
+import com.dtech.auth.enums.Title;
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
@@ -33,6 +34,10 @@ public class UserPersonalDetails extends Audit implements Serializable {
 
     @Column(name = "epf_no",nullable = false,updatable = false)
     private String epfNo;
+
+    @Column(name = "title",nullable = false)
+    @Enumerated(EnumType.STRING)
+    private Title title;
 
     @Column(name = "initials",nullable = false,length = 30)
     private String initials;

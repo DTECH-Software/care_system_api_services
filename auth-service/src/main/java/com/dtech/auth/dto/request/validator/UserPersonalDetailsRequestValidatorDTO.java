@@ -28,6 +28,8 @@ public class UserPersonalDetailsRequestValidatorDTO extends ChannelRequestValida
     private String confirmPassword;
     @NotBlank(message = "EPF no is required.")
     private String epfNo;
+    @NotBlank(message = "Title is required.")
+    private String title;
     @NotBlank(message = "Initials is required.")
     private String initials;
     @NotBlank(message = "First name is required.")

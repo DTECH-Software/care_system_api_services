@@ -25,6 +25,8 @@ public class UserPersonalDetailsResponseDTO {
     private long age;
     private String gender;
     private String genderDescription;
+    private String title;
+    private String titleDescription;
     private UserAddressResponseDTO userAddress;
     private UserCompanyDetailsResponseDTO userCompanyDetails;
 }

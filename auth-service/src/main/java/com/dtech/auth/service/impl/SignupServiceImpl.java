@@ -16,6 +16,7 @@ import com.dtech.auth.dto.response.UserPersonalDetailsResponseDTO;
 import com.dtech.auth.enums.Gender;
 import com.dtech.auth.enums.NotificationsType;
 import com.dtech.auth.enums.Status;
+import com.dtech.auth.enums.Title;
 import com.dtech.auth.feign.MessageFeignClient;
 import com.dtech.auth.model.*;
 import com.dtech.auth.repository.*;
@@ -646,6 +647,7 @@ public class SignupServiceImpl implements SignupService {
             userPersonalDetailsResponseDTO.setAge(DateTimeUtil.getAge(
                     String.valueOf(userPersonalDetailsResponseDTO.getDob())));
             userPersonalDetailsResponseDTO.setGenderDescription(Gender.valueOf(userPersonalDetailsResponseDTO.getGender()).getDescription());
+            userPersonalDetailsResponseDTO.setTitleDescription(Title.valueOf(userPersonalDetailsResponseDTO.getTitle()).getDescription());
         } catch (Exception e) {
             log.error(e);
             throw e;
