@@ -10,7 +10,7 @@
 	</parent>
 	<groupId>com.dtech.registry.service</groupId>
 	<artifactId>registry-service</artifactId>
-	<version>0.0.1-SNAPSHOT</version>
+	<version>0.0.1</version>
 	<name>registry-service</name>
 	<description>api for registry service</description>
 	<url/>

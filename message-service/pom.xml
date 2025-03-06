@@ -10,7 +10,7 @@
 	</parent>
 	<groupId>com.dtech.message.service</groupId>
 	<artifactId>message-service</artifactId>
-	<version>0.0.1-SNAPSHOT</version>
+	<version>0.0.1</version>
 	<name>message-service</name>
 	<description>api for message service</description>
 	<url/>
