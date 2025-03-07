@@ -131,56 +131,57 @@ public class SignupServiceImpl implements SignupService {
         }
     }
 
-    @Override
-    @Transactional
-    public ResponseEntity<ApiResponse<Object>> signupOtpRequest(SignupOtpRequestDTO signupOtpRequestDTO, Locale locale) {
-        try {
-            log.info("Processing SignupOtpRequest {}", signupOtpRequestDTO);
-            return userPersonalDetailsRepository.findByEpfNoAndNicIgnoreCaseAndUserStatus(signupOtpRequestDTO.getEpfNo().trim(), signupOtpRequestDTO.getNic().trim(), Status.ACTIVE)
-                    .map(userPersonalDetails -> applicationPasswordPolicyRepository.findPasswordPolicy()
-                            .map(pw -> {
+//    @Override
+//    @Transactional
+//    public ResponseEntity<ApiResponse<Object>> signupOtpRequest(SignupOtpRequestDTO signupOtpRequestDTO, Locale locale) {
+//        try {
+//            log.info("Processing SignupOtpRequest {}", signupOtpRequestDTO);
+//            return userPersonalDetailsRepository.findByEpfNoAndNicIgnoreCaseAndUserStatus(signupOtpRequestDTO.getEpfNo().trim(), signupOtpRequestDTO.getNic().trim(), Status.ACTIVE)
+//                    .map(userPersonalDetails -> applicationPasswordPolicyRepository.findPasswordPolicy()
+//                            .map(pw -> {
+//
+//                                //check user's mobile already in use
+//                                boolean alreadyUser = applicationUserRepository.
+//                                        existsByPrimaryMobileAndUserPersonalDetails_UserStatus(
+//                                                signupOtpRequestDTO.getMobileNo(), Status.ACTIVE);
+//
+//                                if (alreadyUser) {
+//                                    log.info("Signup request mobile already in use {} ", signupOtpRequestDTO.getMobileNo());
+//                                    return ResponseEntity.ok().body(responseUtil.error(null, 1025, messageSource.getMessage(ResponseMessageUtil.PRIMARY_MOBILE_ALREADY_IN_USE, null, locale)));
+//                                } else if (pw.getOnboardingOtpHistory() > 0) {
+//                                    log.info("Signup otp request policy - {}", pw.getOnboardingOtpHistory());
+//
+//                                    Sort sort = Sort.by(Sort.Order.desc("createdDate"));
+//                                    List<OnboardingVerifiedMobile> onboardingVerifiedMobiles = onboardingVerifiedMobileRepository
+//                                            .findByEpfNoAndNicEqualsIgnoreCaseAndMobileAndVerified(userPersonalDetails.getEpfNo(), userPersonalDetails.getNic(),
+//                                                    signupOtpRequestDTO.getMobileNo().trim(), true, sort);
+//
+//                                    LocalDateTime localDateTime = LocalDateTime.now().minusDays(pw.getOnboardingOtpHistory());
+//                                    boolean history = onboardingVerifiedMobiles.stream().anyMatch((verifiedMobile) -> verifiedMobile.getCreatedDate().toInstant()
+//                                            .atZone(ZoneId.systemDefault()).toLocalDateTime().isAfter(localDateTime));
+//
+//                                    if (history) {
+//                                        log.info("Sign up otp already verified");
+//                                        return ResponseEntity.ok().body(responseUtil.error(null, 1018, messageSource.getMessage(ResponseMessageUtil.OTP_ALREADY_VERIFIED, null, locale)));
+//                                    }
+//                                }
+//                                log.info("Signup otp request success");
+//                                return sendMessage(signupOtpRequestDTO, locale);
+//                            })
+//                            .orElseGet(() -> {
+//                                log.info("Signup otp request password policy not found {}", signupOtpRequestDTO);
+//                                return ResponseEntity.ok().body(responseUtil.error(null, 1010, messageSource.getMessage(ResponseMessageUtil.APPLICATION_USER_PASSWORD_POLICY_NOT_FOUND, null, locale)));
+//                            }))
+//                    .orElseGet(() -> {
+//                        log.info("Signup otp request user not found {}", signupOtpRequestDTO);
+//                        return ResponseEntity.ok().body(responseUtil.error(null, 1017, messageSource.getMessage(ResponseMessageUtil.EMPLOYEE_DETAILS_NOT_FOUND_ON_SYSTEM, new Object[]{signupOtpRequestDTO.getMobileNo()}, locale)));
+//                    });
+//        } catch (Exception e) {
+//            log.error(e);
+//            throw e;
+//        }
+//    }
 
-                                //check user's mobile already in use
-                                boolean alreadyUser = applicationUserRepository.
-                                        existsByPrimaryMobileAndUserPersonalDetails_UserStatus(
-                                                signupOtpRequestDTO.getMobileNo(), Status.ACTIVE);
-
-                                if (alreadyUser) {
-                                    log.info("Signup request mobile already in use {} ", signupOtpRequestDTO.getMobileNo());
-                                    return ResponseEntity.ok().body(responseUtil.error(null, 1025, messageSource.getMessage(ResponseMessageUtil.PRIMARY_MOBILE_ALREADY_IN_USE, null, locale)));
-                                } else if (pw.getOnboardingOtpHistory() > 0) {
-                                    log.info("Signup otp request policy - {}", pw.getOnboardingOtpHistory());
-
-                                    Sort sort = Sort.by(Sort.Order.desc("createdDate"));
-                                    List<OnboardingVerifiedMobile> onboardingVerifiedMobiles = onboardingVerifiedMobileRepository
-                                            .findByEpfNoAndNicEqualsIgnoreCaseAndMobileAndVerified(userPersonalDetails.getEpfNo(), userPersonalDetails.getNic(),
-                                                    signupOtpRequestDTO.getMobileNo().trim(), true, sort);
-
-                                    LocalDateTime localDateTime = LocalDateTime.now().minusDays(pw.getOnboardingOtpHistory());
-                                    boolean history = onboardingVerifiedMobiles.stream().anyMatch((verifiedMobile) -> verifiedMobile.getCreatedDate().toInstant()
-                                            .atZone(ZoneId.systemDefault()).toLocalDateTime().isAfter(localDateTime));
-
-                                    if (history) {
-                                        log.info("Sign up otp already verified");
-                                        return ResponseEntity.ok().body(responseUtil.error(null, 1018, messageSource.getMessage(ResponseMessageUtil.OTP_ALREADY_VERIFIED, null, locale)));
-                                    }
-                                }
-                                log.info("Signup otp request success");
-                                return sendMessage(signupOtpRequestDTO, locale);
-                            })
-                            .orElseGet(() -> {
-                                log.info("Signup otp request password policy not found {}", signupOtpRequestDTO);
-                                return ResponseEntity.ok().body(responseUtil.error(null, 1010, messageSource.getMessage(ResponseMessageUtil.APPLICATION_USER_PASSWORD_POLICY_NOT_FOUND, null, locale)));
-                            }))
-                    .orElseGet(() -> {
-                        log.info("Signup otp request user not found {}", signupOtpRequestDTO);
-                        return ResponseEntity.ok().body(responseUtil.error(null, 1017, messageSource.getMessage(ResponseMessageUtil.EMPLOYEE_DETAILS_NOT_FOUND_ON_SYSTEM, new Object[]{signupOtpRequestDTO.getMobileNo()}, locale)));
-                    });
-        } catch (Exception e) {
-            log.error(e);
-            throw e;
-        }
-    }
 
     @Override
     @Transactional

@@ -48,19 +48,19 @@ public class SignUpController {
         return signupService.signupInquiry(gson.fromJson(gson.toJson(signupInquiryValidatorDTO), SignupInquiryDTO.class), locale);
     }
 
-    @PostMapping(path = "/otp",produces = MediaType.APPLICATION_JSON_VALUE,consumes = MediaType.APPLICATION_JSON_VALUE)
-    @ApiOperation(value = "Handle signup OTP request request ",notes = "OTP for signup request success or failed")
-    public ResponseEntity<ApiResponse<Object>> signupOtpRequest(@RequestBody @Valid SignupOtpRequestValidatorDTO signupOtpRequestValidatorDTO, Locale locale) {
-        log.info("Signup OTP request controller {} ", signupOtpRequestValidatorDTO);
-        return signupService.signupOtpRequest(gson.fromJson(gson.toJson(signupOtpRequestValidatorDTO), SignupOtpRequestDTO.class), locale);
-    }
+//    @PostMapping(path = "/otp",produces = MediaType.APPLICATION_JSON_VALUE,consumes = MediaType.APPLICATION_JSON_VALUE)
+//    @ApiOperation(value = "Handle signup OTP request request ",notes = "OTP for signup request success or failed")
+//    public ResponseEntity<ApiResponse<Object>> signupOtpRequest(@RequestBody @Valid SignupOtpRequestValidatorDTO signupOtpRequestValidatorDTO, Locale locale) {
+//        log.info("Signup OTP request controller {} ", signupOtpRequestValidatorDTO);
+//        return signupService.signupOtpRequest(gson.fromJson(gson.toJson(signupOtpRequestValidatorDTO), SignupOtpRequestDTO.class), locale);
+//    }
 
-    @PostMapping(path = "/validate/otp",produces = MediaType.APPLICATION_JSON_VALUE,consumes = MediaType.APPLICATION_JSON_VALUE)
-    @ApiOperation(value = "Handle signup OTP validation request",notes = "OTP validation for signup request success or failed")
-    public ResponseEntity<ApiResponse<Object>> signupOtpValidation(@RequestBody @Valid OtpRequestValidatorDTO otpRequestValidatorDTO, Locale locale) {
-        log.info("Signup OTP validation request controller {} ", otpRequestValidatorDTO);
-        return signupService.signupOtpValidation(gson.fromJson(gson.toJson(otpRequestValidatorDTO), OtpRequestDTO.class), locale);
-    }
+//    @PostMapping(path = "/validate/otp",produces = MediaType.APPLICATION_JSON_VALUE,consumes = MediaType.APPLICATION_JSON_VALUE)
+//    @ApiOperation(value = "Handle signup OTP validation request",notes = "OTP validation for signup request success or failed")
+//    public ResponseEntity<ApiResponse<Object>> signupOtpValidation(@RequestBody @Valid OtpRequestValidatorDTO otpRequestValidatorDTO, Locale locale) {
+//        log.info("Signup OTP validation request controller {} ", otpRequestValidatorDTO);
+//        return signupService.signupOtpValidation(gson.fromJson(gson.toJson(otpRequestValidatorDTO), OtpRequestDTO.class), locale);
+//    }
 
     @PostMapping(path = "/",produces = MediaType.APPLICATION_JSON_VALUE,consumes = MediaType.APPLICATION_JSON_VALUE)
     @ApiOperation(value = "Handle signup request ",notes = "Signup success or failed")

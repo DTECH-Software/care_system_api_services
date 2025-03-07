@@ -7,7 +7,7 @@
 
 package com.dtech.auth.dto.request.validator;
 
-import com.fasterxml.jackson.annotation.JsonFormat;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
@@ -16,8 +16,10 @@ import java.util.Date;
 @Data
 public class UserCompanyDetailsRequestValidatorDTO {
     @NotNull(message = "Company type is required.")
+    @Valid
     private SimpleBaseValidatorDTO companyTypes;
     @NotNull(message = "Staff category is required.")
+    @Valid
     private SimpleBaseValidatorDTO staffCategories;
     @NotNull(message = "Staff type is required.")
     private SimpleBaseValidatorDTO staffTypes;
