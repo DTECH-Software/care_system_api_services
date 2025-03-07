@@ -43,9 +43,6 @@ public class SendMessageServiceImpl implements SendMessageService {
     private final ResponseUtil responseUtil;
 
     @Autowired
-    private final MessageSource messageSource;
-
-    @Autowired
     private final RestTemplate restTemplate;
 
     @Value("${message.uri}")
@@ -54,13 +51,34 @@ public class SendMessageServiceImpl implements SendMessageService {
     @Value("${message.api.key}")
     private String apiKey;
 
+    @Autowired
+    private final MessageSource messageSource;
+
     @Override
     @Transactional(readOnly = true)
     public ResponseEntity<ApiResponse<Object>> sendMessage(MessageRequestDTO messageRequestDTO, Locale locale) {
 
         try {
             log.info("Processing send message {}", messageRequestDTO);
+            MessageResponseDTO sendCustomer = sendToCustomer(messageRequestDTO);
+            if(sendCustomer.isSuccess()){
+                return ResponseEntity.ok().body(responseUtil.success(null, sendCustomer.getMessage()));
+            }
 
+            return ResponseEntity.ok().body(
+                    responseUtil.error(null, 1038,
+                            sendCustomer.getMessage()));
+
+        } catch (Exception e) {
+            log.error(e);
+            throw e;
+        }
+    }
+
+    @Transactional
+    public MessageResponseDTO sendToCustomer(MessageRequestDTO messageRequestDTO) {
+        try {
+            log.info("Processing send message {}", messageRequestDTO);
             return notificationTemplateRepository
                     .findByType(NotificationsType.valueOf(messageRequestDTO.getType())).map((template) -> {
 
@@ -77,12 +95,15 @@ public class SendMessageServiceImpl implements SendMessageService {
                         ResponseEntity<String> response = restTemplate.exchange(messageURI, HttpMethod.POST, entity, String.class);
                         log.info("After send message {}", response.toString());
                         MessageResponseDTO responseState = getResponseState(response);
-                        return ResponseEntity.ok().body(responseUtil.success((Object) responseState, messageSource.getMessage(ResponseMessageUtil.MESSAGE_SEND_SUCCESS, null, locale)));
-
+                        responseState.setMessage(messageSource.getMessage("val.otp.send.success", null, null));
+                        return responseState;
                     }).orElseGet(() -> {
                         log.info("Template {} not found", messageRequestDTO.getType());
-                        return ResponseEntity.ok().body(responseUtil.error(null, 1013, messageSource.getMessage(ResponseMessageUtil.NOTIFICATION_TEMPLATE_NOT_FOUND, null, locale)));
+                       return MessageResponseDTO.builder()
+                                .success(true)
+                                .message(messageSource.getMessage("val.notification.template.not.found", null, null)).build();
                     });
+
         } catch (Exception e) {
             log.error(e);
             throw e;
@@ -95,9 +116,9 @@ public class SendMessageServiceImpl implements SendMessageService {
             log.info("Response state for send otp: {}", response.getBody());
             HttpStatusCode statusCode = response.getStatusCode();
 
-            int b = switch (statusCode) {
-                case HttpStatus.OK -> 1;
-                default -> 0;
+            boolean b = switch (statusCode) {
+                case HttpStatus.OK -> true;
+                default -> false;
             };
 
             MessageResponseDTO messageResponseDTO = new MessageResponseDTO();

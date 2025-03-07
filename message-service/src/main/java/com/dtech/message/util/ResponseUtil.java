@@ -7,6 +7,7 @@
 
 package com.dtech.message.util;
 
+
 import com.dtech.message.dto.response.ApiResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
@@ -19,7 +20,7 @@ import java.util.List;
 @ResponseStatus(HttpStatus.OK)
 public class ResponseUtil {
 
-    public <T>ApiResponse<T> success(T data,String message) {
+    public <T>ApiResponse<T> success(T data, String message) {
         ApiResponse<T> apiResponse = new ApiResponse<>();
         apiResponse.setSuccess(true);
         apiResponse.setMessage(message);

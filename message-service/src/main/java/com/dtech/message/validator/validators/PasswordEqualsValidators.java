@@ -24,7 +24,7 @@ public class PasswordEqualsValidators implements ConstraintValidator<PasswordEqu
         Field field2 = null;
         try {
             log.info("Equals validators get fields {}",object);
-            field1 = object.getClass().getDeclaredField("newPassword");
+            field1 = object.getClass().getDeclaredField("password");
             field2 = object.getClass().getDeclaredField("confirmPassword");
         } catch (NoSuchFieldException e) {
             log.error(e);

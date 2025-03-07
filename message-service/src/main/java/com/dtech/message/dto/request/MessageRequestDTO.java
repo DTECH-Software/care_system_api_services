@@ -11,6 +11,8 @@ import lombok.*;
 
 
 @Data
+@AllArgsConstructor
+@NoArgsConstructor
 public class MessageRequestDTO{
     private String mobileNo;
     private String type;

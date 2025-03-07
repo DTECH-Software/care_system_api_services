@@ -24,9 +24,11 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        log.info("Security filter chain {}",http);
-        http.authorizeHttpRequests(auth -> auth
-                        .anyRequest().authenticated()
+        log.info("Security filter chain {}", http);
+        http.authorizeHttpRequests(auth ->
+                        auth.requestMatchers("/api/v1/otp/**")
+                                .permitAll()
+                                .anyRequest().authenticated()
                 ).csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS)

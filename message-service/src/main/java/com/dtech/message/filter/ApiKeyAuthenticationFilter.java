@@ -29,10 +29,6 @@ public class ApiKeyAuthenticationFilter extends OncePerRequestFilter {
         if (apiKey != null && apiKey.equals(API_KEY)) {
             Authentication authentication = new ApiKeyAuthentication(apiKey);
             SecurityContextHolder.getContext().setAuthentication(authentication);
-        } else {
-            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-            response.getWriter().write("Unauthorized: Invalid API Key");
-            return;
         }
 
         filterChain.doFilter(request, response);
