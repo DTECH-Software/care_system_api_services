@@ -17,10 +17,10 @@ import com.dtech.message.enums.Messages;
 import com.dtech.message.enums.NotificationsType;
 import com.dtech.message.enums.Status;
 import com.dtech.message.model.ApplicationOtpSession;
+import com.dtech.message.model.ApplicationUser;
 import com.dtech.message.model.OnboardingVerifiedMobile;
 import com.dtech.message.repository.*;
 import com.dtech.message.service.OtpService;
-import com.dtech.message.service.SendMessageService;
 import com.dtech.message.util.DateTimeUtil;
 import com.dtech.message.util.RandomGeneratorUtil;
 import com.dtech.message.util.ResponseMessageUtil;
@@ -41,6 +41,7 @@ import java.time.ZoneId;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 
 @Service
 @Log4j2
@@ -120,7 +121,7 @@ public class OtpServiceImpl implements OtpService {
                                     ApplicationOtpSession applicationOtpSession = updateOtpSession(otp, messageResponseDTO.isSuccess());
                                     updateOnboardingVerifiedMobile(otpRequestDTO, applicationOtpSession);
 
-                                    if(messageResponseDTO.isSuccess()){
+                                    if (messageResponseDTO.isSuccess()) {
                                         return ResponseEntity.ok().body(responseUtil.success(null, messageResponseDTO.getMessage()));
                                     }
 
@@ -137,10 +138,80 @@ public class OtpServiceImpl implements OtpService {
                             log.info("Signup otp request user not found {}", otpRequestDTO);
                             return ResponseEntity.ok().body(responseUtil.error(null, 1017, messageSource.getMessage(ResponseMessageUtil.EMPLOYEE_DETAILS_NOT_FOUND_ON_SYSTEM, new Object[]{otpRequestDTO.getPrimaryMobile()}, locale)));
                         });
+            } else if (otpRequestDTO.getMessage().equalsIgnoreCase(Messages.RESET_PASSWORD_OTP_REQUEST.name())) {
+
+                log.info("Processing reset password request gen otp {} ", otpRequestDTO.getUsername());
+                String username = otpRequestDTO.getUsername().trim();
+                Optional<ApplicationUser> optionalUser = applicationUserRepository.findByUsernameAndUserPersonalDetails_UserStatus(username, Status.ACTIVE);
+
+                if (optionalUser.isEmpty()) {
+                    log.info("Reset password OTP request find by email {} ", username);
+                    optionalUser = applicationUserRepository.findByPrimaryEmailIgnoreCaseAndUserPersonalDetails_UserStatus(username, Status.ACTIVE);
+                    otpRequestDTO.setUsername(optionalUser.map(ApplicationUser::getUsername).orElse(""));
+                }
+
+                return optionalUser.map(user -> applicationPasswordPolicyRepository.findPasswordPolicy().map((policy) -> {
+
+                    if (user.getOtpAttemptCount() > policy.getOtpExceedCount()) {
+                        log.info("Reset password OTP request attempt exceed {} , {}", user.getOtpAttemptCount(), policy.getAttemptExceedCount());
+                        long minutes = DateTimeUtil.getMinutes(DateTimeUtil.getYyyyMMddHHMmSsTimeFormatter(DateTimeUtil.getSeconds(user.getOtpAttemptResetTime(), 2700)));
+                        return ResponseEntity.ok().body(responseUtil.error(null, 1010, messageSource.getMessage(ResponseMessageUtil.APPLICATION_USER_OTP_EXCEED, new Object[]{minutes}, locale)));
+                    } else if (user.getOtpAttemptCount() > 0) {
+                        log.info("Reset password request otp session {}", user.getApplicationOtpSession());
+                        Optional<ApplicationOtpSession> applicationOtpSession = applicationOtpSessionRepository.
+                                findById(user.getApplicationOtpSession() != null ? user.getApplicationOtpSession().getId() : 0);
+
+                        if (applicationOtpSession.isPresent()) {
+                            log.info("Reset password request otp session {}", applicationOtpSession.get());
+                            if (DateTimeUtil.getSeconds(applicationOtpSession.get().getCreatedDate(), 60).after(DateTimeUtil.getCurrentDateTime())) {
+                                log.info("Reset password request otp session valid this moment {}", DateTimeUtil.getSeconds(applicationOtpSession.get().getCreatedDate(), 60));
+                                return ResponseEntity.ok().body(responseUtil.error(null, 1012, messageSource.getMessage(ResponseMessageUtil.APPLICATION_USER_OTP_REQUEST_TRY_TO_AFTER_60S, null, locale)));
+                            }
+                            log.info("Rest password send otp session attempt exceed greater than 0 {}", user);
+                        } else {
+                            log.info("Reset password request otp session not found {}", applicationOtpSession);
+                            return ResponseEntity.ok().body(responseUtil.error(null, 1011, messageSource.getMessage(ResponseMessageUtil.APPLICATION_USER_OTP_SESSION_NOT_FOUND, null, locale)));
+                        }
+                    }
+
+                    log.info("Rest password send otp session send message {}", user);
+                    String otp = RandomGeneratorUtil.getRandom6DigitNumber();
+                    log.info("Generate otp - onboarding verified {} ", otp);
+                    MessageResponseDTO messageResponseDTO = sendMessageService.sendToCustomer(new MessageRequestDTO(user.getPrimaryMobile(), NotificationsType.OTP.name(), otp));
+                    log.info("Signup otp request success");
+                    ApplicationOtpSession applicationOtpSession = updateOtpSession(otp, messageResponseDTO.isSuccess());
+                    updateApplicationUser(user, applicationOtpSession);
+                    if (messageResponseDTO.isSuccess()) {
+                        return ResponseEntity.ok().body(responseUtil.success((Object) Map.of("otpRequestAttempt", policy.getOtpExceedCount() - user.getOtpAttemptCount()), messageResponseDTO.getMessage()));
+                    }
+                    return ResponseEntity.ok().body(
+                            responseUtil.error(null, 1038,
+                                    messageResponseDTO.getMessage()));
+                }).orElseGet(() -> {
+                    log.info("Password reset request policy not found for username {} ", username);
+                    return ResponseEntity.ok().body(responseUtil.error(null, 1010, messageSource.getMessage(ResponseMessageUtil.APPLICATION_USER_PASSWORD_POLICY_NOT_FOUND, null, locale)));
+                })).orElseGet(() -> {
+                    log.info("Password otp reset password request user not found for username {} ", otpRequestDTO.getUsername());
+                    return ResponseEntity.ok().body(responseUtil.error(null, 1009, messageSource.getMessage(ResponseMessageUtil.APPLICATION_USER_NOT_FOUND, null, locale)));
+                });
             }
 
             return null;
 
+        } catch (Exception e) {
+            log.error(e);
+            throw e;
+        }
+    }
+
+    @Transactional
+    protected void updateApplicationUser(ApplicationUser applicationUser, ApplicationOtpSession applicationOtpSession) {
+        try {
+            log.info("Rest password opt request update application user {}", applicationUser);
+            applicationUser.setApplicationOtpSession(applicationOtpSession);
+            applicationUser.setOtpAttemptCount(applicationUser.getOtpAttemptCount() + 1);
+            applicationUser.setOtpAttemptResetTime(DateTimeUtil.getCurrentDateTime());
+            applicationUserRepository.saveAndFlush(applicationUser);
         } catch (Exception e) {
             log.error(e);
             throw e;
@@ -238,10 +309,60 @@ public class OtpServiceImpl implements OtpService {
                                             messageSource.getMessage(ResponseMessageUtil.OTP_SESSION_NOT_FOUND, null, locale))
                             );
                         });
+            }else if(otpValidationDTO.getMessage().equalsIgnoreCase(Messages.RESET_PASSWORD_OTP_VALIDATION.name())) {
+                log.info("processing otp validation request {}", otpValidationDTO);
+                String username = otpValidationDTO.getUsername().trim();
+                Optional<ApplicationUser> optionalUser = applicationUserRepository
+                        .findByUsernameAndUserPersonalDetails_UserStatus(username,Status.ACTIVE);
+
+                if (optionalUser.isEmpty()) {
+                    log.info("OTP validate request find by email {} ", username);
+                    optionalUser = applicationUserRepository
+                            .findByPrimaryEmailIgnoreCaseAndUserPersonalDetails_UserStatus(username,Status.ACTIVE);
+                    otpValidationDTO.setUsername(optionalUser.map(ApplicationUser::getUsername).orElse(""));
+                }
+
+                if (optionalUser.isPresent()) {
+                    ApplicationUser user = optionalUser.get();
+                    if (user.getApplicationOtpSession() != null) {
+                        log.info("Otp request otp session  {} ", user.getApplicationOtpSession());
+
+                        if (DateTimeUtil.getSeconds(user.getApplicationOtpSession().getCreatedDate(),60).after(DateTimeUtil.getCurrentDateTime()) &&
+                                user.getApplicationOtpSession().getOtp().equals(otpValidationDTO.getOtp()) && !user.getApplicationOtpSession().isValidated()) {
+                            log.info("Otp request valid {} ", user.getApplicationOtpSession());
+                            updateApplicationUserOtpData(user,user.getApplicationOtpSession());
+                            return ResponseEntity.ok().body(responseUtil.success(null, messageSource.getMessage(ResponseMessageUtil.OTP_VALIDATION_SUCCESS, null, locale)));
+                        }
+
+                        log.info("Otp request validation fail otp or invalid session {}", user.getApplicationOtpSession());
+                        return ResponseEntity.ok().body(responseUtil.error(null, 1016, messageSource.getMessage(ResponseMessageUtil.OTP_INVALID_OR_SESSION_TIME_OUT, null, locale)));
+                    }
+
+                    log.info("Otp request otp session not found {} ", username);
+                    return ResponseEntity.ok().body(responseUtil.error(null, 1015, messageSource.getMessage(ResponseMessageUtil.OTP_SESSION_NOT_FOUND, null, locale)));
+                }
+
+                log.info("Otp validation request not found for username {} ", username);
+                return ResponseEntity.ok().body(responseUtil.error(null, 1014, messageSource.getMessage(ResponseMessageUtil.APPLICATION_USER_NOT_FOUND, null, locale)));
+
             }
 
             return null;
 
+        } catch (Exception e) {
+            log.error(e);
+            throw e;
+        }
+    }
+
+    @Transactional
+    protected void updateApplicationUserOtpData(ApplicationUser applicationUser,ApplicationOtpSession applicationOtpSession) {
+        log.info("Update otp validation request otp records");
+        try {
+            applicationUser.setOtpAttemptCount(0);
+            applicationOtpSession.setValidated(true);
+            applicationUserRepository.saveAndFlush(applicationUser);
+            applicationOtpSessionRepository.saveAndFlush(applicationOtpSession);
         }catch (Exception e) {
             log.error(e);
             throw e;
@@ -251,9 +372,14 @@ public class OtpServiceImpl implements OtpService {
     @Transactional
     protected void updateOtpData(ApplicationOtpSession applicationOtpSession, OnboardingVerifiedMobile onboardingVerifiedMobile) {
         log.info("Update sign up otp validation request otp records");
-        applicationOtpSession.setValidated(true);
-        onboardingVerifiedMobile.setVerified(true);
-        applicationOtpSessionRepository.saveAndFlush(applicationOtpSession);
-        onboardingVerifiedMobileRepository.saveAndFlush(onboardingVerifiedMobile);
+        try {
+            applicationOtpSession.setValidated(true);
+            onboardingVerifiedMobile.setVerified(true);
+            applicationOtpSessionRepository.saveAndFlush(applicationOtpSession);
+            onboardingVerifiedMobileRepository.saveAndFlush(onboardingVerifiedMobile);
+        }catch (Exception e) {
+            log.error(e);
+            throw e;
+        }
     }
 }
