@@ -47,7 +47,7 @@ public class ApplicationUser extends Audit implements Serializable {
     private Status loginStatus;
 
     @Column(name = "is_reset",nullable = false)
-    private int isReset;
+    private boolean isReset;
 
     @Column(name = "user_key",nullable = false,updatable = false)
     @Lob

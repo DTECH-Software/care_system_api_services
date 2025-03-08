@@ -371,6 +371,7 @@ public class ResetPasswordServiceImpl implements ResetPasswordService {
             applicationUser.setPasswordExpiredDate(DateTimeUtil.get30FutureDate());
             applicationUser.setAttemptCount(0);
             applicationUser.setPassword(newHashPassword);
+            applicationUser.setReset(false);
             applicationUser.setLastPasswordChangeDate(DateTimeUtil.getCurrentDateTime());
             applicationUserRepository.saveAndFlush(applicationUser);
         } catch (Exception e) {

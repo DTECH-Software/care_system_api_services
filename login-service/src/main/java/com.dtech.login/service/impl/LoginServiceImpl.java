@@ -101,6 +101,10 @@ public class LoginServiceImpl implements LoginService {
             }
             return optionalUser.map(user -> {
 
+                if(user.isReset() || user.getLoginStatus() == Status.INACTIVE) {
+                    return ResponseEntity.ok().body(responseUtil.error(null, 1005, messageSource.getMessage(ResponseMessageUtil.LOGIN_STATUS_INACTIVE_OR_EXPECTED_RESET, null, locale)));
+                }
+
                 String hashPasswordRequest = "";
                 try {
                     hashPasswordRequest = PasswordUtil.passwordEncoder(user.getUserKey(), password);
@@ -262,7 +266,7 @@ public class LoginServiceImpl implements LoginService {
             log.info("Processing update password login request  username {} attempt {} ",
                     applicationUser.getUsername(), applicationUser.getAttemptCount());
             applicationUser.setLoginStatus(Status.INACTIVE);
-            applicationUser.setIsReset(1);
+            applicationUser.setReset(true);
             applicationUserRepository.saveAndFlush(applicationUser);
             log.info("After update password login request update data username {}", applicationUser.getUsername());
         } catch (Exception e) {
