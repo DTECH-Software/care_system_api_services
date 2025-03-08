@@ -1,6 +1,6 @@
-package com.dtech.document.filter;
+package com.dtech.auth.filter;
 
-import com.dtech.document.dto.ApiKeyAuthentication;
+import com.dtech.auth.dto.ApiKeyAuthentication;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -23,7 +23,7 @@ public class ApiKeyAuthenticationFilter extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
-        log.info("Document service ApiAuthFilter");
+        log.info("Auth service ApiAuthFilter");
         String apiKey = request.getHeader(API_KEY_HEADER);
 
         if (apiKey != null && apiKey.equals(API_KEY)) {

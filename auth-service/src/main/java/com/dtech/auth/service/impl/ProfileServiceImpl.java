@@ -74,14 +74,19 @@ public class ProfileServiceImpl implements ProfileService {
 
         try {
             log.info("User profile request {} ", channelRequestDTO);
-            return applicationUserRepository.
-                    findByUsernameAndUserPersonalDetails_UserStatus(channelRequestDTO.getUsername().trim(),
-                            Status.ACTIVE).map((ap) -> {
+            String username = channelRequestDTO.getUsername().trim();
+
+            Optional<ApplicationUser> optionalUser = applicationUserRepository.findByUsernameAndUserPersonalDetails_UserStatus(username, Status.ACTIVE);
+
+            if (optionalUser.isEmpty()) {
+                log.info("Login request find by email {} ", username);
+                optionalUser = applicationUserRepository.findByPrimaryEmailIgnoreCaseAndUserPersonalDetails_UserStatus(username,Status.ACTIVE);
+                channelRequestDTO.setUsername(optionalUser.map(ApplicationUser::getUsername).orElse(""));
+            }
+
+            return optionalUser.map((ap) -> {
                         log.info("User profile request user found {} ", ap);
                         ApplicationUserDetailsResponseDTO applicationUserDetailsResponseDTO = ProfileMapper.mapApplicationUser(ap, documentFeignClient);
-                        if (ap.isExpectingFirstTimeLogging()) {
-                            updateApplicationUserDetails(ap);
-                        }
                         log.info("User profile request success{} ", applicationUserDetailsResponseDTO);
                         return ResponseEntity.ok().body(responseUtil.success((Object) applicationUserDetailsResponseDTO, messageSource.getMessage(ResponseMessageUtil.APPLICATION_PROFILE_SUCCESS, null, locale)));
                     }).orElseGet(() -> {
@@ -450,16 +455,5 @@ public class ProfileServiceImpl implements ProfileService {
         }
     }
 
-    @Transactional
-    protected void updateApplicationUserDetails(ApplicationUser applicationUser) {
-        try {
-            log.info("User profile request update user details {} ", applicationUser);
-            applicationUser.setExpectingFirstTimeLogging(false);
-            applicationUserRepository.saveAndFlush(applicationUser);
-        } catch (Exception e) {
-            log.error(e);
-            throw e;
-        }
-    }
 
 }

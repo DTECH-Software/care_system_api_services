@@ -55,7 +55,7 @@ public class ProfileMapper {
                 applicationUserDetailsResponseDTO.setProfileImg(documentDownloadResponseDTO);
                 log.info("application user get profile img downloaded");
             }
-
+            log.info("Success profile mapper {} ",applicationUserDetailsResponseDTO);
             return applicationUserDetailsResponseDTO;
         } catch (Exception e) {
             log.error(e);

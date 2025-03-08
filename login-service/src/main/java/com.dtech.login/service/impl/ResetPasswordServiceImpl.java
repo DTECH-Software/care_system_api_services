@@ -201,7 +201,7 @@ public class ResetPasswordServiceImpl implements ResetPasswordService {
             if (optionalUser.isEmpty()) {
                 log.info("Reset password find by email {} ", username);
                 optionalUser = applicationUserRepository.
-                        findByPrimaryEmailAndUserPersonalDetails_UserStatus(username,Status.ACTIVE);
+                        findByPrimaryEmailIgnoreCaseAndUserPersonalDetails_UserStatus(username,Status.ACTIVE);
                 resetPasswordDTO.setUsername(optionalUser.isEmpty() ? "" : optionalUser.get().getUsername());
             }
 
@@ -245,7 +245,7 @@ public class ResetPasswordServiceImpl implements ResetPasswordService {
             if (optionalUser.isEmpty()) {
                 log.info("OTP validate request find by email {} ", username);
                 optionalUser = applicationUserRepository
-                        .findByPrimaryEmailAndUserPersonalDetails_UserStatus(username,Status.ACTIVE);
+                        .findByPrimaryEmailIgnoreCaseAndUserPersonalDetails_UserStatus(username,Status.ACTIVE);
                 otpRequestDTO.setUsername(optionalUser.isEmpty() ? "" : optionalUser.get().getUsername());
             }
 

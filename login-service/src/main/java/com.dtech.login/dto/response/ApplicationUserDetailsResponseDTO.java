@@ -5,7 +5,7 @@
  * <p>
  */
 
-package com.dtech.auth.dto.response;
+package com.dtech.login.dto.response;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.Data;
@@ -14,6 +14,7 @@ import java.util.Date;
 
 @Data
 public class ApplicationUserDetailsResponseDTO {
+    private String accessToken;
     private String username;
     private String primaryEmail;
     private String primaryMobile;
@@ -23,7 +24,7 @@ public class ApplicationUserDetailsResponseDTO {
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private Date lastLoggedDate;
     private boolean expectingFirstTimeLogging;
-    //private boolean mbExpectingFirstTimeLogging;
+  //  private boolean mbExpectingFirstTimeLogging;
     private boolean expectingDependentsRegister;
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private Date passwordExpiredDate;

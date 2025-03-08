@@ -21,6 +21,6 @@ public interface ApplicationUserRepository extends JpaRepository<ApplicationUser
 //    Optional<ApplicationUser> findByPrimaryEmail(String email);
 
     Optional<ApplicationUser> findByUsernameAndUserPersonalDetails_UserStatus(String username, Status status);
-    Optional<ApplicationUser> findByPrimaryEmailAndUserPersonalDetails_UserStatus(String email, Status status);
+    Optional<ApplicationUser> findByPrimaryEmailIgnoreCaseAndUserPersonalDetails_UserStatus(String email, Status status);
 
 }

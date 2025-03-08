@@ -9,5 +9,6 @@ package com.dtech.login.enums;
 
 public enum Messages {
    SIGN_IN, //Login controller
-   PASSWORD_RESET_REQUEST,PASSWORD_RESET,PASSWORD_RESET_OTP_VALIDATION //Password reset controller
+   PASSWORD_RESET_REQUEST,PASSWORD_RESET,PASSWORD_RESET_OTP_VALIDATION, //Password reset controller
+   PROFILE_DETAILS
 }

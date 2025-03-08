@@ -12,8 +12,11 @@ import com.dtech.login.dto.request.LoginRequestDTO;
 import com.dtech.login.dto.request.ChannelMbDeviceDetailsDTO;
 import com.dtech.login.dto.response.AccessTokenResponseDTO;
 import com.dtech.login.dto.response.ApiResponse;
+import com.dtech.login.dto.response.ApplicationUserDetailsResponseDTO;
 import com.dtech.login.enums.Channel;
+import com.dtech.login.enums.Messages;
 import com.dtech.login.enums.Status;
+import com.dtech.login.feign.AuthFeignClient;
 import com.dtech.login.feign.TokenFeignClient;
 import com.dtech.login.mapper.CommonRequestMapper;
 import com.dtech.login.model.ApplicationPasswordPolicy;
@@ -30,6 +33,7 @@ import com.google.gson.Gson;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 
+import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.MessageSource;
 import org.springframework.http.HttpStatus;
@@ -39,6 +43,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.security.NoSuchAlgorithmException;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Optional;
 
 
@@ -71,6 +76,12 @@ public class LoginServiceImpl implements LoginService {
     @Autowired
     private final ApplicationUserDeviceDetailsRepository applicationUserDeviceDetailsRepository;
 
+    @Autowired
+    private final AuthFeignClient authFeignClient;
+
+    @Autowired
+    private final ModelMapper modelMapper;
+
 
     @Override
     @Transactional
@@ -85,7 +96,7 @@ public class LoginServiceImpl implements LoginService {
 
             if (optionalUser.isEmpty()) {
                 log.info("Login request find by email {} ", username);
-                optionalUser = applicationUserRepository.findByPrimaryEmailAndUserPersonalDetails_UserStatus(username,Status.ACTIVE);
+                optionalUser = applicationUserRepository.findByPrimaryEmailIgnoreCaseAndUserPersonalDetails_UserStatus(username,Status.ACTIVE);
                 loginRequestDTO.setUsername(optionalUser.isEmpty() ? "" : optionalUser.get().getUsername());
             }
             return optionalUser.map(user -> {
@@ -117,9 +128,13 @@ public class LoginServiceImpl implements LoginService {
                     log.info("After token mapper response {}", objectApiResponse);
                     updateSuccessLogin(user, loginRequestDTO);
                     log.info("After successful update application user");
-                    updateUserSession(user, gson.fromJson(gson.toJson(objectApiResponse), AccessTokenResponseDTO.class));
+                    AccessTokenResponseDTO accessTokenResponseDTO = gson.fromJson(gson.toJson(objectApiResponse), AccessTokenResponseDTO.class);
+                    updateUserSession(user,accessTokenResponseDTO );
                     log.info("After successful update application user session");
-                    return ResponseEntity.ok().body(responseUtil.success(objectApiResponse, messageSource.getMessage(ResponseMessageUtil.AUTHENTICATION_SUCCESS, null, locale)));
+                    ApplicationUserDetailsResponseDTO userProfileDetails = getUserProfileDetails(loginRequestDTO.getUsername(), loginRequestDTO);
+                    userProfileDetails.setAccessToken(accessTokenResponseDTO.getAccessToken());
+                    updateApplicationUserDetails(user);
+                    return ResponseEntity.ok().body(responseUtil.success((Object) userProfileDetails, messageSource.getMessage(ResponseMessageUtil.AUTHENTICATION_SUCCESS, null, locale)));
 
                 } else {
                     log.info("Processing login request password mismatch for username {} ", loginRequestDTO.getUsername());
@@ -132,6 +147,37 @@ public class LoginServiceImpl implements LoginService {
             });
 
         } catch (Exception e) {
+            log.error(e);
+            throw e;
+        }
+    }
+    @Transactional
+    protected void updateApplicationUserDetails(ApplicationUser applicationUser) {
+        try {
+            log.info("User profile request update user details {} ", applicationUser);
+            applicationUser.setExpectingFirstTimeLogging(false);
+            applicationUserRepository.saveAndFlush(applicationUser);
+        } catch (Exception e) {
+            log.error(e);
+            throw e;
+        }
+    }
+    @Transactional
+    protected ApplicationUserDetailsResponseDTO getUserProfileDetails(String username,LoginRequestDTO loginRequestDTO) {
+        try {
+           log.info("get user profile details by username login time{}", username);
+            ChannelRequestDTO channelRequestDTO= CommonRequestMapper.mapCommonRequest(loginRequestDTO, ChannelRequestDTO.class);
+            channelRequestDTO.setUsername(username);
+            channelRequestDTO.setMessage(Messages.PROFILE_DETAILS.name());
+            log.info("Before calling auth service {}", authFeignClient);
+            ResponseEntity<ApiResponse<Object>> profileDetailsResponse = authFeignClient.getProfileDetails(channelRequestDTO);
+            log.info("After response auth service {}", profileDetailsResponse);
+            Object objectApiResponse = ExtractApiResponseUtil.extractApiResponse(profileDetailsResponse);
+            log.info("After message mapper response {}", objectApiResponse);
+            ApplicationUserDetailsResponseDTO applicationUserDetailsResponseDTO = modelMapper.map(objectApiResponse, ApplicationUserDetailsResponseDTO.class);
+            log.info("Profile load status {}", applicationUserDetailsResponseDTO);
+            return applicationUserDetailsResponseDTO;
+        }catch (Exception e) {
             log.error(e);
             throw e;
         }
