@@ -20,7 +20,7 @@ import lombok.Data;
 @Conditional(selected = "channel", values = {"MB"}, required = {"deviceDetails"}, message = "Device details is required.")
 @Conditional(selected = "message",
         values = {
-                "SIGNUP_REGISTERED",
+                "SIGNUP",
                 "DASHBOARD",
                 "PROFILE_DETAILS",
                 "ADD_DEPENDENT",

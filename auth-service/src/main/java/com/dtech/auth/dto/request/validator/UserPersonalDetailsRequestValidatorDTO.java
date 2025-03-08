@@ -28,14 +28,16 @@ public class UserPersonalDetailsRequestValidatorDTO extends ChannelRequestValida
     private String confirmPassword;
     @NotBlank(message = "EPF no is required.")
     private String epfNo;
-    @NotBlank(message = "Title is required.")
-    private String title;
-    @NotBlank(message = "Initials is required.")
-    private String initials;
-    @NotBlank(message = "First name is required.")
-    private String firstName;
-    @NotBlank(message = "Last name is required.")
-    private String lastName;
+
+//    @NotBlank(message = "Title is required.")
+//    private String title;
+//    @NotBlank(message = "Initials is required.")
+//    private String initials;
+//    @NotBlank(message = "First name is required.")
+//    private String firstName;
+//    @NotBlank(message = "Last name is required.")
+//    private String lastName;
+
     @NotBlank(message = "NIC is required.")
     @Pattern(regexp = "^[0-9]{9}[Vv]?$|^[0-9]{12}$", message = "Invalid NIC number. It must be 9 digits optionally followed by 'V' or 'v', or exactly 12 digits.")
     private String nic;
@@ -45,12 +47,13 @@ public class UserPersonalDetailsRequestValidatorDTO extends ChannelRequestValida
     @NotBlank(message = "Mobile no is required.")
     @Pattern(regexp = "^(071|070|077|075|078|072|076)[0-9]{7}$", message = "Invalid mobile number. It must start with 071, 070, 077, 075, 078, 072, or 076, and be followed by 7 digits.")
     private String mobileNo;
-    @NotNull(message = "DOB is required.")
-    private Date dob;
-    @NotNull(message = "Address is required.")
-    @Valid
-    private UserAddressRequestValidatorDTO userAddress;
-    @NotNull(message = "Company details is required.")
-    @Valid
-    private UserCompanyDetailsRequestValidatorDTO userCompanyDetails;
+
+//    @NotNull(message = "DOB is required.")
+//    private Date dob;
+//    @NotNull(message = "Address is required.")
+//    @Valid
+//    private UserAddressRequestValidatorDTO userAddress;
+//    @NotNull(message = "Company details is required.")
+//    @Valid
+//    private UserCompanyDetailsRequestValidatorDTO userCompanyDetails;
 }

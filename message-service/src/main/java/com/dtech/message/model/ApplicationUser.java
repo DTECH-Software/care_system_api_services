@@ -102,11 +102,11 @@ public class ApplicationUser extends Audit implements Serializable {
     private Date otpAttemptResetTime;
 
     @OneToOne(fetch = FetchType.LAZY,cascade = CascadeType.ALL)
-    @JoinColumn(name = "onboarding_request",referencedColumnName = "id")
+    @JoinColumn(name = "onboarding_request",referencedColumnName = "id",nullable = false)
     private OnboardingRequest onboardingRequest;
 
     @OneToOne(fetch = FetchType.LAZY,cascade = CascadeType.ALL)
-    @JoinColumn(name = "user_personal_details",referencedColumnName = "id")
+    @JoinColumn(name = "user_personal_details",referencedColumnName = "id",nullable = false)
     private UserPersonalDetails userPersonalDetails;
 
     @ManyToOne(fetch = FetchType.LAZY,cascade = CascadeType.ALL)
