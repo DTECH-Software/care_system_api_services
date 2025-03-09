@@ -102,6 +102,7 @@ public class LoginServiceImpl implements LoginService {
             return optionalUser.map(user -> {
 
                 if(user.isReset() || user.getLoginStatus() == Status.INACTIVE) {
+                    log.info("user is reset state or inactive {}",user.getUsername());
                     return ResponseEntity.ok().body(responseUtil.error(null, 1005, messageSource.getMessage(ResponseMessageUtil.LOGIN_STATUS_INACTIVE_OR_EXPECTED_RESET, null, locale)));
                 }
 

@@ -12,4 +12,8 @@ import lombok.Data;
 @Data
 public class DocumentUploadResponseDTO {
     private Long id;
+    private String type;
+    private String doc;
+    private String fileName;
+    private String fileType;
 }

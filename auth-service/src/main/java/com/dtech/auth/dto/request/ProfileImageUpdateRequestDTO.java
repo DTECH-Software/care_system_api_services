@@ -13,5 +13,6 @@ import lombok.EqualsAndHashCode;
 @EqualsAndHashCode(callSuper = true)
 @Data
 public class ProfileImageUpdateRequestDTO extends ChannelRequestDTO{
-    private Long id;
+    private String type;
+    private String file;
 }

@@ -44,5 +44,6 @@ public class ResponseMessageUtil {
     public final static String APPLICATION_USER_DETAILS_NOT_CHANGE = "val.application.user.details.not.change";
     public final static String APPLICATION_USER_DETAILS_UPDATE_SUCCESS = "val.application.user.details.update.success";
     public final static String APPLICATION_USER_DETAILS_OTP_VERIFICATION_FAILED = "val.application.user.otp.verification.failed";
+    public final static String PROFILE_IMAGE_UPLOAD_FAILED = "val.image.upload.failed";
 
 }

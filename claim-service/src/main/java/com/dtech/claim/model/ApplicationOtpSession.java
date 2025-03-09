@@ -31,7 +31,7 @@ public class ApplicationOtpSession extends Audit implements Serializable {
     private String otp;
 
     @Column(name = "success",nullable = false)
-    private int success;
+    private boolean success;
 
     @Column(name = "validated",nullable = false)
     private boolean validated;

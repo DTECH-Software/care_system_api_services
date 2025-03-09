@@ -21,7 +21,12 @@ import java.util.List;
 
 @EqualsAndHashCode(callSuper = true)
 @Entity
-@Table(name = "application_user")
+@Table(name = "application_user" ,indexes = {
+@Index(name = "idx_username", columnList = "username"),
+@Index(name = "idx_primary_email", columnList = "primary_email"),
+@Index(name = "idx_user_status", columnList = "user_status"),
+@Index(name = "idx_expect_first_time_logging", columnList = "expecting_first_time_loging")
+})
 @Data
 public class ApplicationUser extends Audit implements Serializable {
 
@@ -116,7 +121,7 @@ public class ApplicationUser extends Audit implements Serializable {
     @JsonBackReference
     private List<ClaimsDependents> claimsDependents;
 
-    @OneToOne(fetch = FetchType.LAZY,cascade = CascadeType.ALL)
+    @OneToOne(fetch = FetchType.LAZY,cascade = CascadeType.REFRESH,targetEntity = Document.class)
     @JoinColumn(name = "profile_img",referencedColumnName = "id")
     private Document profileImg;
 

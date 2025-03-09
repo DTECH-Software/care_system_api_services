@@ -26,7 +26,10 @@ import org.springframework.context.MessageSource;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
+import javax.print.Doc;
+import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -80,19 +83,19 @@ public class ProfileServiceImpl implements ProfileService {
 
             if (optionalUser.isEmpty()) {
                 log.info("Login request find by email {} ", username);
-                optionalUser = applicationUserRepository.findByPrimaryEmailIgnoreCaseAndUserPersonalDetails_UserStatus(username,Status.ACTIVE);
+                optionalUser = applicationUserRepository.findByPrimaryEmailIgnoreCaseAndUserPersonalDetails_UserStatus(username, Status.ACTIVE);
                 channelRequestDTO.setUsername(optionalUser.map(ApplicationUser::getUsername).orElse(""));
             }
 
             return optionalUser.map((ap) -> {
-                        log.info("User profile request user found {} ", ap);
-                        ApplicationUserDetailsResponseDTO applicationUserDetailsResponseDTO = ProfileMapper.mapApplicationUser(ap, documentFeignClient);
-                        log.info("User profile request success{} ", applicationUserDetailsResponseDTO);
-                        return ResponseEntity.ok().body(responseUtil.success((Object) applicationUserDetailsResponseDTO, messageSource.getMessage(ResponseMessageUtil.APPLICATION_PROFILE_SUCCESS, null, locale)));
-                    }).orElseGet(() -> {
-                        log.info("User profile request user not found {} ", channelRequestDTO);
-                        return ResponseEntity.ok().body(responseUtil.error(null, 1014, messageSource.getMessage(ResponseMessageUtil.APPLICATION_USER_NOT_FOUND, null, locale)));
-                    });
+                log.info("User profile request user found {} ", ap);
+                ApplicationUserDetailsResponseDTO applicationUserDetailsResponseDTO = ProfileMapper.mapApplicationUser(ap, documentFeignClient);
+                log.info("User profile request success{} ", applicationUserDetailsResponseDTO);
+                return ResponseEntity.ok().body(responseUtil.success((Object) applicationUserDetailsResponseDTO, messageSource.getMessage(ResponseMessageUtil.APPLICATION_PROFILE_SUCCESS, null, locale)));
+            }).orElseGet(() -> {
+                log.info("User profile request user not found {} ", channelRequestDTO);
+                return ResponseEntity.ok().body(responseUtil.error(null, 1014, messageSource.getMessage(ResponseMessageUtil.APPLICATION_USER_NOT_FOUND, null, locale)));
+            });
         } catch (Exception e) {
             log.error(e);
             throw e;
@@ -195,20 +198,48 @@ public class ProfileServiceImpl implements ProfileService {
             log.info("User profile update request {} ", profileImageUpdateRequestDTO);
             return applicationUserRepository.
                     findByUsernameAndUserPersonalDetails_UserStatus(profileImageUpdateRequestDTO.getUsername(), Status.ACTIVE).map((user) -> {
-                        Object objectApiResponse = ProfileMapper.getDocuments(profileImageUpdateRequestDTO.getId(), documentFeignClient, true);
-                        Document document = gson.fromJson(gson.toJson(objectApiResponse), Document.class);
-                        log.info("User profile image inquiry success {} ", profileImageUpdateRequestDTO);
-                        user.setProfileImg(document);
-                        applicationUserRepository.saveAndFlush(user);
-                        log.info("User profile update successful {} ", user.getUsername());
-                        DocumentDownloadResponseDTO documentDownloadResponseDTO = gson.fromJson(gson.toJson(document), DocumentDownloadResponseDTO.class);
-                        log.info("User profile update profile load success {} ", user.getUsername());
-                        return ResponseEntity.ok().body(responseUtil.success((Object) documentDownloadResponseDTO, messageSource.getMessage(ResponseMessageUtil.PROFILE_IMAGE_UPDATE_SUCCESS, null, locale)));
+
+                        try {
+                            Document uploadedDocument = uploadProfileImage(profileImageUpdateRequestDTO.getType(), profileImageUpdateRequestDTO.getFile());
+                            if(uploadedDocument == null) {
+                                log.info("User profile image upload failed");
+                                return ResponseEntity.ok().body(responseUtil.error(null, 1039, messageSource.getMessage(ResponseMessageUtil.PROFILE_IMAGE_UPLOAD_FAILED, null, locale)));
+                            }
+                            user.setProfileImg(uploadedDocument);
+                            log.info("set image to profile image");
+                            applicationUserRepository.saveAndFlush(user);
+                            log.info("User profile update successful {} ", user.getUsername());
+                        //    DocumentDownloadResponseDTO documentDownloadResponseDTO = gson.fromJson(gson.toJson(uploadedDocument), DocumentDownloadResponseDTO.class);
+                            log.info("User profile update profile load success {} ", user.getUsername());
+                            return ResponseEntity.ok().body(responseUtil.success((Object) null, messageSource.getMessage(ResponseMessageUtil.PROFILE_IMAGE_UPDATE_SUCCESS, null, locale)));
+                        } catch (Exception e) {
+                            log.error(e);
+                            throw new RuntimeException(e);
+                        }
+
                     }).orElseGet(() -> {
                         log.info("User profile update request application user not found {} ", profileImageUpdateRequestDTO.getUsername());
                         return ResponseEntity.ok().body(responseUtil.error(null, 1014, messageSource.getMessage(ResponseMessageUtil.APPLICATION_USER_NOT_FOUND, null, locale)));
                     });
 
+        } catch (Exception e) {
+            log.error(e);
+            throw e;
+        }
+    }
+
+    protected Document uploadProfileImage(String tye, String file) throws IOException {
+        try {
+            log.info("Upload profile image");
+            MultipartFile multipartFile = MultipartFileUtil.convertToMultipartFile(file);
+            log.info("Before calling document service {}", documentFeignClient);
+            ResponseEntity<ApiResponse<Object>> documentResponse = documentFeignClient.upload(tye, multipartFile);
+            log.info("After response document service {}", documentResponse);
+            Object objectApiResponse = ExtractApiResponseUtil.extractApiResponse(documentResponse);
+            log.info("After document mapper response {}", objectApiResponse);
+            Document document = gson.fromJson(gson.toJson(objectApiResponse), Document.class);
+            log.info("image upload success {}", document);
+            return document;
         } catch (Exception e) {
             log.error(e);
             throw e;
@@ -230,7 +261,7 @@ public class ProfileServiceImpl implements ProfileService {
 //                            return ResponseEntity.ok().body(responseUtil.error(null, 1027, messageSource.getMessage(ResponseMessageUtil.APPLICATION_USER_DETAILS_NOT_CHANGE, null, locale)));
 //                        } else
 
-                            if (user.getOtpAttemptCount() > policy.getOtpExceedCount()) {
+                        if (user.getOtpAttemptCount() > policy.getOtpExceedCount()) {
                             log.info("Profile details update OTP request attempt exceed {} , {}", user.getOtpAttemptCount()
                                     , policy.getAttemptExceedCount());
                             long minutes = DateTimeUtil.getMinutes(DateTimeUtil.getYyyyMMddHHMmSsTimeFormatter(DateTimeUtil.getSeconds(user.getOtpAttemptResetTime(), 2700)));
@@ -254,7 +285,7 @@ public class ProfileServiceImpl implements ProfileService {
                         }
 
                         log.info("Profile update send otp session send message {}", user);
-                       return sendMessage(user, profileEditOtpRequestDTO.getPrimaryMobile(), locale, policy.getOtpExceedCount() - user.getOtpAttemptCount());
+                        return sendMessage(user, profileEditOtpRequestDTO.getPrimaryMobile(), locale, policy.getOtpExceedCount() - user.getOtpAttemptCount());
                     }).orElseGet(() -> {
                         log.info("Profile update request policy not found for username {} ", username);
                         return ResponseEntity.ok().body(responseUtil.error(null, 1010, messageSource.getMessage(ResponseMessageUtil.APPLICATION_USER_PASSWORD_POLICY_NOT_FOUND, null, locale)));
@@ -318,9 +349,9 @@ public class ProfileServiceImpl implements ProfileService {
                 if (user.getPrimaryEmail().equalsIgnoreCase(primaryEmail) && user.getPrimaryMobile().equalsIgnoreCase(primaryMobile)) {
                     log.info("User profile update request details not change {} ", profileEditRequestDTO);
                     return ResponseEntity.ok().body(responseUtil.error(null, 1027, messageSource.getMessage(ResponseMessageUtil.APPLICATION_USER_DETAILS_NOT_CHANGE, null, locale)));
-                }else if(user.getApplicationOtpSession() != null) {
+                } else if (user.getApplicationOtpSession() != null) {
                     ApplicationOtpSession applicationOtpSession = user.getApplicationOtpSession();
-                    if(!applicationOtpSession.getOtp().equalsIgnoreCase(profileEditRequestDTO.getOtp()) || !applicationOtpSession.isValidated()){
+                    if (!applicationOtpSession.getOtp().equalsIgnoreCase(profileEditRequestDTO.getOtp()) || !applicationOtpSession.isValidated()) {
                         log.info("User profile update request details not change {} ", profileEditRequestDTO);
                         return ResponseEntity.ok().body(responseUtil.error(null, 1028, messageSource.getMessage(ResponseMessageUtil.APPLICATION_USER_DETAILS_OTP_VERIFICATION_FAILED, null, locale)));
                     }
@@ -376,7 +407,7 @@ public class ProfileServiceImpl implements ProfileService {
             log.info("After message mapper response {}", objectApiResponse);
             MessageResponseDTO messageResponseDTO = gson.fromJson(gson.toJson(objectApiResponse), MessageResponseDTO.class);
             log.info("Otp send status {}", messageResponseDTO);
-            ApplicationOtpSession applicationOtpSession = updateOtpSession(otp, messageResponseDTO != null ? messageResponseDTO.getSuccess() : 0);
+            ApplicationOtpSession applicationOtpSession = updateOtpSession(otp, messageResponseDTO != null ? messageResponseDTO.isSuccess() : false);
             updateApplicationUser(applicationUser, applicationOtpSession);
             log.info("Application OTP session updated successfully");
             if (objectApiResponse != null) {
@@ -390,7 +421,7 @@ public class ProfileServiceImpl implements ProfileService {
     }
 
     @Transactional
-    protected ApplicationOtpSession updateOtpSession(String otp, int state) {
+    protected ApplicationOtpSession updateOtpSession(String otp, boolean state) {
         try {
             log.info("Processing profile edt request gen otp application otp session update {} ", otp);
             ApplicationOtpSession applicationOtpSession = new ApplicationOtpSession();

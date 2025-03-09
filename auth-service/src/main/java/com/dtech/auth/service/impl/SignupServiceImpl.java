@@ -469,7 +469,7 @@ public class SignupServiceImpl implements SignupService {
             log.info("After message mapper response {}", objectApiResponse);
             MessageResponseDTO messageResponseDTO = gson.fromJson(gson.toJson(objectApiResponse), MessageResponseDTO.class);
             log.info("Otp send status {}", messageResponseDTO);
-            ApplicationOtpSession applicationOtpSession = updateOtpSession(otp, messageResponseDTO != null ? messageResponseDTO.getSuccess() : 0);
+            ApplicationOtpSession applicationOtpSession = updateOtpSession(otp, messageResponseDTO != null ? messageResponseDTO.isSuccess() : false);
             updateOnboardingVerifiedMobile(signupOtpRequestDTO, applicationOtpSession);
             log.info("Application OTP session updated successfully - onboarding verified mobile {}", otp);
             if (objectApiResponse != null) {
@@ -500,7 +500,7 @@ public class SignupServiceImpl implements SignupService {
     }
 
     @Transactional
-    protected ApplicationOtpSession updateOtpSession(String otp, int state) {
+    protected ApplicationOtpSession updateOtpSession(String otp, boolean state) {
         try {
             log.info("Processing onboarding otp request  application otp session update {} ", otp);
             ApplicationOtpSession applicationOtpSession = new ApplicationOtpSession();

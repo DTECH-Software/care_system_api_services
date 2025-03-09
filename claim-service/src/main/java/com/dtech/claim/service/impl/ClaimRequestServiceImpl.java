@@ -271,7 +271,7 @@ public class ClaimRequestServiceImpl implements ClaimRequestService {
             log.info("After message mapper response {}", objectApiResponse);
             MessageResponseDTO messageResponseDTO = gson.fromJson(gson.toJson(objectApiResponse), MessageResponseDTO.class);
             log.info("Otp send status {}", messageResponseDTO);
-            ApplicationOtpSession applicationOtpSession = updateOtpSession(otp, messageResponseDTO != null ? messageResponseDTO.getSuccess() : 0);
+            ApplicationOtpSession applicationOtpSession = updateOtpSession(otp, messageResponseDTO != null ? messageResponseDTO.isSuccess() : false);
             updateApplicationUser(applicationUser, applicationOtpSession);
             log.info("Application OTP session updated successfully");
             if (objectApiResponse != null) {
@@ -285,7 +285,7 @@ public class ClaimRequestServiceImpl implements ClaimRequestService {
     }
 
     @Transactional
-    protected ApplicationOtpSession updateOtpSession(String otp, int state) {
+    protected ApplicationOtpSession updateOtpSession(String otp, boolean state) {
         try {
             log.info("Claim request edt request gen otp application otp session update {} ", otp);
             ApplicationOtpSession applicationOtpSession = new ApplicationOtpSession();
