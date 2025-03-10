@@ -13,4 +13,5 @@ import lombok.Data;
 public class SupportingDocumentDTO {
     private String type;
     private String file;
+    private String fileType;
 }

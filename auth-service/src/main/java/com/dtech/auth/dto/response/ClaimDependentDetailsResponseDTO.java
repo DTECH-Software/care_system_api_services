@@ -17,6 +17,8 @@ public class ClaimDependentDetailsResponseDTO {
     private Long id;
     private String dependentCategory;
     private String dependentCategoryDescription;
+    private String title;
+    private String titleDescription;
     private String initials;
     private String firstName;
     private String lastName;

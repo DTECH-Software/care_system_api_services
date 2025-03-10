@@ -82,6 +82,8 @@ public class ProfileMapper {
                 claimDependentDetailsResponseDTO.setRelationCategoryDescription(ifNotOrEmpty(String.valueOf(dependents.getRelationCategory().getDescription())));
                 claimDependentDetailsResponseDTO.setStatus(ifNotOrEmpty(String.valueOf(dependents.getStatus())));
                 claimDependentDetailsResponseDTO.setStatusDescription(ifNotOrEmpty(String.valueOf(dependents.getStatus().getDescription())));
+                claimDependentDetailsResponseDTO.setTitleDescription(Title.valueOf(dependents.getTitle().name()).getDescription());
+
                 log.info("claim dependent details call get image method");
                 List<DocumentDownloadResponseDTO> collect = dependents.getDocuments().stream().map((document -> {
                     log.info("inside document mapper");

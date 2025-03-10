@@ -10,11 +10,11 @@ package com.dtech.auth.dto.request.validator;
 import com.dtech.auth.enums.DependentCategory;
 import com.dtech.auth.enums.Gender;
 import com.dtech.auth.enums.RelationCategory;
+import com.dtech.auth.enums.Title;
 import com.dtech.auth.validator.Conditional;
 import com.dtech.auth.validator.ValidAge;
 import com.dtech.auth.validator.ValidEnum;
 import com.dtech.auth.validator.ValidPastDays;
-import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
@@ -31,6 +31,9 @@ public class ClaimDependentDetailsRequestValidatorDTO {
     @NotBlank(message = "Dependent category is required.")
     @ValidEnum(enumClass = DependentCategory.class,message = "Invalid dependent category.")
     private String dependentCategory;
+    @NotBlank(message = "Title is required.")
+    @ValidEnum(enumClass = Title.class,message = "Invalid title.")
+    private String title;
     @NotBlank(message = "Initials is required.")
     private String initials;
     @NotBlank(message = "First name is required.")

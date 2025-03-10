@@ -32,6 +32,10 @@ public class ClaimsDependents extends Audit implements Serializable {
     @Enumerated(EnumType.STRING)
     private DependentCategory dependentCategory;
 
+    @Column(name = "title",nullable = false)
+    @Enumerated(EnumType.STRING)
+    private Title title;
+
     @Column(name = "initials",nullable = false)
     private String initials;
 

@@ -15,6 +15,7 @@ import java.util.List;
 @Data
 public class ClaimDependentDetailsRequestDTO {
     private String dependentCategory;
+    private String title;
     private String initials;
     private String firstName;
     private String lastName;
