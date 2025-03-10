@@ -9,7 +9,8 @@ package com.dtech.auth.enums;
 
 public enum Gender implements DescribableEnum{
     MALE("Male"),
-    FEMALE("Female");
+    FEMALE("Female"),
+    OTHER("Other");
 
     private final String description;
 
