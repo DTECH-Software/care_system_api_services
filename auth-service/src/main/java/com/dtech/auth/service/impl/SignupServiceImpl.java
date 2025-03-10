@@ -114,7 +114,7 @@ public class SignupServiceImpl implements SignupService {
             splashData.put("docTypes", getEnumList(DocType.class));
             splashData.put("relationCategories", getEnumList(RelationCategory.class));
             log.info("Splash request success{} ", channelRequestDTO);
-            return ResponseEntity.ok().body(responseUtil.success(splashData, messageSource.getMessage(ResponseMessageUtil.CLAIM_DEPENDENT_ADDED_SUCCESS, null, locale)));
+            return ResponseEntity.ok().body(responseUtil.success(splashData, messageSource.getMessage(ResponseMessageUtil.SPLASH_SUCCESS, null, locale)));
 
         } catch (Exception e) {
             log.error(e);

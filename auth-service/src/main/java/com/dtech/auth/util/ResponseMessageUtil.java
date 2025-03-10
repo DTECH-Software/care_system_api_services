@@ -26,6 +26,7 @@ public class ResponseMessageUtil {
     public final static String USERNAME_POLICY_NOT_FOUND= "val.username.policy.notfound";
     public final static String PRIMARY_MOBILE_ALREADY_IN_USE= "val.primary.mobile.already.in.use";
     public final static String PRIMARY_EMAIL_ALREADY_IN_USE= "val.primary.email.already.in.use";
+    public final static String SPLASH_SUCCESS= "val.splash.success";
 
     /*profile*/
     public final static String APPLICATION_USER_NOT_FOUND = "val.application.user.not.found";
