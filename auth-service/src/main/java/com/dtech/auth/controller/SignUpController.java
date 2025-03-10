@@ -7,14 +7,8 @@
 
 package com.dtech.auth.controller;
 
-import com.dtech.auth.dto.request.OtpRequestDTO;
-import com.dtech.auth.dto.request.SignupInquiryDTO;
-import com.dtech.auth.dto.request.SignupOtpRequestDTO;
-import com.dtech.auth.dto.request.UserPersonalDetailsRequestDTO;
-import com.dtech.auth.dto.request.validator.OtpRequestValidatorDTO;
-import com.dtech.auth.dto.request.validator.SignupInquiryValidatorDTO;
-import com.dtech.auth.dto.request.validator.SignupOtpRequestValidatorDTO;
-import com.dtech.auth.dto.request.validator.UserPersonalDetailsRequestValidatorDTO;
+import com.dtech.auth.dto.request.*;
+import com.dtech.auth.dto.request.validator.*;
 import com.dtech.auth.dto.response.ApiResponse;
 import com.dtech.auth.service.SignupService;
 import com.google.gson.Gson;
@@ -40,6 +34,13 @@ public class SignUpController {
 
     @Autowired
     private final Gson gson;
+
+    @PostMapping(path = "/splash",produces = MediaType.APPLICATION_JSON_VALUE,consumes = MediaType.APPLICATION_JSON_VALUE)
+    @ApiOperation(value = "Handle splash request ",notes = "Splash request success or failed")
+    public ResponseEntity<ApiResponse<Object>> splash(@RequestBody @Valid ChannelRequestValidatorDTO channelRequestValidatorDTO, Locale locale) {
+        log.info("Splash request controller {} ", channelRequestValidatorDTO);
+        return signupService.splash(gson.fromJson(gson.toJson(channelRequestValidatorDTO), ChannelRequestDTO.class), locale);
+    }
 
     @PostMapping(path = "/inquiry",produces = MediaType.APPLICATION_JSON_VALUE,consumes = MediaType.APPLICATION_JSON_VALUE)
     @ApiOperation(value = "Handle signup inquiry request request ",notes = "Inquiry for signup request success or failed")

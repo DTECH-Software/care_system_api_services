@@ -28,10 +28,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
-import javax.print.Doc;
 import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
+
 
 @Service
 @Log4j2
@@ -57,9 +57,6 @@ public class ProfileServiceImpl implements ProfileService {
     private final Gson gson;
 
     @Autowired
-    private final DocumentRepository documentRepository;
-
-    @Autowired
     private final DocumentFeignClient documentFeignClient;
 
     @Autowired
@@ -72,7 +69,7 @@ public class ProfileServiceImpl implements ProfileService {
     private final MessageFeignClient messageFeignClient;
 
     @Override
-    @Transactional
+    @Transactional(readOnly = true)
     public ResponseEntity<ApiResponse<Object>> profile(ChannelRequestDTO channelRequestDTO, Locale locale) {
 
         try {
@@ -89,7 +86,8 @@ public class ProfileServiceImpl implements ProfileService {
 
             return optionalUser.map((ap) -> {
                 log.info("User profile request user found {} ", ap);
-                ApplicationUserDetailsResponseDTO applicationUserDetailsResponseDTO = ProfileMapper.mapApplicationUser(ap, documentFeignClient);
+                ProfileMapper profileMapper = new ProfileMapper();
+                ApplicationUserDetailsResponseDTO applicationUserDetailsResponseDTO = profileMapper.mapApplicationUser(ap);
                 log.info("User profile request success{} ", applicationUserDetailsResponseDTO);
                 return ResponseEntity.ok().body(responseUtil.success((Object) applicationUserDetailsResponseDTO, messageSource.getMessage(ResponseMessageUtil.APPLICATION_PROFILE_SUCCESS, null, locale)));
             }).orElseGet(() -> {
@@ -137,13 +135,40 @@ public class ProfileServiceImpl implements ProfileService {
                                     log.info("User profile add dependent request out of wife document {} ", claimDependentRequestDTO);
                                     return ResponseEntity.ok().body(responseUtil.error(null, 1023, messageSource.getMessage(ResponseMessageUtil.CLAIM_DEPENDENT_WIFE_DOCUMENT_IS_EMPTY_OR_OUT_OF_RANGE, new Object[]{detailsRequestDTO.getFirstName()}, locale)));
 
+                                } else {
+
+                                    boolean birth = detailsRequestDTO.getDocuments().stream().anyMatch(val -> {
+                                        return val.getType().equals(DocType.BIRTH.name());
+                                    });
+
+                                    boolean married = detailsRequestDTO.getDocuments().stream().anyMatch(val -> {
+                                        return val.getType().equals(DocType.MARRIED.name());
+                                    });
+
+                                    if (!birth && !married) {
+                                        log.info("Birth and married certificate missing");
+                                        return ResponseEntity.ok().body(responseUtil.error(null, 1040, messageSource.getMessage(ResponseMessageUtil.BIRTH_MARRIED_CERTIFICATE_MISSING, new Object[]{detailsRequestDTO.getFirstName()}, locale)));
+                                    } else if (!birth) {
+                                        log.info("Birth certificate missing");
+                                        return ResponseEntity.ok().body(responseUtil.error(null, 1040, messageSource.getMessage(ResponseMessageUtil.BIRTH_CERTIFICATE_MISSING, new Object[]{detailsRequestDTO.getFirstName()}, locale)));
+                                    } else if (!married) {
+                                        log.info("Married certificate missing");
+                                        return ResponseEntity.ok().body(responseUtil.error(null, 1040, messageSource.getMessage(ResponseMessageUtil.MARRIED_CERTIFICATE_MISSING, new Object[]{detailsRequestDTO.getFirstName()}, locale)));
+                                    }
                                 }
                             } else if (detailsRequestDTO.getDependentCategory().equalsIgnoreCase(DependentCategory.PARENTS.name())
                                     || detailsRequestDTO.getDependentCategory().equalsIgnoreCase(DependentCategory.CHILDREN.name())) {
                                 if (detailsRequestDTO.getDocuments().size() != 1) {
                                     log.info("User profile add dependent request out of parent or child document {} ", claimDependentRequestDTO);
                                     return ResponseEntity.ok().body(responseUtil.error(null, 1023, messageSource.getMessage(ResponseMessageUtil.CLAIM_DEPENDENT_OTHER_RELATION_CATEGORY_DOCUMENT_IS_EMPTY_OR_OUT_OF_RANGE, new Object[]{detailsRequestDTO.getFirstName()}, locale)));
-
+                                } else {
+                                    boolean birth = detailsRequestDTO.getDocuments().stream().anyMatch(val -> {
+                                        return val.getType().equals(DocType.BIRTH.name());
+                                    });
+                                    if (!birth) {
+                                        log.info("Birth certificate missing");
+                                        return ResponseEntity.ok().body(responseUtil.error(null, 1040, messageSource.getMessage(ResponseMessageUtil.BIRTH_CERTIFICATE_MISSING, new Object[]{detailsRequestDTO.getFirstName()}, locale)));
+                                    }
                                 }
                             }
 
@@ -201,7 +226,7 @@ public class ProfileServiceImpl implements ProfileService {
 
                         try {
                             Document uploadedDocument = uploadProfileImage(profileImageUpdateRequestDTO.getType(), profileImageUpdateRequestDTO.getFile());
-                            if(uploadedDocument == null) {
+                            if (uploadedDocument == null) {
                                 log.info("User profile image upload failed");
                                 return ResponseEntity.ok().body(responseUtil.error(null, 1039, messageSource.getMessage(ResponseMessageUtil.PROFILE_IMAGE_UPLOAD_FAILED, null, locale)));
                             }
@@ -209,9 +234,9 @@ public class ProfileServiceImpl implements ProfileService {
                             log.info("set image to profile image");
                             applicationUserRepository.saveAndFlush(user);
                             log.info("User profile update successful {} ", user.getUsername());
-                        //    DocumentDownloadResponseDTO documentDownloadResponseDTO = gson.fromJson(gson.toJson(uploadedDocument), DocumentDownloadResponseDTO.class);
+                            DocumentDownloadResponseDTO documentDownloadResponseDTO = gson.fromJson(gson.toJson(uploadedDocument), DocumentDownloadResponseDTO.class);
                             log.info("User profile update profile load success {} ", user.getUsername());
-                            return ResponseEntity.ok().body(responseUtil.success((Object) null, messageSource.getMessage(ResponseMessageUtil.PROFILE_IMAGE_UPDATE_SUCCESS, null, locale)));
+                            return ResponseEntity.ok().body(responseUtil.success((Object) documentDownloadResponseDTO, messageSource.getMessage(ResponseMessageUtil.PROFILE_IMAGE_UPDATE_SUCCESS, null, locale)));
                         } catch (Exception e) {
                             log.error(e);
                             throw new RuntimeException(e);
@@ -458,8 +483,18 @@ public class ProfileServiceImpl implements ProfileService {
                 ClaimsDependents claimsDependents = gson.fromJson(gson.toJson(claimDependentDetailsRequestDTO), ClaimsDependents.class);
                 claimsDependents.setStatus(Workflow.UNDER_REVIEW);
                 claimsDependents.setApplicationUser(applicationUser);
+                List<Document> uploadSupportingDocumentFromDependent = claimDependentDetailsRequestDTO.getDocuments().stream().map(doc -> {
+                    log.info("Upload supporting document from dependent");
+                    try {
+                        return uploadProfileImage(doc.getType(), doc.getFile());
+                    } catch (IOException e) {
+                        log.error(e);
+                        throw new RuntimeException(e);
+                    }
+                }).collect(Collectors.toList());
+
                 claimsDependents.setDocuments(
-                        saveClaimDependentDocument(claimDependentDetailsRequestDTO.getDocuments())
+                        uploadSupportingDocumentFromDependent
                 );
                 log.info("User claim dependent attachment  save {} ", claimDependentDetailsRequestDTO);
                 claimDependentsRepository.saveAndFlush(claimsDependents);
@@ -472,19 +507,19 @@ public class ProfileServiceImpl implements ProfileService {
         }
     }
 
-    @Transactional
-    protected List<Document> saveClaimDependentDocument(List<SupportingDocumentDTO> supportingDocumentDTO) {
-        try {
-            log.info("User dependent document save {} ", supportingDocumentDTO);
-
-            return supportingDocumentDTO.stream().map(val -> documentRepository.findById(val.getId())
-                    .orElseThrow(() -> new RuntimeException("Document not found with id " + val.getId()))).collect(Collectors.toList());
-
-        } catch (Exception e) {
-            log.error(e);
-            throw e;
-        }
-    }
+//    @Transactional
+//    protected List<Document> saveClaimDependentDocument(List<SupportingDocumentDTO> supportingDocumentDTO) {
+//        try {
+//            log.info("User dependent document save {} ", supportingDocumentDTO);
+//
+//            return supportingDocumentDTO.stream().map(val -> documentRepository.findById(val.getId())
+//                    .orElseThrow(() -> new RuntimeException("Document not found with id " + val.getId()))).collect(Collectors.toList());
+//
+//        } catch (Exception e) {
+//            log.error(e);
+//            throw e;
+//        }
+//    }
 
 
 }

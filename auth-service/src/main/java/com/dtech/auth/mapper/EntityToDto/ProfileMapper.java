@@ -8,7 +8,6 @@
 package com.dtech.auth.mapper.EntityToDto;
 
 
-import com.dtech.auth.dto.request.DocumentDownloadRequestDTO;
 import com.dtech.auth.dto.response.*;
 import com.dtech.auth.enums.Gender;
 import com.dtech.auth.enums.Title;
@@ -16,13 +15,12 @@ import com.dtech.auth.feign.DocumentFeignClient;
 import com.dtech.auth.model.ApplicationUser;
 import com.dtech.auth.model.ClaimsDependents;
 import com.dtech.auth.util.DateTimeUtil;
-import com.dtech.auth.util.ExtractApiResponseUtil;
 import com.google.gson.Gson;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.modelmapper.ModelMapper;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.sql.Date;
 import java.util.List;
@@ -38,7 +36,8 @@ public class ProfileMapper {
     private static final ModelMapper modelMapper = new ModelMapper();
     private static final Gson gson = new Gson();
 
-    public static ApplicationUserDetailsResponseDTO mapApplicationUser(ApplicationUser applicationUser, DocumentFeignClient documentFeignClient) {
+    @Transactional(readOnly = true)
+    public ApplicationUserDetailsResponseDTO mapApplicationUser(ApplicationUser applicationUser) {
         try {
             log.info("application user mapper");
             ApplicationUserDetailsResponseDTO applicationUserDetailsResponseDTO = modelMapper.map(applicationUser, ApplicationUserDetailsResponseDTO.class);
@@ -50,12 +49,11 @@ public class ProfileMapper {
 
             if (applicationUser.getProfileImg() != null) {
                 log.info("application user get profile img");
-                Object documents = getDocuments(applicationUser.getProfileImg().getId(), documentFeignClient, false);
-                DocumentDownloadResponseDTO documentDownloadResponseDTO = gson.fromJson(gson.toJson(documents), DocumentDownloadResponseDTO.class);
+                DocumentDownloadResponseDTO documentDownloadResponseDTO = gson.fromJson(gson.toJson(applicationUser.getProfileImg()), DocumentDownloadResponseDTO.class);
                 applicationUserDetailsResponseDTO.setProfileImg(documentDownloadResponseDTO);
                 log.info("application user get profile img downloaded");
             }
-            log.info("Success profile mapper {} ",applicationUserDetailsResponseDTO);
+            log.info("Success profile mapper {} ", applicationUserDetailsResponseDTO);
             return applicationUserDetailsResponseDTO;
         } catch (Exception e) {
             log.error(e);
@@ -86,9 +84,8 @@ public class ProfileMapper {
                 claimDependentDetailsResponseDTO.setStatusDescription(ifNotOrEmpty(String.valueOf(dependents.getStatus().getDescription())));
                 log.info("claim dependent details call get image method");
                 List<DocumentDownloadResponseDTO> collect = dependents.getDocuments().stream().map((document -> {
-                    log.info("inside document call get document method");
-                    Object documents = getDocuments(document.getId(), documentFeignClient, false);
-                    return gson.fromJson(gson.toJson(documents), DocumentDownloadResponseDTO.class);
+                    log.info("inside document mapper");
+                    return gson.fromJson(gson.toJson(document), DocumentDownloadResponseDTO.class);
                 })).collect(Collectors.toList());
                 claimDependentDetailsResponseDTO.setDocuments(collect);
                 log.info("claim dependent details call get documents method success map");
@@ -115,18 +112,18 @@ public class ProfileMapper {
 //        }
 //    }
 
-    public static Object getDocuments(Long id, DocumentFeignClient documentFeignClient, boolean state) {
-        try {
-            log.info("documents download from auth {} ", id);
-            id = id != null ? id : 0;
-            ResponseEntity<ApiResponse<Object>> image = documentFeignClient.getImage(new DocumentDownloadRequestDTO(id, state));
-            log.info("documents download from auth after response from extract {} ", id);
-            Object objectApiResponse = ExtractApiResponseUtil.extractApiResponse(image);
-            log.info("After message mapper response {}", objectApiResponse);
-            return objectApiResponse;
-        } catch (Exception e) {
-            log.error(e);
-            throw e;
-        }
-    }
+//    public static Object getDocuments(Long id, DocumentFeignClient documentFeignClient, boolean state) {
+//        try {
+//            log.info("documents download from auth {} ", id);
+//            id = id != null ? id : 0;
+//            ResponseEntity<ApiResponse<Object>> image = documentFeignClient.getImage(new DocumentDownloadRequestDTO(id, state));
+//            log.info("documents download from auth after response from extract {} ", id);
+//            Object objectApiResponse = ExtractApiResponseUtil.extractApiResponse(image);
+//            log.info("After message mapper response {}", objectApiResponse);
+//            return objectApiResponse;
+//        } catch (Exception e) {
+//            log.error(e);
+//            throw e;
+//        }
+//    }
 }

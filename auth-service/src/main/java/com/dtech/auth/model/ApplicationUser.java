@@ -121,7 +121,7 @@ public class ApplicationUser extends Audit implements Serializable {
     @JsonBackReference
     private List<ClaimsDependents> claimsDependents;
 
-    @OneToOne(fetch = FetchType.LAZY,cascade = CascadeType.REFRESH,targetEntity = Document.class)
+    @OneToOne(fetch = FetchType.EAGER,cascade = CascadeType.REFRESH,targetEntity = Document.class)
     @JoinColumn(name = "profile_img",referencedColumnName = "id")
     private Document profileImg;
 

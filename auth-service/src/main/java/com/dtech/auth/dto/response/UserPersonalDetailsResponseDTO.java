@@ -21,6 +21,7 @@ public class UserPersonalDetailsResponseDTO {
     private String nic;
     private String email;
     private String mobileNo;
+    @JsonFormat(pattern = "yyyy-MM-dd")
     private Date dob;
     private long age;
     private String gender;

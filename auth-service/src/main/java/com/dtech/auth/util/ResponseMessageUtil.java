@@ -45,5 +45,8 @@ public class ResponseMessageUtil {
     public final static String APPLICATION_USER_DETAILS_UPDATE_SUCCESS = "val.application.user.details.update.success";
     public final static String APPLICATION_USER_DETAILS_OTP_VERIFICATION_FAILED = "val.application.user.otp.verification.failed";
     public final static String PROFILE_IMAGE_UPLOAD_FAILED = "val.image.upload.failed";
+    public final static String BIRTH_MARRIED_CERTIFICATE_MISSING = "val.birth.married.certificate.missing";
+    public final static String BIRTH_CERTIFICATE_MISSING = "val.birth.certificate.missing";
+    public final static String MARRIED_CERTIFICATE_MISSING = "val.married.certificate.missing";
 
 }

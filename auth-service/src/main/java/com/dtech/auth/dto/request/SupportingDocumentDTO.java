@@ -11,5 +11,6 @@ import lombok.Data;
 
 @Data
 public class SupportingDocumentDTO {
-    private Long id;
+    private String type;
+    private String file;
 }

@@ -13,10 +13,7 @@ import com.dtech.auth.dto.response.ApiResponse;
 import com.dtech.auth.dto.response.MessageResponseDTO;
 import com.dtech.auth.dto.response.PolicyResponseDTO;
 import com.dtech.auth.dto.response.UserPersonalDetailsResponseDTO;
-import com.dtech.auth.enums.Gender;
-import com.dtech.auth.enums.NotificationsType;
-import com.dtech.auth.enums.Status;
-import com.dtech.auth.enums.Title;
+import com.dtech.auth.enums.*;
 import com.dtech.auth.feign.MessageFeignClient;
 import com.dtech.auth.model.*;
 import com.dtech.auth.repository.*;
@@ -39,10 +36,9 @@ import org.springframework.transaction.annotation.Transactional;
 import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
+
+import static com.dtech.auth.util.EnumUtil.getEnumList;
 
 @Service
 @Log4j2
@@ -102,6 +98,29 @@ public class SignupServiceImpl implements SignupService {
 
     @Autowired
     private final ObjectMapper objectMapper;
+
+    @Override
+    public ResponseEntity<ApiResponse<Object>> splash(ChannelRequestDTO channelRequestDTO, Locale locale) {
+
+        try {
+            log.info("Splash Request {} ", channelRequestDTO);
+            Map<String, Object> splashData = new HashMap<>();
+            splashData.put("passwordPolicy", applicationPasswordPolicyRepository.findPasswordPolicy().orElse(null));
+            splashData.put("usernamePolicy", applicationUsernamePolicyRepository.findUsernamePolicy().orElse(null));
+
+            splashData.put("gender", getEnumList(Gender.class));
+            splashData.put("dependents", getEnumList(DependentCategory.class));
+            splashData.put("title", getEnumList(Title.class));
+            splashData.put("docTypes", getEnumList(DocType.class));
+            splashData.put("relationCategories", getEnumList(RelationCategory.class));
+            log.info("Splash request success{} ", channelRequestDTO);
+            return ResponseEntity.ok().body(responseUtil.success(splashData, messageSource.getMessage(ResponseMessageUtil.CLAIM_DEPENDENT_ADDED_SUCCESS, null, locale)));
+
+        } catch (Exception e) {
+            log.error(e);
+            throw e;
+        }
+    }
 
     @Override
     @Transactional
