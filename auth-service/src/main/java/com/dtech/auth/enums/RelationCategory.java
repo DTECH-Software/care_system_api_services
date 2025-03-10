@@ -1,6 +1,6 @@
 package com.dtech.auth.enums;
 
-public enum RelationCategory {
+public enum RelationCategory implements DescribableEnum {
     MOTHER("Mother"),
     FATHER("Father"),
     CHILD("Child"),

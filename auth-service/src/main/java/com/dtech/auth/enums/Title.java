@@ -1,6 +1,6 @@
 package com.dtech.auth.enums;
 
-public enum Title {
+public enum Title implements DescribableEnum {
     MR("Mr"),
     MRS("Mrs"),
     MISS("Miss"),

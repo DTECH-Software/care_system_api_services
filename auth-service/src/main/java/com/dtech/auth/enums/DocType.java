@@ -1,6 +1,6 @@
 package com.dtech.auth.enums;
 
-public enum DocType {
+public enum DocType implements DescribableEnum{
     BIRTH("Birth"),
     MARRIED("Married"),
     PROFILE("Profile");

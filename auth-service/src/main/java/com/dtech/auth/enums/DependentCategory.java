@@ -7,7 +7,7 @@
 
 package com.dtech.auth.enums;
 
-public enum DependentCategory {
+public enum DependentCategory implements DescribableEnum{
     PARENTS("Parents"),
     CHILDREN("Children"),
     WIFE("Wife");
