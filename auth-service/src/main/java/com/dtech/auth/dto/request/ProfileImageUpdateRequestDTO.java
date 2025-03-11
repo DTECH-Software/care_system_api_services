@@ -15,4 +15,6 @@ import lombok.EqualsAndHashCode;
 public class ProfileImageUpdateRequestDTO extends ChannelRequestDTO{
     private String type;
     private String file;
+    private String fileType;
+    private String fileName;
 }

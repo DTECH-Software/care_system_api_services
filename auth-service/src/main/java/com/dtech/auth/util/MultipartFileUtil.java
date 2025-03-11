@@ -17,10 +17,10 @@ import java.util.Base64;
 @Log4j2
 public class MultipartFileUtil {
 
-    public static MultipartFile convertToMultipartFile(String base64File) throws IOException {
+    public static MultipartFile convertToMultipartFile(String base64File,String fileType,String fileName) throws IOException {
         log.info("converting file " + base64File);
         byte[] decodedBytes = Base64.getDecoder().decode(base64File);
-        return new MockMultipartFile("file", "profileImage.jpg", "image/jpeg", decodedBytes);
+        return new MockMultipartFile("file", fileName, fileType, decodedBytes);
     }
 
 }

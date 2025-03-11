@@ -9,6 +9,7 @@ package com.dtech.auth.dto.request.validator;
 
 import com.dtech.auth.enums.DocType;
 import com.dtech.auth.validator.ValidEnum;
+import com.dtech.auth.validator.ValidFileType;
 import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 
@@ -20,6 +21,8 @@ public class SupportingDocumentValidatorDTO {
     @NotBlank(message = "File is required.")
     private String file;
     @NotBlank(message = "File type is required.")
+    @ValidFileType(message = "Only PNG, JPEG, JPG, and PDF file types are allowed.")
     private String fileType;
-
+    @NotBlank(message = "File name is required.")
+    private String fileName;
 }

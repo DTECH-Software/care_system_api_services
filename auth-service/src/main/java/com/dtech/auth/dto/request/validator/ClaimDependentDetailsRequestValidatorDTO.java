@@ -11,10 +11,7 @@ import com.dtech.auth.enums.DependentCategory;
 import com.dtech.auth.enums.Gender;
 import com.dtech.auth.enums.RelationCategory;
 import com.dtech.auth.enums.Title;
-import com.dtech.auth.validator.Conditional;
-import com.dtech.auth.validator.ValidAge;
-import com.dtech.auth.validator.ValidEnum;
-import com.dtech.auth.validator.ValidPastDays;
+import com.dtech.auth.validator.*;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
@@ -27,6 +24,7 @@ import java.util.List;
 @Data
 @Conditional(selected = "dependentCategory" ,values = {"PARENTS,WIFE","HUSBAND"},required = {"jobTitle"},message = "Job title is required.")
 @Conditional(selected = "dependentCategory" ,values = {"PARENTS,WIFE","HUSBAND"},required = {"nic"},message = "NIC is required.")
+@NicRequiredIfAge(message = "NIC is required for dependents aged 18 or older.")
 public class ClaimDependentDetailsRequestValidatorDTO {
     @NotBlank(message = "Dependent category is required.")
     @ValidEnum(enumClass = DependentCategory.class,message = "Invalid dependent category.")

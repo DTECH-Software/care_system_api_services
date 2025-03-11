@@ -235,7 +235,7 @@ public class ProfileServiceImpl implements ProfileService {
                     findByUsernameAndUserPersonalDetails_UserStatus(profileImageUpdateRequestDTO.getUsername(), Status.ACTIVE).map((user) -> {
 
                         try {
-                            Document uploadedDocument = uploadProfileImage(profileImageUpdateRequestDTO.getType(), profileImageUpdateRequestDTO.getFile());
+                            Document uploadedDocument = uploadProfileImage(profileImageUpdateRequestDTO.getType(), profileImageUpdateRequestDTO.getFile(),profileImageUpdateRequestDTO.getFileType(),profileImageUpdateRequestDTO.getFileName());
                             if (uploadedDocument == null) {
                                 log.info("User profile image upload failed");
                                 return ResponseEntity.ok().body(responseUtil.error(null, 1039, messageSource.getMessage(ResponseMessageUtil.PROFILE_IMAGE_UPLOAD_FAILED, null, locale)));
@@ -263,10 +263,10 @@ public class ProfileServiceImpl implements ProfileService {
         }
     }
 
-    protected Document uploadProfileImage(String tye, String file) throws IOException {
+    protected Document uploadProfileImage(String tye, String file,String fileType,String fileName) throws IOException {
         try {
             log.info("Upload profile image");
-            MultipartFile multipartFile = MultipartFileUtil.convertToMultipartFile(file);
+            MultipartFile multipartFile = MultipartFileUtil.convertToMultipartFile(file,fileType,fileName);
             log.info("Before calling document service {}", documentFeignClient);
             ResponseEntity<ApiResponse<Object>> documentResponse = documentFeignClient.upload(tye, multipartFile);
             log.info("After response document service {}", documentResponse);
@@ -496,7 +496,7 @@ public class ProfileServiceImpl implements ProfileService {
                 List<Document> uploadSupportingDocumentFromDependent = claimDependentDetailsRequestDTO.getDocuments().stream().map(doc -> {
                     log.info("Upload supporting document from dependent");
                     try {
-                        return uploadProfileImage(doc.getType(), doc.getFile());
+                        return uploadProfileImage(doc.getType(), doc.getFile(),doc.getFileType(),doc.getFileName());
                     } catch (IOException e) {
                         log.error(e);
                         throw new RuntimeException(e);
