@@ -13,4 +13,5 @@ import lombok.Data;
 public class SignupOtpRequestDTO {
     private String epfNo;
     private String nic;
+    private String primaryEmail;
 }

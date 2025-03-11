@@ -71,7 +71,7 @@ public class ClaimsDependents extends Audit implements Serializable {
     @JoinColumn(name = "application_user",nullable = false)
     private ApplicationUser applicationUser;
 
-    @ManyToMany(fetch = FetchType.LAZY,cascade = CascadeType.ALL)
+    @ManyToMany(fetch = FetchType.LAZY,cascade = CascadeType.REFRESH)
     @JoinTable(
             name = "claims_dependents_document",
             joinColumns = @JoinColumn(name = "claims_dependents_id",referencedColumnName = "id"),
