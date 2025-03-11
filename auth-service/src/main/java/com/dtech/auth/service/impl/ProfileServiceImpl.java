@@ -111,6 +111,14 @@ public class ProfileServiceImpl implements ProfileService {
 
                         for (ClaimDependentDetailsRequestDTO detailsRequestDTO : claimDependentRequestDTO.getDependents()) {
 
+                            if(!applicationUser.getUserPersonalDetails().isMaritalStatus()){
+                                if(detailsRequestDTO.getRelationCategory().equalsIgnoreCase(RelationCategory.WIFE.name())
+                                   || detailsRequestDTO.getRelationCategory().equalsIgnoreCase(RelationCategory.HUSBAND.name())){
+                                     log.info("User not eligible add wife or husband {} ",detailsRequestDTO.getRelationCategory());
+                                    return ResponseEntity.ok().body(responseUtil.error(null, 1042, messageSource.getMessage(ResponseMessageUtil.USER_NOT_ELIGIBLE_WIFE_OR_HUSBAND_DEPENDENTS, new Object[]{clientMobile}, locale)));
+                                }
+                            }
+
                             if (detailsRequestDTO.getRelationCategory().equalsIgnoreCase(RelationCategory.MOTHER.name())) {
                                 List<ClaimsDependents> claimsDependents = claimDependentsRepository
                                         .findAllByApplicationUserAndRelationCategoryAndStatusIn(applicationUser,
@@ -130,7 +138,9 @@ public class ProfileServiceImpl implements ProfileService {
                                 }
                             }
 
-                            if (detailsRequestDTO.getDependentCategory().equalsIgnoreCase(DependentCategory.WIFE.name())) {
+                            if (detailsRequestDTO.getDependentCategory().equalsIgnoreCase(DependentCategory.WIFE.name()) ||
+                                    detailsRequestDTO.getDependentCategory().equalsIgnoreCase(DependentCategory.HUSBAND.name())) {
+
                                 if (detailsRequestDTO.getDocuments().size() != 2) {
                                     log.info("User profile add dependent request out of wife document {} ", claimDependentRequestDTO);
                                     return ResponseEntity.ok().body(responseUtil.error(null, 1023, messageSource.getMessage(ResponseMessageUtil.CLAIM_DEPENDENT_WIFE_DOCUMENT_IS_EMPTY_OR_OUT_OF_RANGE, new Object[]{detailsRequestDTO.getFirstName()}, locale)));

@@ -25,8 +25,8 @@ import java.util.Date;
 import java.util.List;
 
 @Data
-@Conditional(selected = "dependentCategory" ,values = {"PARENTS,WIFE"},required = {"jobTitle"},message = "Job title is required.")
-@Conditional(selected = "dependentCategory" ,values = {"PARENTS,WIFE"},required = {"nic"},message = "NIC is required.")
+@Conditional(selected = "dependentCategory" ,values = {"PARENTS,WIFE","HUSBAND"},required = {"jobTitle"},message = "Job title is required.")
+@Conditional(selected = "dependentCategory" ,values = {"PARENTS,WIFE","HUSBAND"},required = {"nic"},message = "NIC is required.")
 public class ClaimDependentDetailsRequestValidatorDTO {
     @NotBlank(message = "Dependent category is required.")
     @ValidEnum(enumClass = DependentCategory.class,message = "Invalid dependent category.")

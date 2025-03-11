@@ -4,7 +4,8 @@ public enum RelationCategory implements DescribableEnum {
     MOTHER("Mother"),
     FATHER("Father"),
     CHILD("Child"),
-    WIFE("Wife");
+    WIFE("Wife"),
+    HUSBAND("Husband");
 
     private final String description;
 
