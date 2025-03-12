@@ -1,0 +1,104 @@
+version: '2.1'
+services:
+  registry_service:
+    image: 'himal999/care_system:registry_service-0.0.1'
+    container_name: registry_service
+    environment:
+      - SPRING_PROFILES_ACTIVE=sit
+    ports:
+      - '8081:8081'
+    networks:
+      - inter_service_api_network
+  cloud_service:
+    image: 'himal999/care_system:cloud_service-0.0.1'
+    container_name: cloud_service
+    ports:
+      - '8080:8080'
+    environment:
+      - EUREKA_INSTANCE_HOSTNAME=45.79.125.85
+      - SPRING_PROFILES_ACTIVE=sit
+    depends_on:
+      - registry_service
+    networks:
+      - inter_service_api_network
+  token_service:
+    image: 'himal999/care_system:token_service-0.0.1'
+    container_name: token_service
+    ports:
+      - '8082:8082'
+    environment:
+          - EUREKA_INSTANCE_HOSTNAME=45.79.125.85
+          - SPRING_PROFILES_ACTIVE=sit
+    depends_on:
+      - registry_service
+      - cloud_service
+    networks:
+      - inter_service_api_network
+  login_service:
+    image: 'himal999/care_system:login_service-0.0.1'
+    container_name: login_service
+    ports:
+      - '8083:8083'
+    environment:
+      - EUREKA_INSTANCE_HOSTNAME=45.79.125.85
+      - SPRING_PROFILES_ACTIVE=sit
+    depends_on:
+      - registry_service
+      - cloud_service
+    networks:
+      - inter_service_api_network
+  auth_service:
+    image: 'himal999/care_system:auth_service-0.0.1'
+    container_name: auth_service
+    ports:
+      - '8085:8085'
+    environment:
+      - EUREKA_INSTANCE_HOSTNAME=45.79.125.85
+      - SPRING_PROFILES_ACTIVE=sit
+    depends_on:
+      - registry_service
+      - cloud_service
+    networks:
+      - inter_service_api_network
+  document_service:
+    image: 'himal999/care_system:document_service-0.0.1'
+    container_name: document_service
+    ports:
+      - '8086:8086'
+    environment:
+      - EUREKA_INSTANCE_HOSTNAME=45.79.125.85
+      - SPRING_PROFILES_ACTIVE=sit
+    depends_on:
+      - registry_service
+      - cloud_service
+    networks:
+      - inter_service_api_network
+  message_service:
+    image: 'himal999/care_system:message_service-0.0.1'
+    container_name: message_service
+    ports:
+      - '8084:8084'
+    environment:
+      - EUREKA_INSTANCE_HOSTNAME=45.79.125.85
+      - SPRING_PROFILES_ACTIVE=sit
+    depends_on:
+      - registry_service
+      - cloud_service
+    networks:
+      - inter_service_api_network
+  claim_service:
+    image: 'himal999/care_system:claim_service-0.0.1'
+    container_name: claim_service
+    ports:
+      - '8087:8087'
+    environment:
+      - EUREKA_INSTANCE_HOSTNAME=45.79.125.85
+      - SPRING_PROFILES_ACTIVE=sit
+    depends_on:
+      - registry_service
+      - cloud_service
+    networks:
+      - inter_service_api_network
+networks:
+  inter_service_api_network:
+    driver: bridge

@@ -1,0 +1,85 @@
+version: '1'
+services:
+  registry_service:
+    image: 'registry_service:0.0.1'
+    container_name: registry_service
+    environment:
+      - SPRING_PROFILES_ACTIVE=sit
+    ports:
+      - '8081:8081'
+  cloud_service:
+    image: 'cloud_service:0.0.1'
+    container_name: cloud_service
+    ports:
+      - '8080:8080'
+    environment:
+      - EUREKA_INSTANCE_HOSTNAME=host.docker.internal
+      - SPRING_PROFILES_ACTIVE=sit
+    depends_on:
+      - registry_service
+  token_service:
+    image: 'token_service:0.0.1'
+    container_name: token_service
+    ports:
+      - '8082:8082'
+    environment:
+          - EUREKA_INSTANCE_HOSTNAME=host.docker.internal
+          - SPRING_PROFILES_ACTIVE=sit
+    depends_on:
+      - registry_service
+      - cloud_service
+  login_service:
+    image: 'login_service:0.0.1'
+    container_name: login_service
+    ports:
+      - '8083:8083'
+    environment:
+      - EUREKA_INSTANCE_HOSTNAME=host.docker.internal
+      - SPRING_PROFILES_ACTIVE=sit
+    depends_on:
+      - registry_service
+      - cloud_service
+  auth_service:
+    image: 'auth_service:0.0.1'
+    container_name: auth_service
+    ports:
+      - '8085:8085'
+    environment:
+      - EUREKA_INSTANCE_HOSTNAME=host.docker.internal
+      - SPRING_PROFILES_ACTIVE=sit
+    depends_on:
+      - registry_service
+      - cloud_service
+  document_service:
+    image: 'document_service:0.0.1'
+    container_name: document_service
+    ports:
+      - '8086:8086'
+    environment:
+      - EUREKA_INSTANCE_HOSTNAME=host.docker.internal
+      - SPRING_PROFILES_ACTIVE=sit
+    depends_on:
+      - registry_service
+      - cloud_service
+  message_service:
+    image: 'message_service:0.0.1'
+    container_name: message_service
+    ports:
+      - '8084:8084'
+    environment:
+      - EUREKA_INSTANCE_HOSTNAME=host.docker.internal
+      - SPRING_PROFILES_ACTIVE=sit
+    depends_on:
+      - registry_service
+      - cloud_service
+  claim_service:
+    image: 'claim_service:0.0.1'
+    container_name: claim_service
+    ports:
+      - '8087:8087'
+    environment:
+      - EUREKA_INSTANCE_HOSTNAME=host.docker.internal
+      - SPRING_PROFILES_ACTIVE=sit
+    depends_on:
+      - registry_service
+      - cloud_service
