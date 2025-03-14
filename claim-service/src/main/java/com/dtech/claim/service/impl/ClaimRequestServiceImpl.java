@@ -209,25 +209,19 @@ public class ClaimRequestServiceImpl implements ClaimRequestService {
             Pageable pageable = PaginationUtil.getPageable(paginationRequest);
 
             Page<ClaimsRequest> claimsRequests = Objects.nonNull(paginationRequest.getSearch()) ?
-                     claimsRequestRepository.findAll(ClaimHistorySpecification.getSpecification(paginationRequest.getSearch()),pageable)
-                    :
+                     claimsRequestRepository.findAll(ClaimHistorySpecification.getSpecification(paginationRequest.getSearch()),pageable) :
                      claimsRequestRepository.findAll(pageable);
 
-            // Get the total number of elements based on search criteria
             long totalElements = Objects.nonNull(paginationRequest.getSearch()) ?
                     claimsRequestRepository.count(ClaimHistorySpecification.getSpecification(paginationRequest.getSearch())) :
                     claimsRequestRepository.count();
-
-
+            log.info("Filter list data fetching success");
             List<ClaimRequestResponseDto> collectList = claimsRequests.stream()
                     .map(EntityToDtoMapper::mapClaimHistoryDetails).toList();
-
-            PagingResult<ClaimRequestResponseDto> pagingResult = new PagingResult<>();
-
-            pagingResult.setContent(collectList);
-            pagingResult.setSize(collectList.size());
-            pagingResult.setTotalElements(totalElements);
-            return ResponseEntity.ok().body(responseUtil.success(pagingResult, messageSource.getMessage(ResponseMessageUtil.CLAIM_REQUEST_SUBMIT_SUCCESS, null, locale)));
+            log.info("Filter list {} success", collectList);
+            return ResponseEntity.ok().body(responseUtil.success(new PagingResult<ClaimRequestResponseDto>(collectList,collectList.size(),totalElements),
+                    messageSource.getMessage(ResponseMessageUtil.CLAIM_REQUEST_HISTORY_FILTER_LIST_SUCCESS,
+                            null, locale)));
 
         }catch (Exception e) {
             log.error(e);

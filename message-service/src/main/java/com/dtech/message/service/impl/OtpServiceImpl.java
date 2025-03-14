@@ -188,7 +188,7 @@ public class OtpServiceImpl implements OtpService {
                     ApplicationOtpSession applicationOtpSession = updateOtpSession(otp, messageResponseDTO.isSuccess());
                     updateApplicationUser(user, applicationOtpSession);
                     if (messageResponseDTO.isSuccess()) {
-                        return ResponseEntity.ok().body(responseUtil.success((Object) Map.of("otpRequestAttempt", policy.getOtpExceedCount() - user.getOtpAttemptCount()), messageResponseDTO.getMessage()));
+                        return ResponseEntity.ok().body(responseUtil.success((Object) Map.of("otpRequestAttempt", Math.max(0,policy.getOtpExceedCount() - user.getOtpAttemptCount())), messageResponseDTO.getMessage()));
                     }
                     return ResponseEntity.ok().body(
                             responseUtil.error(null, 1038,

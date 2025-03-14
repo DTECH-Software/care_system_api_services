@@ -14,7 +14,6 @@ import java.math.BigDecimal;
 
 @Data
 public class ClaimRequestResponseDto {
-
     private Long id;
     private String requestId;
     private BigDecimal requestAmount;
@@ -22,5 +21,4 @@ public class ClaimRequestResponseDto {
     private String remark;
     private ClaimsDependentsResponseDto claimsDependents;
     private InsuranceClaimsDetailsResponseDto insuranceClaimsDetails;
-
 }

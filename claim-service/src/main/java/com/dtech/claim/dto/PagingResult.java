@@ -11,6 +11,6 @@ import java.util.List;
 @AllArgsConstructor
 public class PagingResult<T> {
     private List<T> content;
-    private long totalElements;
-    private Integer size;
+    private long size;
+    private long totalRecords;
 }
