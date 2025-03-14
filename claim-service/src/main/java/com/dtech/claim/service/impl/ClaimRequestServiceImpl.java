@@ -9,20 +9,22 @@ package com.dtech.claim.service.impl;
 
 
 import com.dtech.claim.dto.ClaimRequestIdGen;
-import com.dtech.claim.dto.request.ClaimRequestDTO;
-import com.dtech.claim.dto.request.MessageRequestDTO;
-import com.dtech.claim.dto.request.OtpRequestDTO;
-import com.dtech.claim.dto.request.SupportingDocumentDTO;
+import com.dtech.claim.dto.PagingResult;
+import com.dtech.claim.dto.request.*;
 import com.dtech.claim.dto.response.ApiResponse;
+import com.dtech.claim.dto.response.ClaimRequestResponseDto;
 import com.dtech.claim.dto.response.MessageResponseDTO;
+import com.dtech.claim.dto.search.ClaimHistory;
 import com.dtech.claim.enums.CommonParam;
 import com.dtech.claim.enums.NotificationsType;
 import com.dtech.claim.enums.Status;
 import com.dtech.claim.enums.Workflow;
 import com.dtech.claim.feign.MessageFeignClient;
+import com.dtech.claim.mapper.EntityToDtoMapper;
 import com.dtech.claim.model.*;
 import com.dtech.claim.repository.*;
 import com.dtech.claim.service.ClaimRequestService;
+import com.dtech.claim.specifications.ClaimHistorySpecification;
 import com.dtech.claim.util.*;
 import com.google.gson.Gson;
 import jakarta.persistence.EntityManager;
@@ -31,6 +33,8 @@ import lombok.extern.log4j.Log4j2;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.MessageSource;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -192,6 +196,40 @@ public class ClaimRequestServiceImpl implements ClaimRequestService {
             });
 
         } catch (Exception e) {
+            log.error(e);
+            throw e;
+        }
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public ResponseEntity<ApiResponse<Object>> claimHistoryList(PaginationRequest<ClaimHistory> paginationRequest, Locale locale) {
+        try {
+            log.info("Claim history filter list {}", paginationRequest);
+            Pageable pageable = PaginationUtil.getPageable(paginationRequest);
+
+            Page<ClaimsRequest> claimsRequests = Objects.nonNull(paginationRequest.getSearch()) ?
+                     claimsRequestRepository.findAll(ClaimHistorySpecification.getSpecification(paginationRequest.getSearch()),pageable)
+                    :
+                     claimsRequestRepository.findAll(pageable);
+
+            // Get the total number of elements based on search criteria
+            long totalElements = Objects.nonNull(paginationRequest.getSearch()) ?
+                    claimsRequestRepository.count(ClaimHistorySpecification.getSpecification(paginationRequest.getSearch())) :
+                    claimsRequestRepository.count();
+
+
+            List<ClaimRequestResponseDto> collectList = claimsRequests.stream()
+                    .map(EntityToDtoMapper::mapClaimHistoryDetails).toList();
+
+            PagingResult<ClaimRequestResponseDto> pagingResult = new PagingResult<>();
+
+            pagingResult.setContent(collectList);
+            pagingResult.setSize(collectList.size());
+            pagingResult.setTotalElements(totalElements);
+            return ResponseEntity.ok().body(responseUtil.success(pagingResult, messageSource.getMessage(ResponseMessageUtil.CLAIM_REQUEST_SUBMIT_SUCCESS, null, locale)));
+
+        }catch (Exception e) {
             log.error(e);
             throw e;
         }
