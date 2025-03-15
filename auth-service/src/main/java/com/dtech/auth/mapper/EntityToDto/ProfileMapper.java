@@ -11,11 +11,9 @@ package com.dtech.auth.mapper.EntityToDto;
 import com.dtech.auth.dto.response.*;
 import com.dtech.auth.enums.Gender;
 import com.dtech.auth.enums.Title;
-import com.dtech.auth.feign.DocumentFeignClient;
 import com.dtech.auth.model.ApplicationUser;
 import com.dtech.auth.model.ClaimsDependents;
 import com.dtech.auth.util.DateTimeUtil;
-import com.google.gson.Gson;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.modelmapper.ModelMapper;
@@ -34,7 +32,6 @@ import static com.dtech.auth.util.StringUtil.ifNotOrEmpty;
 public class ProfileMapper {
 
     private static final ModelMapper modelMapper = new ModelMapper();
-    private static final Gson gson = new Gson();
 
     @Transactional(readOnly = true)
     public ApplicationUserDetailsResponseDTO mapApplicationUser(ApplicationUser applicationUser) {
@@ -49,7 +46,7 @@ public class ProfileMapper {
 
             if (applicationUser.getProfileImg() != null) {
                 log.info("application user get profile img");
-                DocumentDownloadResponseDTO documentDownloadResponseDTO = gson.fromJson(gson.toJson(applicationUser.getProfileImg()), DocumentDownloadResponseDTO.class);
+                DocumentDownloadResponseDTO documentDownloadResponseDTO = modelMapper.map(applicationUser.getProfileImg(), DocumentDownloadResponseDTO.class);
                 applicationUserDetailsResponseDTO.setProfileImg(documentDownloadResponseDTO);
                 log.info("application user get profile img downloaded");
             }
@@ -61,7 +58,7 @@ public class ProfileMapper {
         }
     }
 
-    public static List<ClaimDependentDetailsResponseDTO> mapDependentList(List<ClaimsDependents> claimsDependentsList, DocumentFeignClient documentFeignClient) {
+    public static List<ClaimDependentDetailsResponseDTO> mapDependentList(List<ClaimsDependents> claimsDependentsList) {
         try {
             log.info("dependent list mapper");
 
@@ -86,8 +83,8 @@ public class ProfileMapper {
 
                 log.info("claim dependent details call get image method");
                 List<DocumentDownloadResponseDTO> collect = dependents.getDocuments().stream().map((document -> {
-                    log.info("inside document mapper");
-                    return gson.fromJson(gson.toJson(document), DocumentDownloadResponseDTO.class);
+                    log.info("inside document mapper {} ",document);
+                    return new DocumentDownloadResponseDTO(String.valueOf(document.getType()), document.getFileName(), document.getFileType(),document.getDoc());
                 })).collect(Collectors.toList());
                 claimDependentDetailsResponseDTO.setDocuments(collect);
                 log.info("claim dependent details call get documents method success map");

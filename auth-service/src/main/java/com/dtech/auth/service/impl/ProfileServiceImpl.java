@@ -12,6 +12,7 @@ import com.dtech.auth.dto.response.*;
 import com.dtech.auth.enums.*;
 import com.dtech.auth.feign.DocumentFeignClient;
 import com.dtech.auth.feign.MessageFeignClient;
+import com.dtech.auth.mapper.DtoToEntity.DependenceMapper;
 import com.dtech.auth.mapper.EntityToDto.ProfileMapper;
 import com.dtech.auth.model.*;
 import com.dtech.auth.repository.*;
@@ -30,6 +31,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 
@@ -68,6 +70,9 @@ public class ProfileServiceImpl implements ProfileService {
     @Autowired
     private final MessageFeignClient messageFeignClient;
 
+    @Autowired
+    private final MarriedRepository marriedRepository;
+
     @Override
     @Transactional(readOnly = true)
     public ResponseEntity<ApiResponse<Object>> profile(ChannelRequestDTO channelRequestDTO, Locale locale) {
@@ -86,8 +91,8 @@ public class ProfileServiceImpl implements ProfileService {
 
             return optionalUser.map((ap) -> {
                 log.info("User profile request user found {} ", ap);
-                ProfileMapper profileMapper = new ProfileMapper();
-                ApplicationUserDetailsResponseDTO applicationUserDetailsResponseDTO = profileMapper.mapApplicationUser(ap);
+                ProfileMapper dependenceMapper = new ProfileMapper();
+                ApplicationUserDetailsResponseDTO applicationUserDetailsResponseDTO = dependenceMapper.mapApplicationUser(ap);
                 log.info("User profile request success{} ", applicationUserDetailsResponseDTO);
                 return ResponseEntity.ok().body(responseUtil.success((Object) applicationUserDetailsResponseDTO, messageSource.getMessage(ResponseMessageUtil.APPLICATION_PROFILE_SUCCESS, null, locale)));
             }).orElseGet(() -> {
@@ -111,35 +116,96 @@ public class ProfileServiceImpl implements ProfileService {
 
                         for (ClaimDependentDetailsRequestDTO detailsRequestDTO : claimDependentRequestDTO.getDependents()) {
 
-                            if(!applicationUser.getUserPersonalDetails().isMaritalStatus()){
-                                if(detailsRequestDTO.getRelationCategory().equalsIgnoreCase(RelationCategory.WIFE.name())
-                                   || detailsRequestDTO.getRelationCategory().equalsIgnoreCase(RelationCategory.HUSBAND.name())){
-                                     log.info("User not eligible add wife or husband {} ",detailsRequestDTO.getRelationCategory());
+                            if (!applicationUser.getUserPersonalDetails().isMaritalStatus()) {
+                                if (detailsRequestDTO.getRelationCategory().equalsIgnoreCase(RelationCategory.WIFE.name())
+                                        || detailsRequestDTO.getRelationCategory().equalsIgnoreCase(RelationCategory.HUSBAND.name())
+                                        || detailsRequestDTO.getRelationCategory().equalsIgnoreCase(RelationCategory.FATHER_IN_LAW.name())
+                                        || detailsRequestDTO.getRelationCategory().equalsIgnoreCase(RelationCategory.MOTHER_IN_LAW.name())
+                                ) {
+                                    log.info("User not eligible add wife or husband {} ", detailsRequestDTO.getRelationCategory());
                                     return ResponseEntity.ok().body(responseUtil.error(null, 1042, messageSource.getMessage(ResponseMessageUtil.USER_NOT_ELIGIBLE_WIFE_OR_HUSBAND_DEPENDENTS, new Object[]{clientMobile}, locale)));
                                 }
+                            } else if (applicationUser.getUserPersonalDetails().getGender().equals(Gender.MALE) &&
+                                    detailsRequestDTO.getRelationCategory().equalsIgnoreCase(RelationCategory.HUSBAND.name())) {
+                                log.info("Can't relation husband {} ", detailsRequestDTO.getRelationCategory());
+                                return ResponseEntity.ok().body(responseUtil.error(null, 1041, messageSource.getMessage(ResponseMessageUtil.CLAIM_DEPENDENT_MOTHER_FOUND, new Object[]{clientMobile}, locale)));
+
+                            } else if (applicationUser.getUserPersonalDetails().getGender().equals(Gender.FEMALE) &&
+                                    detailsRequestDTO.getRelationCategory().equalsIgnoreCase(RelationCategory.WIFE.name())) {
+                                log.info("Can't relation wife {} ", detailsRequestDTO.getRelationCategory());
+                                return ResponseEntity.ok().body(responseUtil.error(null, 1041, messageSource.getMessage(ResponseMessageUtil.CLAIM_DEPENDENT_MOTHER_FOUND, new Object[]{clientMobile}, locale)));
+
+                            } else if ((detailsRequestDTO.getRelationCategory().equalsIgnoreCase(RelationCategory.HUSBAND.name())
+                                    || detailsRequestDTO.getRelationCategory().equalsIgnoreCase(RelationCategory.FATHER.name())
+                                    || detailsRequestDTO.getRelationCategory().equalsIgnoreCase(RelationCategory.FATHER_IN_LAW.name()) && detailsRequestDTO.getGender().equalsIgnoreCase(Gender.FEMALE.name()))
+                            ) {
+                                log.info("Gender is not male correct {}", detailsRequestDTO.getFirstName());
+                                return ResponseEntity.ok().body(responseUtil.error(null, 1042, messageSource.getMessage(ResponseMessageUtil.CLAIM_DEPENDENT_MOTHER_FOUND, new Object[]{clientMobile}, locale)));
+
+                            } else if ((detailsRequestDTO.getRelationCategory().equalsIgnoreCase(RelationCategory.WIFE.name())
+                                    || detailsRequestDTO.getRelationCategory().equalsIgnoreCase(RelationCategory.MOTHER.name())
+                                    || detailsRequestDTO.getRelationCategory().equalsIgnoreCase(RelationCategory.MOTHER_IN_LAW.name()) && detailsRequestDTO.getGender().equalsIgnoreCase(Gender.MALE.name()))
+                            ) {
+                                log.info("Gender is not female correct {}", detailsRequestDTO.getFirstName());
+                                return ResponseEntity.ok().body(responseUtil.error(null, 1042, messageSource.getMessage(ResponseMessageUtil.CLAIM_DEPENDENT_MOTHER_FOUND, new Object[]{clientMobile}, locale)));
+
                             }
 
                             if (detailsRequestDTO.getRelationCategory().equalsIgnoreCase(RelationCategory.MOTHER.name())) {
-                                List<ClaimsDependents> claimsDependents = claimDependentsRepository
-                                        .findAllByApplicationUserAndRelationCategoryAndStatusIn(applicationUser,
+                                boolean claimsDependents = claimDependentsRepository
+                                        .existsAllByApplicationUserAndRelationCategoryAndStatusIn(applicationUser,
                                                 RelationCategory.MOTHER, Arrays.asList(Workflow.ACTIVE, Workflow.UNDER_REVIEW));
 
-                                if (!claimsDependents.isEmpty()) {
+                                if (claimsDependents) {
                                     log.info("User profile add dependent request already active mother {} ", claimsDependents);
                                     return ResponseEntity.ok().body(responseUtil.error(null, 1022, messageSource.getMessage(ResponseMessageUtil.CLAIM_DEPENDENT_MOTHER_FOUND, new Object[]{clientMobile}, locale)));
                                 }
 
                             } else if (detailsRequestDTO.getRelationCategory().equalsIgnoreCase(RelationCategory.FATHER.name())) {
-                                List<ClaimsDependents> claimsDependents = claimDependentsRepository.findAllByApplicationUserAndRelationCategoryAndStatusIn(applicationUser,
+                                boolean claimsDependents = claimDependentsRepository.existsAllByApplicationUserAndRelationCategoryAndStatusIn(applicationUser,
                                         RelationCategory.FATHER, Arrays.asList(Workflow.ACTIVE, Workflow.UNDER_REVIEW));
-                                if (!claimsDependents.isEmpty()) {
+                                if (claimsDependents) {
                                     log.info("User profile add dependent request already active father {} ", claimsDependents);
+                                    return ResponseEntity.ok().body(responseUtil.error(null, 1022, messageSource.getMessage(ResponseMessageUtil.CLAIM_DEPENDENT_FATHER_FOUND, new Object[]{clientMobile}, locale)));
+                                }
+                            } else if (detailsRequestDTO.getRelationCategory().equalsIgnoreCase(RelationCategory.WIFE.name())) {
+
+                                boolean existed = claimDependentsRepository.existsAllByApplicationUserAndRelationCategoryAndStatusInAndMarried_Id(applicationUser,
+                                        RelationCategory.WIFE, Arrays.asList(Workflow.ACTIVE, Workflow.UNDER_REVIEW), Long.valueOf(detailsRequestDTO.getMarried()));
+                                if (existed) {
+                                    log.info("User profile add dependent request already married round wife {} ", existed);
+                                    return ResponseEntity.ok().body(responseUtil.error(null, 1022, messageSource.getMessage(ResponseMessageUtil.CLAIM_DEPENDENT_FATHER_FOUND, new Object[]{clientMobile}, locale)));
+                                }
+                            } else if (detailsRequestDTO.getRelationCategory().equalsIgnoreCase(RelationCategory.HUSBAND.name())) {
+
+                                boolean existed = claimDependentsRepository.existsAllByApplicationUserAndRelationCategoryAndStatusInAndMarried_Id(applicationUser,
+                                        RelationCategory.HUSBAND, Arrays.asList(Workflow.ACTIVE, Workflow.UNDER_REVIEW), Long.valueOf(detailsRequestDTO.getMarried()));
+                                if (existed) {
+                                    log.info("User profile add dependent request already married round husband {} ", existed);
+                                    return ResponseEntity.ok().body(responseUtil.error(null, 1022, messageSource.getMessage(ResponseMessageUtil.CLAIM_DEPENDENT_FATHER_FOUND, new Object[]{clientMobile}, locale)));
+                                }
+                            } else if (detailsRequestDTO.getRelationCategory().equalsIgnoreCase(RelationCategory.FATHER_IN_LAW.name())) {
+
+                                boolean existed = claimDependentsRepository.existsAllByApplicationUserAndRelationCategoryAndStatusInAndMarried_Id(applicationUser,
+                                        RelationCategory.FATHER_IN_LAW, Arrays.asList(Workflow.ACTIVE, Workflow.UNDER_REVIEW), Long.valueOf(detailsRequestDTO.getMarried()));
+                                if (existed) {
+                                    log.info("User profile add dependent request already married round fathe in law {} ", existed);
+                                    return ResponseEntity.ok().body(responseUtil.error(null, 1022, messageSource.getMessage(ResponseMessageUtil.CLAIM_DEPENDENT_FATHER_FOUND, new Object[]{clientMobile}, locale)));
+                                }
+                            } else if (detailsRequestDTO.getRelationCategory().equalsIgnoreCase(RelationCategory.MOTHER_IN_LAW.name())) {
+
+                                boolean existed = claimDependentsRepository.existsAllByApplicationUserAndRelationCategoryAndStatusInAndMarried_Id(applicationUser,
+                                        RelationCategory.MOTHER_IN_LAW, Arrays.asList(Workflow.ACTIVE, Workflow.UNDER_REVIEW), Long.valueOf(detailsRequestDTO.getMarried()));
+                                if (existed) {
+                                    log.info("User profile add dependent request already married round mother in law {} ", existed);
                                     return ResponseEntity.ok().body(responseUtil.error(null, 1022, messageSource.getMessage(ResponseMessageUtil.CLAIM_DEPENDENT_FATHER_FOUND, new Object[]{clientMobile}, locale)));
                                 }
                             }
 
-                            if (detailsRequestDTO.getDependentCategory().equalsIgnoreCase(DependentCategory.WIFE.name()) ||
-                                    detailsRequestDTO.getDependentCategory().equalsIgnoreCase(DependentCategory.HUSBAND.name())) {
+                            if (detailsRequestDTO.getDependentCategory().equalsIgnoreCase(DependentCategory.WIFE.name())
+                                    || detailsRequestDTO.getDependentCategory().equalsIgnoreCase(DependentCategory.HUSBAND.name())
+                                    || detailsRequestDTO.getDependentCategory().equalsIgnoreCase(DependentCategory.FATHER_IN_LAW.name())
+                                    || detailsRequestDTO.getDependentCategory().equalsIgnoreCase(DependentCategory.MOTHER_IN_LAW.name())) {
 
                                 if (detailsRequestDTO.getDocuments().size() != 2) {
                                     log.info("User profile add dependent request out of wife document {} ", claimDependentRequestDTO);
@@ -167,7 +233,10 @@ public class ProfileServiceImpl implements ProfileService {
                                     }
                                 }
                             } else if (detailsRequestDTO.getDependentCategory().equalsIgnoreCase(DependentCategory.PARENTS.name())
-                                    || detailsRequestDTO.getDependentCategory().equalsIgnoreCase(DependentCategory.CHILDREN.name())) {
+                                    || detailsRequestDTO.getDependentCategory().equalsIgnoreCase(DependentCategory.CHILDREN.name())
+                                    || detailsRequestDTO.getDependentCategory().equalsIgnoreCase(DependentCategory.BROTHER.name())
+                                    || detailsRequestDTO.getDependentCategory().equalsIgnoreCase(DependentCategory.SISTER.name())) {
+
                                 if (detailsRequestDTO.getDocuments().size() != 1) {
                                     log.info("User profile add dependent request out of parent or child document {} ", claimDependentRequestDTO);
                                     return ResponseEntity.ok().body(responseUtil.error(null, 1023, messageSource.getMessage(ResponseMessageUtil.CLAIM_DEPENDENT_OTHER_RELATION_CATEGORY_DOCUMENT_IS_EMPTY_OR_OUT_OF_RANGE, new Object[]{detailsRequestDTO.getFirstName()}, locale)));
@@ -181,9 +250,8 @@ public class ProfileServiceImpl implements ProfileService {
                                     }
                                 }
                             }
-
                         }
-                        saveClaimDependent(claimDependentRequestDTO.getDependents(), applicationUser);
+                        saveDependent(claimDependentRequestDTO.getDependents(), applicationUser, locale);
                         return ResponseEntity.ok().body(responseUtil.success(null, messageSource.getMessage(ResponseMessageUtil.CLAIM_DEPENDENT_ADDED_SUCCESS, null, locale)));
                     })
                     .orElseGet(() -> {
@@ -211,7 +279,7 @@ public class ProfileServiceImpl implements ProfileService {
                                 (c1, c2) ->
                                         c2.getLastModifiedDate().compareTo(c1.getLastModifiedDate())).collect(Collectors.toList());
                         List<ClaimDependentDetailsResponseDTO> claimDependentDetailsResponseDTOS = ProfileMapper
-                                .mapDependentList(collect, documentFeignClient);
+                                .mapDependentList(collect);
                         ClaimDependentResponseDTO dependentResponseDTO = new ClaimDependentResponseDTO();
                         dependentResponseDTO.setDependents(claimDependentDetailsResponseDTOS);
                         return ResponseEntity.ok().body(responseUtil.success((Object) dependentResponseDTO, messageSource.getMessage(ResponseMessageUtil.CLAIM_DEPENDENT_LIST_VIEW_SUCCESS, null, locale)));
@@ -235,7 +303,7 @@ public class ProfileServiceImpl implements ProfileService {
                     findByUsernameAndUserPersonalDetails_UserStatus(profileImageUpdateRequestDTO.getUsername(), Status.ACTIVE).map((user) -> {
 
                         try {
-                            Document uploadedDocument = uploadProfileImage(profileImageUpdateRequestDTO.getType(), profileImageUpdateRequestDTO.getFile(),profileImageUpdateRequestDTO.getFileType(),profileImageUpdateRequestDTO.getFileName());
+                            Document uploadedDocument = uploadProfileImage(profileImageUpdateRequestDTO.getType(), profileImageUpdateRequestDTO.getFile(), profileImageUpdateRequestDTO.getFileType(), profileImageUpdateRequestDTO.getFileName());
                             if (uploadedDocument == null) {
                                 log.info("User profile image upload failed");
                                 return ResponseEntity.ok().body(responseUtil.error(null, 1039, messageSource.getMessage(ResponseMessageUtil.PROFILE_IMAGE_UPLOAD_FAILED, null, locale)));
@@ -263,10 +331,10 @@ public class ProfileServiceImpl implements ProfileService {
         }
     }
 
-    protected Document uploadProfileImage(String tye, String file,String fileType,String fileName) throws IOException {
+    protected Document uploadProfileImage(String tye, String file, String fileType, String fileName) throws IOException {
         try {
             log.info("Upload profile image");
-            MultipartFile multipartFile = MultipartFileUtil.convertToMultipartFile(file,fileType,fileName);
+            MultipartFile multipartFile = MultipartFileUtil.convertToMultipartFile(file, fileType, fileName);
             log.info("Before calling document service {}", documentFeignClient);
             ResponseEntity<ApiResponse<Object>> documentResponse = documentFeignClient.upload(tye, multipartFile);
             log.info("After response document service {}", documentResponse);
@@ -486,17 +554,36 @@ public class ProfileServiceImpl implements ProfileService {
     }
 
     @Transactional
-    protected void saveClaimDependent(List<ClaimDependentDetailsRequestDTO> dependents, ApplicationUser applicationUser) {
+    protected void saveDependent(List<ClaimDependentDetailsRequestDTO> dependents, ApplicationUser applicationUser, Locale locale) {
         try {
             log.info("User claim dependent save {} ", dependents);
             dependents.forEach(claimDependentDetailsRequestDTO -> {
-                ClaimsDependents claimsDependents = gson.fromJson(gson.toJson(claimDependentDetailsRequestDTO), ClaimsDependents.class);
-                claimsDependents.setStatus(Workflow.UNDER_REVIEW);
+
+                Married married = null;
+                if (claimDependentDetailsRequestDTO.getRelationCategory().equalsIgnoreCase(RelationCategory.WIFE.name())
+                        || claimDependentDetailsRequestDTO.getRelationCategory().equalsIgnoreCase(RelationCategory.HUSBAND.name())
+                        || claimDependentDetailsRequestDTO.getRelationCategory().equalsIgnoreCase(RelationCategory.CHILD.name())
+                        || claimDependentDetailsRequestDTO.getRelationCategory().equalsIgnoreCase(RelationCategory.FATHER_IN_LAW.name())
+                        || claimDependentDetailsRequestDTO.getRelationCategory().equalsIgnoreCase(RelationCategory.MOTHER_IN_LAW.name())) {
+
+                }
+                {
+                    married = marriedRepository.findById(Long.valueOf(claimDependentDetailsRequestDTO.getMarried())).map(ma -> {
+                        log.info("Married  {}", ma);
+                        return ma;
+                    }).orElse(null);
+
+                }
+
+                ClaimsDependents claimsDependents = DependenceMapper.mapDependence(claimDependentDetailsRequestDTO);
                 claimsDependents.setApplicationUser(applicationUser);
+                if (claimDependentDetailsRequestDTO.getMarried() != null && married != null) {
+                    claimsDependents.setMarried(married);
+                }
                 List<Document> uploadSupportingDocumentFromDependent = claimDependentDetailsRequestDTO.getDocuments().stream().map(doc -> {
                     log.info("Upload supporting document from dependent");
                     try {
-                        return uploadProfileImage(doc.getType(), doc.getFile(),doc.getFileType(),doc.getFileName());
+                        return uploadProfileImage(doc.getType(), doc.getFile(), doc.getFileType(), doc.getFileName());
                     } catch (IOException e) {
                         log.error(e);
                         throw new RuntimeException(e);

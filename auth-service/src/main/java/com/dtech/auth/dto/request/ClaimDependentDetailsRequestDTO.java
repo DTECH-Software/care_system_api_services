@@ -24,5 +24,6 @@ public class ClaimDependentDetailsRequestDTO {
     private String jobTitle;
     private String nic;
     private String relationCategory;
+    private String married;
     private List<SupportingDocumentDTO> documents;
 }

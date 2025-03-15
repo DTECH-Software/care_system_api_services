@@ -50,5 +50,6 @@ public class ResponseMessageUtil {
     public final static String BIRTH_CERTIFICATE_MISSING = "val.birth.certificate.missing";
     public final static String MARRIED_CERTIFICATE_MISSING = "val.married.certificate.missing";
     public final static String USER_NOT_ELIGIBLE_WIFE_OR_HUSBAND_DEPENDENTS = "val.user.not.eligible.wife.or.husband.dependents";
+    public final static String MARRED_ROUND_NOT_FOUND = "val.marred.round.not.found";
 
 }

@@ -7,9 +7,13 @@
 
 package com.dtech.auth.dto.response;
 
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Data
+@NoArgsConstructor
+@AllArgsConstructor
 public class DocumentDownloadResponseDTO {
     private String type;
     private String fileName;
