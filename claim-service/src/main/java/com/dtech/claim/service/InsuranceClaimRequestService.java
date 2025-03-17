@@ -9,7 +9,7 @@ import org.springframework.http.ResponseEntity;
 
 import java.util.Locale;
 
-public interface ClaimRequestService {
+public interface InsuranceClaimRequestService {
     ResponseEntity<ApiResponse<Object>> claimRequest(ClaimRequestDTO claimRequestDTO, Locale locale);
     ResponseEntity<ApiResponse<Object>> claimHistoryList(PaginationRequest<ClaimHistory> paginationRequest, Locale locale);
     ResponseEntity<ApiResponse<Object>> claimRequestOtp(OtpRequestDTO otpRequestDTO, Locale locale);

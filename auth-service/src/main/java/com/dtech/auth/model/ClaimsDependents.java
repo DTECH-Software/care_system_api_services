@@ -67,6 +67,10 @@ public class ClaimsDependents extends Audit implements Serializable {
     @Enumerated(EnumType.STRING)
     private Workflow status;
 
+    @Column(name = "eligible_facility",nullable = false)
+    @Enumerated(EnumType.STRING)
+    private Facility eligibleFacility;
+
     @ManyToOne(fetch = FetchType.LAZY,cascade = CascadeType.ALL)
     @JoinColumn(name = "application_user",nullable = false)
     private ApplicationUser applicationUser;

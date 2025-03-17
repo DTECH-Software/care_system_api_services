@@ -1,9 +1,12 @@
 package com.dtech.claim.enums;
 
-public enum RelationCategory {
+
+public enum DeathBeneficiary implements DescribableEnum {
+
+    EMPLOYEE("Employee"),
     MOTHER("Mother"),
     FATHER("Father"),
-    CHILD("Child"),
+    CHILD("Children"),
     WIFE("Wife"),
     HUSBAND("Husband"),
     FATHER_IN_LAW("Father in law"),
@@ -13,7 +16,7 @@ public enum RelationCategory {
 
     private final String description;
 
-    RelationCategory(String description) {
+    DeathBeneficiary(String description) {
         this.description = description;
     }
 

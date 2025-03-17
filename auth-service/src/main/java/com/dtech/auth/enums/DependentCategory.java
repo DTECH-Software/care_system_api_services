@@ -10,12 +10,8 @@ package com.dtech.auth.enums;
 public enum DependentCategory implements DescribableEnum{
     PARENTS("Parents"),
     CHILDREN("Children"),
-    WIFE("Wife"),
-    HUSBAND("Husband"),
-    FATHER_IN_LAW("Father in law"),
-    MOTHER_IN_LAW("Mother in law"),
-    BROTHER("Brother"),
-    SISTER("Sister");
+    SPOUSE("Spouse"),
+    SIBLING("Sibling");
 
     private final String description;
 

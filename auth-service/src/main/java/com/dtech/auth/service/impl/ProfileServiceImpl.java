@@ -31,7 +31,6 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.util.*;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 
@@ -137,6 +136,7 @@ public class ProfileServiceImpl implements ProfileService {
 
                             } else if ((detailsRequestDTO.getRelationCategory().equalsIgnoreCase(RelationCategory.HUSBAND.name())
                                     || detailsRequestDTO.getRelationCategory().equalsIgnoreCase(RelationCategory.FATHER.name())
+                                    || detailsRequestDTO.getRelationCategory().equalsIgnoreCase(RelationCategory.BROTHER.name())
                                     || detailsRequestDTO.getRelationCategory().equalsIgnoreCase(RelationCategory.FATHER_IN_LAW.name()) && detailsRequestDTO.getGender().equalsIgnoreCase(Gender.FEMALE.name()))
                             ) {
                                 log.info("Gender is not male correct {}", detailsRequestDTO.getFirstName());
@@ -144,6 +144,7 @@ public class ProfileServiceImpl implements ProfileService {
 
                             } else if ((detailsRequestDTO.getRelationCategory().equalsIgnoreCase(RelationCategory.WIFE.name())
                                     || detailsRequestDTO.getRelationCategory().equalsIgnoreCase(RelationCategory.MOTHER.name())
+                                    || detailsRequestDTO.getRelationCategory().equalsIgnoreCase(RelationCategory.SISTER.name())
                                     || detailsRequestDTO.getRelationCategory().equalsIgnoreCase(RelationCategory.MOTHER_IN_LAW.name()) && detailsRequestDTO.getGender().equalsIgnoreCase(Gender.MALE.name()))
                             ) {
                                 log.info("Gender is not female correct {}", detailsRequestDTO.getFirstName());
@@ -202,10 +203,10 @@ public class ProfileServiceImpl implements ProfileService {
                                 }
                             }
 
-                            if (detailsRequestDTO.getDependentCategory().equalsIgnoreCase(DependentCategory.WIFE.name())
-                                    || detailsRequestDTO.getDependentCategory().equalsIgnoreCase(DependentCategory.HUSBAND.name())
-                                    || detailsRequestDTO.getDependentCategory().equalsIgnoreCase(DependentCategory.FATHER_IN_LAW.name())
-                                    || detailsRequestDTO.getDependentCategory().equalsIgnoreCase(DependentCategory.MOTHER_IN_LAW.name())) {
+                            if (detailsRequestDTO.getRelationCategory().equalsIgnoreCase(RelationCategory.WIFE.name())
+                                    || detailsRequestDTO.getRelationCategory().equalsIgnoreCase(RelationCategory.HUSBAND.name())
+                                    || detailsRequestDTO.getRelationCategory().equalsIgnoreCase(RelationCategory.FATHER_IN_LAW.name())
+                                    || detailsRequestDTO.getRelationCategory().equalsIgnoreCase(RelationCategory.MOTHER_IN_LAW.name())) {
 
                                 if (detailsRequestDTO.getDocuments().size() != 2) {
                                     log.info("User profile add dependent request out of wife document {} ", claimDependentRequestDTO);
@@ -232,10 +233,11 @@ public class ProfileServiceImpl implements ProfileService {
                                         return ResponseEntity.ok().body(responseUtil.error(null, 1040, messageSource.getMessage(ResponseMessageUtil.MARRIED_CERTIFICATE_MISSING, new Object[]{detailsRequestDTO.getFirstName()}, locale)));
                                     }
                                 }
-                            } else if (detailsRequestDTO.getDependentCategory().equalsIgnoreCase(DependentCategory.PARENTS.name())
-                                    || detailsRequestDTO.getDependentCategory().equalsIgnoreCase(DependentCategory.CHILDREN.name())
-                                    || detailsRequestDTO.getDependentCategory().equalsIgnoreCase(DependentCategory.BROTHER.name())
-                                    || detailsRequestDTO.getDependentCategory().equalsIgnoreCase(DependentCategory.SISTER.name())) {
+                            } else if (detailsRequestDTO.getRelationCategory().equalsIgnoreCase(RelationCategory.MOTHER.name())
+                                    || detailsRequestDTO.getRelationCategory().equalsIgnoreCase(RelationCategory.FATHER.name())
+                                    || detailsRequestDTO.getRelationCategory().equalsIgnoreCase(RelationCategory.CHILD.name())
+                                    || detailsRequestDTO.getRelationCategory().equalsIgnoreCase(RelationCategory.BROTHER.name())
+                                    || detailsRequestDTO.getRelationCategory().equalsIgnoreCase(RelationCategory.SISTER.name())) {
 
                                 if (detailsRequestDTO.getDocuments().size() != 1) {
                                     log.info("User profile add dependent request out of parent or child document {} ", claimDependentRequestDTO);
@@ -303,7 +305,7 @@ public class ProfileServiceImpl implements ProfileService {
                     findByUsernameAndUserPersonalDetails_UserStatus(profileImageUpdateRequestDTO.getUsername(), Status.ACTIVE).map((user) -> {
 
                         try {
-                            Document uploadedDocument = uploadProfileImage(profileImageUpdateRequestDTO.getType(), profileImageUpdateRequestDTO.getFile(), profileImageUpdateRequestDTO.getFileType(), profileImageUpdateRequestDTO.getFileName());
+                            Document uploadedDocument = uploadImage(profileImageUpdateRequestDTO.getType(), profileImageUpdateRequestDTO.getFile(), profileImageUpdateRequestDTO.getFileType(), profileImageUpdateRequestDTO.getFileName());
                             if (uploadedDocument == null) {
                                 log.info("User profile image upload failed");
                                 return ResponseEntity.ok().body(responseUtil.error(null, 1039, messageSource.getMessage(ResponseMessageUtil.PROFILE_IMAGE_UPLOAD_FAILED, null, locale)));
@@ -331,7 +333,7 @@ public class ProfileServiceImpl implements ProfileService {
         }
     }
 
-    protected Document uploadProfileImage(String tye, String file, String fileType, String fileName) throws IOException {
+    protected Document uploadImage(String tye, String file, String fileType, String fileName) throws IOException {
         try {
             log.info("Upload profile image");
             MultipartFile multipartFile = MultipartFileUtil.convertToMultipartFile(file, fileType, fileName);
@@ -574,16 +576,30 @@ public class ProfileServiceImpl implements ProfileService {
                     }).orElse(null);
 
                 }
-
                 ClaimsDependents claimsDependents = DependenceMapper.mapDependence(claimDependentDetailsRequestDTO);
-                claimsDependents.setApplicationUser(applicationUser);
+                boolean isMarried = applicationUser.getUserPersonalDetails().isMaritalStatus();
+                String dependentCategory = claimDependentDetailsRequestDTO.getDependentCategory();
+                String relationCategory = claimDependentDetailsRequestDTO.getRelationCategory();
+
+                boolean isEligibleForBoth = false;
+                if (isMarried) {
+                    isEligibleForBoth = DependentCategory.SPOUSE.name().equalsIgnoreCase(dependentCategory) ||
+                            DependentCategory.CHILDREN.name().equalsIgnoreCase(dependentCategory);
+                } else {
+                    isEligibleForBoth = RelationCategory.FATHER.name().equalsIgnoreCase(relationCategory) ||
+                            RelationCategory.MOTHER.name().equalsIgnoreCase(relationCategory);
+                }
+
+                claimsDependents.setEligibleFacility(isEligibleForBoth ? Facility.BOTH : Facility.DEATH);
+
+               claimsDependents.setApplicationUser(applicationUser);
                 if (claimDependentDetailsRequestDTO.getMarried() != null && married != null) {
                     claimsDependents.setMarried(married);
                 }
                 List<Document> uploadSupportingDocumentFromDependent = claimDependentDetailsRequestDTO.getDocuments().stream().map(doc -> {
                     log.info("Upload supporting document from dependent");
                     try {
-                        return uploadProfileImage(doc.getType(), doc.getFile(), doc.getFileType(), doc.getFileName());
+                        return uploadImage(doc.getType(), doc.getFile(), doc.getFileType(), doc.getFileName());
                     } catch (IOException e) {
                         log.error(e);
                         throw new RuntimeException(e);

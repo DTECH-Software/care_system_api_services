@@ -8,6 +8,8 @@
 package com.dtech.claim.service.impl;
 
 
+import com.dtech.claim.enums.*;
+import com.dtech.claim.util.MultipartFileUtil;
 import com.dtech.claim.dto.ClaimRequestIdGen;
 import com.dtech.claim.dto.PagingResult;
 import com.dtech.claim.dto.request.*;
@@ -15,15 +17,12 @@ import com.dtech.claim.dto.response.ApiResponse;
 import com.dtech.claim.dto.response.ClaimRequestResponseDto;
 import com.dtech.claim.dto.response.MessageResponseDTO;
 import com.dtech.claim.dto.search.ClaimHistory;
-import com.dtech.claim.enums.CommonParam;
-import com.dtech.claim.enums.NotificationsType;
-import com.dtech.claim.enums.Status;
-import com.dtech.claim.enums.Workflow;
+import com.dtech.claim.feign.DocumentFeignClient;
 import com.dtech.claim.feign.MessageFeignClient;
 import com.dtech.claim.mapper.EntityToDtoMapper;
 import com.dtech.claim.model.*;
 import com.dtech.claim.repository.*;
-import com.dtech.claim.service.ClaimRequestService;
+import com.dtech.claim.service.InsuranceClaimRequestService;
 import com.dtech.claim.specifications.ClaimHistorySpecification;
 import com.dtech.claim.util.*;
 import com.google.gson.Gson;
@@ -38,7 +37,9 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.*;
@@ -47,7 +48,7 @@ import java.util.stream.Collectors;
 @Service
 @Log4j2
 @RequiredArgsConstructor
-public class ClaimRequestServiceImpl implements ClaimRequestService {
+public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestService {
 
     @Autowired
     private final ApplicationUserRepository applicationUserRepository;
@@ -74,19 +75,16 @@ public class ClaimRequestServiceImpl implements ClaimRequestService {
     private final TreatmentRepository treatmentRepository;
 
     @Autowired
-    private final ClaimsAccountBalanceRepository claimsAccountBalanceRepository;
+    private final InsuranceClaimsAccountBalanceRepository insuranceClaimsAccountBalanceRepository;
 
     @Autowired
     private final EntityManager entityManager;
 
     @Autowired
-    private final DocumentRepository documentRepository;
-
-    @Autowired
     private final InsuranceClaimsDetailsRepository insuranceClaimsDetailsRepository;
 
     @Autowired
-    private final ClaimsRequestRepository claimsRequestRepository;
+    private final InsuranceClaimsRequestRepository insuranceClaimsRequestRepository;
 
     @Autowired
     private final CommonParameterRepository commonParameterRepository;
@@ -103,6 +101,9 @@ public class ClaimRequestServiceImpl implements ClaimRequestService {
     @Autowired
     private final Gson gson;
 
+    @Autowired
+    private final DocumentFeignClient documentFeignClient;
+
     @Override
     @Transactional
     public ResponseEntity<ApiResponse<Object>> claimRequest(ClaimRequestDTO claimRequestDTO, Locale locale) {
@@ -111,84 +112,88 @@ public class ClaimRequestServiceImpl implements ClaimRequestService {
 
             return applicationUserRepository.findByUsernameAndUserPersonalDetails_UserStatus(claimRequestDTO.getUsername().trim(), Status.ACTIVE).map((user) -> {
 
-                if (user.getApplicationOtpSession() != null) {
-                    log.info("Otp request otp session  {} ", user.getApplicationOtpSession());
+                   if (user.getApplicationOtpSession() != null) {
+                        log.info("Otp request otp session  {} ", user.getApplicationOtpSession());
 
-                    if (DateTimeUtil.getSeconds(user.getApplicationOtpSession().getCreatedDate(), 60).after(DateTimeUtil.getCurrentDateTime()) &&
-                            user.getApplicationOtpSession().getOtp().equals(claimRequestDTO.getOtp()) && !user.getApplicationOtpSession().isValidated()) {
-                        log.info("Otp request valid {} ", user.getApplicationOtpSession());
-                        updateApplicationUserOtpData(user, user.getApplicationOtpSession());
+                        if (DateTimeUtil.getSeconds(user.getApplicationOtpSession().getCreatedDate(), 60).after(DateTimeUtil.getCurrentDateTime()) &&
+                                user.getApplicationOtpSession().getOtp().equals(claimRequestDTO.getOtp()) && !user.getApplicationOtpSession().isValidated()) {
+                            log.info("Otp request valid {} ", user.getApplicationOtpSession());
+                            updateApplicationUserOtpData(user, user.getApplicationOtpSession());
 
-                        if (user.getInsurancePolicy() == null) {
-                            log.info("User not eligible to claim request {}", claimRequestDTO.getUsername());
-                            return ResponseEntity.ok().body(responseUtil.error(null, 1029, messageSource.getMessage(ResponseMessageUtil.USER_NOT_ELIGIBLE_TO_CLAIM_REQUEST, null, locale)));
-                        }
-                        return commonParameterRepository.findByCode(CommonParam.CLIM_REQUEST_PERIOD.name()).map((param) -> {
-                                    log.info("get - date from claim request {}", param);
-                                    Date minuesDate = DateTimeUtil.getMinuesDate(param.getValue());
-                                    if (claimRequestDTO.getToDate().before(minuesDate)) {
-                                        log.info("older than claim request {}", claimRequestDTO.getUsername());
-                                        return ResponseEntity.ok().body(responseUtil.error(null, 1037, messageSource.getMessage(ResponseMessageUtil.OLDER_DATE_CLAIM_REQUEST, null, locale)));
-                                    }
-                                    return insuranceRepository.findByIdAndStatus(user.getInsurancePolicy().getId(), Status.ACTIVE).map((policy) -> {
-                                        return insurancePeriodRepository.findByYearAndStatus(String.valueOf(LocalDate.now().getYear()), Status.ACTIVE).map((period) -> {
-                                            return treatmentRepository.findByTreatmentCode(claimRequestDTO.getTreatment()).map((treatment) -> {
-                                                return insuranceDetailsRepository.findByInsurancePolicyAndInsurancePeriodAndTreatmentAndStatus(policy, period, treatment, Status.ACTIVE).map((insuranceDetails) -> {
+                            if (user.getInsurancePolicy() == null) {
+                                log.info("User not eligible to claim request {}", claimRequestDTO.getUsername());
+                                return ResponseEntity.ok().body(responseUtil.error(null, 1029, messageSource.getMessage(ResponseMessageUtil.USER_NOT_ELIGIBLE_TO_CLAIM_REQUEST, null, locale)));
+                            }
+                            return commonParameterRepository.findByCode(CommonParam.INSURANCE_CLIM_REQUEST_PERIOD.name()).map((param) -> {
+                                        log.info("get - date from claim request {}", param);
+                                        Date minuesDate = DateTimeUtil.getMinuesDate(param.getValue());
+                                        if (claimRequestDTO.getToDate().before(minuesDate)) {
+                                            log.info("older than claim request {}", claimRequestDTO.getUsername());
+                                            return ResponseEntity.ok().body(responseUtil.error(null, 1037, messageSource.getMessage(ResponseMessageUtil.OLDER_DATE_CLAIM_REQUEST, null, locale)));
+                                        }
+                                        return insuranceRepository.findByIdAndStatus(user.getInsurancePolicy().getId(), Status.ACTIVE).map((policy) -> {
+                                            return insurancePeriodRepository.findByYearAndStatus(String.valueOf(LocalDate.now().getYear()), Status.ACTIVE).map((period) -> {
+                                                return treatmentRepository.findByTreatmentCode(claimRequestDTO.getTreatment()).map((treatment) -> {
+                                                    return insuranceDetailsRepository.findByInsurancePolicyAndInsurancePeriodAndTreatmentAndStatus(policy, period, treatment, Status.ACTIVE).map((insuranceDetails) -> {
 
-                                                    Optional<ClaimsDependents> claimsDependents = Optional.empty();
+                                                        Optional<ClaimsDependents> claimsDependents = Optional.empty();
 
-                                                    if (!claimRequestDTO.getIsEmployee()) {
-                                                        log.info("Claim dependent found for request {}", true);
-                                                        claimsDependents = claimDependentsRepository.findByIdAndApplicationUserAndStatus(claimRequestDTO.getClaimsDependentId(), user, Workflow.ACTIVE);
+                                                        if (!claimRequestDTO.getIsEmployee()) {
+                                                            log.info("Claim dependent found for request {}", true);
+                                                            claimsDependents = claimDependentsRepository.
+                                                                    findByIdAndApplicationUserAndStatusAndEligibleFacilityIn(
+                                                                            claimRequestDTO.getClaimsDependentId(),
+                                                                            user,
+                                                                            Workflow.ACTIVE,List.of(Facility.INSURANCE,Facility.BOTH));
 
-                                                        if (claimsDependents.isEmpty()) {
-                                                            log.info("Claim dependent not found");
-                                                            return ResponseEntity.ok().body(responseUtil.error(null, 1034, messageSource.getMessage(ResponseMessageUtil.CLAIM_DEPENDENT_NOT_FOUND, null, locale)));
+                                                            if (claimsDependents.isEmpty()) {
+                                                                log.info("Claim dependent not found or not eligible for insurance");
+                                                                return ResponseEntity.ok().body(responseUtil.error(null, 1034, messageSource.getMessage(ResponseMessageUtil.CLAIM_DEPENDENT_NOT_FOUND, null, locale)));
+                                                            }
                                                         }
-                                                    }
 
-                                                    Optional<ClaimsAccountBalance> claimsAccountBalance = claimsAccountBalanceRepository.findByEmployeeAndTreatmentAndInsurancePeriod(user, treatment, period);
+                                                        Optional<ClaimsAccountBalance> claimsAccountBalance = insuranceClaimsAccountBalanceRepository.findByEmployeeAndTreatmentAndInsurancePeriod(user, treatment, period);
 
-                                                    //check available fund
-                                                    String message = checkFundLimits(insuranceDetails, claimRequestDTO, claimsAccountBalance.orElse(null));
+                                                        //check available fund
+                                                        String message = checkFundLimits(insuranceDetails, claimRequestDTO, claimsAccountBalance.orElse(null));
 
-                                                    if (message != null && !message.isEmpty()) {
-                                                        log.info("validation filed {} ", message);
-                                                        return ResponseEntity.ok().body(responseUtil.error(null, 1035, message));
-                                                    }
-                                                    saveClaimRequest(claimRequestDTO, period, user, claimsDependents, treatment);
-                                                    updateAccountBalance(claimsAccountBalance.orElse(null), claimRequestDTO, treatment, insuranceDetails, user, period);
-                                                    return ResponseEntity.ok().body(responseUtil.success(null, messageSource.getMessage(ResponseMessageUtil.CLAIM_REQUEST_SUBMIT_SUCCESS, null, locale)));
+                                                        if (message != null && !message.isEmpty()) {
+                                                            log.info("validation filed {} ", message);
+                                                            return ResponseEntity.ok().body(responseUtil.error(null, 1035, message));
+                                                        }
+                                                        saveClaimRequest(claimRequestDTO, period, user, claimsDependents, treatment);
+                                                        updateAccountBalance(claimsAccountBalance.orElse(null), claimRequestDTO, treatment, insuranceDetails, user, period);
+                                                        return ResponseEntity.ok().body(responseUtil.success(null, messageSource.getMessage(ResponseMessageUtil.CLAIM_REQUEST_SUBMIT_SUCCESS, null, locale)));
 
+                                                    }).orElseGet(() -> {
+                                                        log.info("User insurance policy period treatment not found");
+                                                        return ResponseEntity.ok().body(responseUtil.error(null, 1033, messageSource.getMessage(ResponseMessageUtil.POLICY_TREATMENT_PERIOD_NOT_FOUND_OR_INACTIVE, null, locale)));
+                                                    });
                                                 }).orElseGet(() -> {
-                                                    log.info("User insurance policy period treatment not found");
-                                                    return ResponseEntity.ok().body(responseUtil.error(null, 1033, messageSource.getMessage(ResponseMessageUtil.POLICY_TREATMENT_PERIOD_NOT_FOUND_OR_INACTIVE, null, locale)));
+                                                    log.info("User insurance treatment not found {} ", DateTimeUtil.getCurrentDateTime());
+                                                    return ResponseEntity.ok().body(responseUtil.error(null, 1032, messageSource.getMessage(ResponseMessageUtil.TREATMENT_NOT_FOUND, null, locale)));
                                                 });
                                             }).orElseGet(() -> {
-                                                log.info("User insurance treatment not found {} ", DateTimeUtil.getCurrentDateTime());
-                                                return ResponseEntity.ok().body(responseUtil.error(null, 1032, messageSource.getMessage(ResponseMessageUtil.TREATMENT_NOT_FOUND, null, locale)));
+                                                log.info("User insurance period not found {} ", DateTimeUtil.getCurrentDateTime());
+                                                return ResponseEntity.ok().body(responseUtil.error(null, 1031, messageSource.getMessage(ResponseMessageUtil.INSURANCE_PERIOD_NOT_FOUND, null, locale)));
                                             });
                                         }).orElseGet(() -> {
-                                            log.info("User insurance period not found {} ", DateTimeUtil.getCurrentDateTime());
-                                            return ResponseEntity.ok().body(responseUtil.error(null, 1031, messageSource.getMessage(ResponseMessageUtil.INSURANCE_PERIOD_NOT_FOUND, null, locale)));
+                                            log.info("User insurance policy not found {} ", user.getInsurancePolicy().getId());
+                                            return ResponseEntity.ok().body(responseUtil.error(null, 1030, messageSource.getMessage(ResponseMessageUtil.INSURANCE_POLICY_NOT_FOUND, null, locale)));
                                         });
-                                    }).orElseGet(() -> {
-                                        log.info("User insurance policy not found {} ", user.getInsurancePolicy().getId());
-                                        return ResponseEntity.ok().body(responseUtil.error(null, 1030, messageSource.getMessage(ResponseMessageUtil.INSURANCE_POLICY_NOT_FOUND, null, locale)));
+                                    })
+                                    .orElseGet(() -> {
+                                        log.info("User common param claim request {}", claimRequestDTO.getUsername());
+                                        return ResponseEntity.ok().body(responseUtil.error(null, 1036, messageSource.getMessage(ResponseMessageUtil.COMMON_PARAM_NOT_FOUND, null, locale)));
+
                                     });
-                                })
-                                .orElseGet(() -> {
-                                    log.info("User common param claim request {}", claimRequestDTO.getUsername());
-                                    return ResponseEntity.ok().body(responseUtil.error(null, 1036, messageSource.getMessage(ResponseMessageUtil.COMMON_PARAM_NOT_FOUND, null, locale)));
+                        }
 
-                                });
+                        log.info("Otp request validation fail otp or invalid session {}", user.getApplicationOtpSession());
+                        return ResponseEntity.ok().body(responseUtil.error(null, 1016, messageSource.getMessage(ResponseMessageUtil.OTP_INVALID_OR_SESSION_TIME_OUT, null, locale)));
                     }
-
-                    log.info("Otp request validation fail otp or invalid session {}", user.getApplicationOtpSession());
-                    return ResponseEntity.ok().body(responseUtil.error(null, 1016, messageSource.getMessage(ResponseMessageUtil.OTP_INVALID_OR_SESSION_TIME_OUT, null, locale)));
-                }
-                log.info("Otp request otp session not found {} ", claimRequestDTO.getUsername());
-                return ResponseEntity.ok().body(responseUtil.error(null, 1015, messageSource.getMessage(ResponseMessageUtil.OTP_SESSION_NOT_FOUND, null, locale)));
+                    log.info("Otp request otp session not found {} ", claimRequestDTO.getUsername());
+                    return ResponseEntity.ok().body(responseUtil.error(null, 1015, messageSource.getMessage(ResponseMessageUtil.OTP_SESSION_NOT_FOUND, null, locale)));
 
             }).orElseGet(() -> {
                 log.info("User claim request user not found {} ", claimRequestDTO);
@@ -209,21 +214,21 @@ public class ClaimRequestServiceImpl implements ClaimRequestService {
             Pageable pageable = PaginationUtil.getPageable(paginationRequest);
 
             Page<ClaimsRequest> claimsRequests = Objects.nonNull(paginationRequest.getSearch()) ?
-                     claimsRequestRepository.findAll(ClaimHistorySpecification.getSpecification(paginationRequest.getSearch()),pageable) :
-                     claimsRequestRepository.findAll(pageable);
+                    insuranceClaimsRequestRepository.findAll(ClaimHistorySpecification.getSpecification(paginationRequest.getSearch()), pageable) :
+                    insuranceClaimsRequestRepository.findAll(pageable);
 
             long totalElements = Objects.nonNull(paginationRequest.getSearch()) ?
-                    claimsRequestRepository.count(ClaimHistorySpecification.getSpecification(paginationRequest.getSearch())) :
-                    claimsRequestRepository.count();
+                    insuranceClaimsRequestRepository.count(ClaimHistorySpecification.getSpecification(paginationRequest.getSearch())) :
+                    insuranceClaimsRequestRepository.count();
             log.info("Filter list data fetching success");
             List<ClaimRequestResponseDto> collectList = claimsRequests.stream()
                     .map(EntityToDtoMapper::mapClaimHistoryDetails).toList();
             log.info("Filter list {} success", collectList);
-            return ResponseEntity.ok().body(responseUtil.success(new PagingResult<ClaimRequestResponseDto>(collectList,collectList.size(),totalElements),
+            return ResponseEntity.ok().body(responseUtil.success(new PagingResult<ClaimRequestResponseDto>(collectList, collectList.size(), totalElements),
                     messageSource.getMessage(ResponseMessageUtil.CLAIM_REQUEST_HISTORY_FILTER_LIST_SUCCESS,
                             null, locale)));
 
-        }catch (Exception e) {
+        } catch (Exception e) {
             log.error(e);
             throw e;
         }
@@ -365,14 +370,13 @@ public class ClaimRequestServiceImpl implements ClaimRequestService {
                 claimsAccountBalance.setUtilizeAmount(claimsAccountBalance.getUtilizeAmount().add(claimRequestDTO.getRequestAmount()));
                 claimsAccountBalance.setAvailableBalance(claimsAccountBalance.getAvailableBalance().subtract(claimRequestDTO.getRequestAmount()));
             }
-            claimsAccountBalanceRepository.saveAndFlush(claimsAccountBalance);
+            insuranceClaimsAccountBalanceRepository.saveAndFlush(claimsAccountBalance);
             log.info("claim request account balance update finished");
         } catch (Exception e) {
             log.error(e);
             throw e;
         }
     }
-
 
     @Transactional
     protected InsuranceClaimsDetails saveClaimRequestDetails(ClaimRequestDTO claimRequestDTO, Treatment treatment) {
@@ -383,7 +387,19 @@ public class ClaimRequestServiceImpl implements ClaimRequestService {
             insuranceClaimsDetails.setFromTreatmentDate(claimRequestDTO.getFromDate());
             insuranceClaimsDetails.setToTreatmentDate(claimRequestDTO.getToDate());
             insuranceClaimsDetails.setDisease(claimRequestDTO.getDisease());
-            insuranceClaimsDetails.setDocuments(findClaimsDocument(claimRequestDTO.getDocuments()));
+            List<Document> uploadSupportingDocument = claimRequestDTO.getDocuments().stream().map(doc -> {
+                log.info("Upload supporting document from dependent");
+                try {
+                    return uploadImage(doc.getType(), doc.getFile(), doc.getFileType(), doc.getFileName());
+                } catch (IOException e) {
+                    log.error(e);
+                    throw new RuntimeException(e);
+                }
+            }).collect(Collectors.toList());
+
+            insuranceClaimsDetails.setDocuments(
+                    uploadSupportingDocument
+            );
             return insuranceClaimsDetailsRepository.saveAndFlush(insuranceClaimsDetails);
         } catch (Exception e) {
             log.error(e);
@@ -391,13 +407,18 @@ public class ClaimRequestServiceImpl implements ClaimRequestService {
         }
     }
 
-    @Transactional
-    protected List<Document> findClaimsDocument(List<SupportingDocumentDTO> supportingDocumentDTO) {
+    protected Document uploadImage(String tye, String file, String fileType, String fileName) throws IOException {
         try {
-            log.info("User claims request document save {} ", supportingDocumentDTO);
-
-            return supportingDocumentDTO.stream().map(val -> documentRepository.findById(val.getId()).orElseThrow(() -> new RuntimeException("Document not found with id " + val.getId()))).collect(Collectors.toList());
-
+            log.info("Upload profile image");
+            MultipartFile multipartFile = MultipartFileUtil.convertToMultipartFile(file, fileType, fileName);
+            log.info("Before calling document service {}", documentFeignClient);
+            ResponseEntity<ApiResponse<Object>> documentResponse = documentFeignClient.upload(tye, multipartFile);
+            log.info("After response document service {}", documentResponse);
+            Object objectApiResponse = ExtractApiResponseUtil.extractApiResponse(documentResponse);
+            log.info("After document mapper response {}", objectApiResponse);
+            Document document = gson.fromJson(gson.toJson(objectApiResponse), Document.class);
+            log.info("image upload success {}", document);
+            return document;
         } catch (Exception e) {
             log.error(e);
             throw e;
@@ -425,7 +446,7 @@ public class ClaimRequestServiceImpl implements ClaimRequestService {
             claimsRequest.setClaimsDependents(claimsDependents.orElse(null));
             claimsRequest.setEmployee(applicationUser);
             claimsRequest.setInsuranceClaimsDetails(insuranceClaimsDetails);
-            claimsRequestRepository.saveAndFlush(claimsRequest);
+            insuranceClaimsRequestRepository.saveAndFlush(claimsRequest);
             log.info("Complete save claim request id {}", claimRequestId);
         } catch (Exception e) {
             log.error(e);

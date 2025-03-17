@@ -8,5 +8,6 @@
 package com.dtech.claim.enums;
 
 public enum CommonParam {
-    CLIM_REQUEST_PERIOD
+    INSURANCE_CLIM_REQUEST_PERIOD,
+    DEATH_CLIM_REQUEST_PERIOD,
 }

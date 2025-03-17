@@ -9,7 +9,7 @@ import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.stereotype.Repository;
 
 @Repository
-public interface ClaimsRequestRepository extends JpaRepository<ClaimsRequest, Long> , JpaSpecificationExecutor<ClaimsRequest> {
+public interface InsuranceClaimsRequestRepository extends JpaRepository<ClaimsRequest, Long> , JpaSpecificationExecutor<ClaimsRequest> {
 
     Page<ClaimsRequest> findAll(Specification<ClaimsRequest> spec, Pageable pageable);
 }

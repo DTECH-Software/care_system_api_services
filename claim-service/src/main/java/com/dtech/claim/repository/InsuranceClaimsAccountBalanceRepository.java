@@ -10,6 +10,6 @@ import org.springframework.stereotype.Repository;
 import java.util.Optional;
 
 @Repository
-public interface ClaimsAccountBalanceRepository extends JpaRepository<ClaimsAccountBalance, Long> {
+public interface InsuranceClaimsAccountBalanceRepository extends JpaRepository<ClaimsAccountBalance, Long> {
     Optional<ClaimsAccountBalance> findByEmployeeAndTreatmentAndInsurancePeriod(ApplicationUser user, Treatment treatment, InsurancePeriod insurancePeriod);
 }

@@ -10,7 +10,8 @@ package com.dtech.claim.enums;
 public enum DependentCategory {
     PARENTS("Parents"),
     CHILDREN("Children"),
-    WIFE("Wife");
+    SPOUSE("Spouse"),
+    SIBLING("Sibling");
 
     private final String description;
 

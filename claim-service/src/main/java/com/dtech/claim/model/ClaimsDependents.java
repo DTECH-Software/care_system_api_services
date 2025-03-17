@@ -7,10 +7,7 @@
 
 package com.dtech.claim.model;
 
-import com.dtech.claim.enums.DependentCategory;
-import com.dtech.claim.enums.Gender;
-import com.dtech.claim.enums.RelationCategory;
-import com.dtech.claim.enums.Workflow;
+import com.dtech.claim.enums.*;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -59,6 +56,10 @@ public class ClaimsDependents extends Audit implements Serializable {
 
     @Column(name = "job_title")
     private String jobTitle;
+
+    @Column(name = "eligible_facility",nullable = false)
+    @Enumerated(EnumType.STRING)
+    private Facility eligibleFacility;
 
     @Column(name = "relation_category",nullable = false)
     @Enumerated(EnumType.STRING)

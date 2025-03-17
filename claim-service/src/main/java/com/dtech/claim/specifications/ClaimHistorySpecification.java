@@ -39,7 +39,6 @@ public class ClaimHistorySpecification {
             }
 
             if (filterDto.getRequestId() != null && !filterDto.getRequestId().isEmpty()) {
-                System.out.println("gsfgfhfd");
                 predicates.add(criteriaBuilder.equal(root.get("requestId"), filterDto.getRequestId()));
             }
 
