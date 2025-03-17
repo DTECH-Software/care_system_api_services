@@ -8,6 +8,7 @@
 package com.dtech.auth.service.impl;
 
 
+import com.dtech.auth.dto.SimpleBaseDTO;
 import com.dtech.auth.dto.request.*;
 import com.dtech.auth.dto.response.ApiResponse;
 import com.dtech.auth.dto.response.MessageResponseDTO;
@@ -36,6 +37,7 @@ import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static com.dtech.auth.util.EnumUtil.getEnumList;
 
@@ -98,15 +100,22 @@ public class SignupServiceImpl implements SignupService {
     @Autowired
     private final ObjectMapper objectMapper;
 
+    @Autowired
+    private final MarriedRepository marriedRepository;
+
     @Override
     public ResponseEntity<ApiResponse<Object>> splash(ChannelRequestDTO channelRequestDTO, Locale locale) {
 
         try {
             log.info("Splash Request {} ", channelRequestDTO);
             Map<String, Object> splashData = new HashMap<>();
+            List<SimpleBaseDTO> marriedRounds = marriedRepository.findByAllAndStatus(Status.ACTIVE)
+                    .stream()
+                    .map(val -> new SimpleBaseDTO(val.getCode(), val.getDescription()))
+                    .toList();
+            splashData.put("marriedRounds", marriedRounds);
             splashData.put("passwordPolicy", modelMapper.map(applicationPasswordPolicyRepository.findPasswordPolicy().orElse(null),PolicyResponseDTO.class));
             splashData.put("usernamePolicy", modelMapper.map(applicationUsernamePolicyRepository.findUsernamePolicy().orElse(null),PolicyResponseDTO.class));
-
             splashData.put("gender", getEnumList(Gender.class));
             splashData.put("dependents", getEnumList(DependentCategory.class));
             splashData.put("title", getEnumList(Title.class));

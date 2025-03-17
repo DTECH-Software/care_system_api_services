@@ -570,7 +570,7 @@ public class ProfileServiceImpl implements ProfileService {
 
                 }
                 {
-                    married = marriedRepository.findById(Long.valueOf(claimDependentDetailsRequestDTO.getMarried())).map(ma -> {
+                    married = marriedRepository.findByCodeAndStatus(claimDependentDetailsRequestDTO.getMarried(),Status.ACTIVE).map(ma -> {
                         log.info("Married  {}", ma);
                         return ma;
                     }).orElse(null);

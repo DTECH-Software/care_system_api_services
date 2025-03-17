@@ -22,9 +22,9 @@ import java.util.Date;
 import java.util.List;
 
 @Data
-@Conditional(selected = "dependentCategory" ,values = {"PARENTS,WIFE","HUSBAND","FATHER_IN_LAW","MOTHER_IN_LAW"},required = {"jobTitle"},message = "Job title is required.")
-@Conditional(selected = "dependentCategory" ,values = {"PARENTS,WIFE","HUSBAND"},required = {"nic"},message = "NIC is required.")
-@Conditional(selected = "dependentCategory" ,values = {"WIFE","HUSBAND","FATHER_IN_LAW","MOTHER_IN_LAW","CHILDREN"},required = {"married"},message = "Married is required.")
+@Conditional(selected = "relationCategory" ,values = {"MOTHER","FATHER","WIFE","HUSBAND","FATHER_IN_LAW","MOTHER_IN_LAW"},required = {"jobTitle"},message = "Job title is required.")
+@Conditional(selected = "relationCategory" ,values = {"MOTHER","FATHER","WIFE","HUSBAND","FATHER_IN_LAW","MOTHER_IN_LAW"},required = {"nic"},message = "NIC is required.")
+@Conditional(selected = "relationCategory" ,values = {"WIFE","HUSBAND","FATHER_IN_LAW","MOTHER_IN_LAW","CHILD"},required = {"married"},message = "Married is required.")
 @NicRequiredIfAge(message = "NIC is required for dependents aged 18 or older.")
 public class ClaimDependentDetailsRequestValidatorDTO {
     @NotBlank(message = "Dependent category is required.")
