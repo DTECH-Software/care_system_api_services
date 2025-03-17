@@ -104,8 +104,8 @@ public class SignupServiceImpl implements SignupService {
         try {
             log.info("Splash Request {} ", channelRequestDTO);
             Map<String, Object> splashData = new HashMap<>();
-            splashData.put("passwordPolicy", applicationPasswordPolicyRepository.findPasswordPolicy().orElse(null));
-            splashData.put("usernamePolicy", applicationUsernamePolicyRepository.findUsernamePolicy().orElse(null));
+            splashData.put("passwordPolicy", modelMapper.map(applicationPasswordPolicyRepository.findPasswordPolicy().orElse(null),PolicyResponseDTO.class));
+            splashData.put("usernamePolicy", modelMapper.map(applicationUsernamePolicyRepository.findUsernamePolicy().orElse(null),PolicyResponseDTO.class));
 
             splashData.put("gender", getEnumList(Gender.class));
             splashData.put("dependents", getEnumList(DependentCategory.class));
