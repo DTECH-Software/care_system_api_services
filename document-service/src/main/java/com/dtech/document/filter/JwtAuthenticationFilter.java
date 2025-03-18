@@ -8,6 +8,9 @@
 package com.dtech.document.filter;
 
 
+import com.dtech.document.util.ResponseUtil;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.google.gson.Gson;
 import com.dtech.document.dto.response.ApiResponse;
 import com.dtech.document.dto.response.TokenValidResponseDTO;
@@ -37,10 +40,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final TokenFeignClient tokenFeignClient;
     private final Gson gson;
+    private final ResponseUtil responseUtil;
 
-    public JwtAuthenticationFilter(TokenFeignClient tokenFeignClient, Gson gson) {
+    public JwtAuthenticationFilter(TokenFeignClient tokenFeignClient, Gson gson, ResponseUtil responseUtil) {
         this.tokenFeignClient = tokenFeignClient;
         this.gson = gson;
+        this.responseUtil = responseUtil;
     }
 
     @Override
@@ -68,15 +73,32 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     );
                     SecurityContextHolder.getContext().setAuthentication(authentication);
 
+                }else {
+                    log.info("JWT Authentication Filter Token expired or invalid - Auth {}", token);
+                    sendUnauthorizedResponse(response, "Token has expired or is invalid. Please log in again to continue");
+                    return ;
                 }
             }
             filterChain.doFilter(request, response);
 
         } catch (Exception e) {
             log.error(e);
-            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-            response.setContentType("application/json");
-            response.getWriter().write("{\"message\": \"Unauthorized: An error occurred while processing the token\"}");
+            sendUnauthorizedResponse(null,"An error occurred while processing the token");
         }
+    }
+
+    private void sendUnauthorizedResponse(HttpServletResponse response, String message) throws IOException {
+        response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+        response.setContentType("application/json");
+
+        ApiResponse<Object> apiResponse = responseUtil.error(
+                null,
+                1111,
+                message
+        );
+        ObjectMapper objectMapper = new ObjectMapper();
+        objectMapper.registerModule(new JavaTimeModule());
+        String jsonResponse = objectMapper.writeValueAsString(apiResponse);
+        response.getWriter().write(jsonResponse);
     }
 }
