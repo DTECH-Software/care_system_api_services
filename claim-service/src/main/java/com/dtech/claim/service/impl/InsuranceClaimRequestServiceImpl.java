@@ -115,8 +115,8 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
                    if (user.getApplicationOtpSession() != null) {
                         log.info("Otp request otp session  {} ", user.getApplicationOtpSession());
 
-                        if (DateTimeUtil.getSeconds(user.getApplicationOtpSession().getCreatedDate(), 60).after(DateTimeUtil.getCurrentDateTime()) &&
-                                user.getApplicationOtpSession().getOtp().equals(claimRequestDTO.getOtp()) && !user.getApplicationOtpSession().isValidated()) {
+                        if (DateTimeUtil.getSeconds(user.getApplicationOtpSession().getCreatedDate(), 600).after(DateTimeUtil.getCurrentDateTime()) &&
+                                user.getApplicationOtpSession().getOtp().equals(claimRequestDTO.getOtp()) && user.getApplicationOtpSession().isValidated()) {
                             log.info("Otp request valid {} ", user.getApplicationOtpSession());
                             updateApplicationUserOtpData(user, user.getApplicationOtpSession());
 

@@ -7,11 +7,23 @@
 
 package com.dtech.claim.dto.request.validator;
 
+import com.dtech.claim.enums.DocType;
+import com.dtech.claim.validator.ValidEnum;
+import com.dtech.claim.validator.ValidFileType;
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
 @Data
 public class SupportingDocumentValidatorDTO {
-    @NotNull(message = "Document id is required.")
-    private String id;
+    @NotBlank(message = "File type is required.")
+    @ValidEnum(enumClass = DocType.class, message = "Invalid file type.")
+    private String type;
+    @NotBlank(message = "File is required.")
+    private String file;
+    @NotBlank(message = "File type is required.")
+    @ValidFileType(message = "Only PNG, JPEG, JPG, and PDF file types are allowed.")
+    private String fileType;
+    @NotBlank(message = "File name is required.")
+    private String fileName;
 }
