@@ -7,6 +7,7 @@
 
 package com.dtech.auth.dto.response;
 
+import com.dtech.auth.dto.SimpleBaseDTO;
 import lombok.Data;
 
 import java.util.Date;
@@ -31,5 +32,7 @@ public class ClaimDependentDetailsResponseDTO {
     private String relationCategoryDescription;
     private String status;
     private String statusDescription;
+    private SimpleBaseDTO married;
+    private String eligibleFacility;
     private List<DocumentDownloadResponseDTO> documents;
 }

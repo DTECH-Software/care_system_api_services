@@ -109,7 +109,7 @@ public class SignupServiceImpl implements SignupService {
         try {
             log.info("Splash Request {} ", channelRequestDTO);
             Map<String, Object> splashData = new HashMap<>();
-            List<SimpleBaseDTO> marriedRounds = marriedRepository.findByAllAndStatus(Status.ACTIVE)
+            List<SimpleBaseDTO> marriedRounds = marriedRepository.findAllByStatus(Status.ACTIVE)
                     .stream()
                     .map(val -> new SimpleBaseDTO(val.getCode(), val.getDescription()))
                     .toList();
@@ -144,7 +144,7 @@ public class SignupServiceImpl implements SignupService {
                         log.info("Sign up inquiry start");
                         UserPersonalDetailsResponseDTO userPersonalDetailsResponseDTO = modelMapper.map(user, UserPersonalDetailsResponseDTO.class);
                         getAge(userPersonalDetailsResponseDTO);
-                        log.info("Sign up inquiry end");
+                        log.info("Sign up inquiry end {} ",userPersonalDetailsResponseDTO);
                         return ResponseEntity.ok().body(responseUtil.success(userPersonalDetailsResponseDTO, messageSource.getMessage(ResponseMessageUtil.EMPLOYEE_DETAILS_INQUIRY_SUCCESS, null, locale)));
                     }))
                     .orElseGet(() -> {

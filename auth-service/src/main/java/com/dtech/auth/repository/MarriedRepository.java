@@ -11,5 +11,5 @@ import java.util.Optional;
 @Repository
 public interface MarriedRepository extends JpaRepository<Married, Long> {
     Optional<Married> findByCodeAndStatus(String code, Status status);
-    List<Married> findByAllAndStatus(Status status);
+    List<Married> findAllByStatus(Status status);
 }

@@ -204,12 +204,10 @@ public class ProfileServiceImpl implements ProfileService {
                             }
 
                             if (detailsRequestDTO.getRelationCategory().equalsIgnoreCase(RelationCategory.WIFE.name())
-                                    || detailsRequestDTO.getRelationCategory().equalsIgnoreCase(RelationCategory.HUSBAND.name())
-                                    || detailsRequestDTO.getRelationCategory().equalsIgnoreCase(RelationCategory.FATHER_IN_LAW.name())
-                                    || detailsRequestDTO.getRelationCategory().equalsIgnoreCase(RelationCategory.MOTHER_IN_LAW.name())) {
+                                    || detailsRequestDTO.getRelationCategory().equalsIgnoreCase(RelationCategory.HUSBAND.name())) {
 
                                 if (detailsRequestDTO.getDocuments().size() != 2) {
-                                    log.info("User profile add dependent request out of wife document {} ", claimDependentRequestDTO);
+                                    log.info("User profile add dependent request out of wife and husband document {} ", claimDependentRequestDTO);
                                     return ResponseEntity.ok().body(responseUtil.error(null, 1023, messageSource.getMessage(ResponseMessageUtil.CLAIM_DEPENDENT_WIFE_DOCUMENT_IS_EMPTY_OR_OUT_OF_RANGE, new Object[]{detailsRequestDTO.getFirstName()}, locale)));
 
                                 } else {

@@ -8,6 +8,7 @@
 package com.dtech.auth.mapper.EntityToDto;
 
 
+import com.dtech.auth.dto.SimpleBaseDTO;
 import com.dtech.auth.dto.response.*;
 import com.dtech.auth.enums.Gender;
 import com.dtech.auth.enums.Title;
@@ -80,7 +81,9 @@ public class ProfileMapper {
                 claimDependentDetailsResponseDTO.setStatus(ifNotOrEmpty(String.valueOf(dependents.getStatus())));
                 claimDependentDetailsResponseDTO.setStatusDescription(ifNotOrEmpty(String.valueOf(dependents.getStatus().getDescription())));
                 claimDependentDetailsResponseDTO.setTitleDescription(Title.valueOf(dependents.getTitle().name()).getDescription());
-
+                claimDependentDetailsResponseDTO.setMarried(new SimpleBaseDTO(ifNotOrEmpty(String.valueOf(dependents.getMarried().getCode()))
+                        ,ifNotOrEmpty(String.valueOf(dependents.getMarried().getDescription()))));
+                claimDependentDetailsResponseDTO.setEligibleFacility(ifNotOrEmpty(String.valueOf(dependents.getEligibleFacility())));
                 log.info("claim dependent details call get image method");
                 List<DocumentDownloadResponseDTO> collect = dependents.getDocuments().stream().map((document -> {
                     log.info("inside document mapper {} ",document);
