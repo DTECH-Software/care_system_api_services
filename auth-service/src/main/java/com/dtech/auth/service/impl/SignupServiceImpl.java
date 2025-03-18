@@ -104,6 +104,7 @@ public class SignupServiceImpl implements SignupService {
     private final MarriedRepository marriedRepository;
 
     @Override
+    @Transactional(readOnly = true)
     public ResponseEntity<ApiResponse<Object>> splash(ChannelRequestDTO channelRequestDTO, Locale locale) {
 
         try {

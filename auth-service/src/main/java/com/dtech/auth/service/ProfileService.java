@@ -11,7 +11,5 @@ public interface ProfileService {
     ResponseEntity<ApiResponse<Object>> addDependents(ClaimDependentRequestDTO claimDependentRequestDTO, Locale locale);
     ResponseEntity<ApiResponse<Object>> getDependentsDetails(ChannelRequestDTO channelRequestDTO, Locale locale);
     ResponseEntity<ApiResponse<Object>> updateProfileImage(ProfileImageUpdateRequestDTO profileImageUpdateRequestDTO, Locale locale);
-    ResponseEntity<ApiResponse<Object>> updateProfileDetailsOtpRequest(ProfileEditOtpRequestDTO profileEditOtpRequestDTO, Locale locale);
-    ResponseEntity<ApiResponse<Object>> updateProfileOtpValidation(OtpRequestDTO otpRequestDTO, Locale locale);
     ResponseEntity<ApiResponse<Object>> updateProfileDetails(ProfileEditRequestDTO profileEditRequestDTO, Locale locale);
 }

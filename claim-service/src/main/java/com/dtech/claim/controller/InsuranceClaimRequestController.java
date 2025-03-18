@@ -7,9 +7,11 @@
 
 package com.dtech.claim.controller;
 
+import com.dtech.claim.dto.request.ChannelRequestDTO;
 import com.dtech.claim.dto.request.ClaimRequestDTO;
 import com.dtech.claim.dto.request.OtpRequestDTO;
 import com.dtech.claim.dto.request.PaginationRequest;
+import com.dtech.claim.dto.request.validator.ChannelRequestValidatorDTO;
 import com.dtech.claim.dto.request.validator.ClaimRequestValidatorDTO;
 import com.dtech.claim.dto.request.validator.OtpRequestValidatorDTO;
 import com.dtech.claim.dto.response.ApiResponse;
@@ -44,26 +46,33 @@ public class InsuranceClaimRequestController {
     @Autowired
     private final Gson gson;
 
+    @PostMapping(path = "/reference-data",produces = MediaType.APPLICATION_JSON_VALUE,consumes = MediaType.APPLICATION_JSON_VALUE)
+    @ApiOperation(value = "Handle insurance claim request request ",notes = "Insurance claim request success or failed")
+    public ResponseEntity<ApiResponse<Object>> insuranceClaimReferenceData(@RequestBody @Valid ChannelRequestValidatorDTO channelRequestValidatorDTO, Locale locale) {
+        log.info("Insurance claim request reference data controller {} ", channelRequestValidatorDTO);
+        return insuranceClaimRequestService.insuranceClaimReferenceData(gson.fromJson(gson.toJson(channelRequestValidatorDTO), ChannelRequestDTO.class), locale);
+    }
+
     @PostMapping(path = "/request",produces = MediaType.APPLICATION_JSON_VALUE,consumes = MediaType.APPLICATION_JSON_VALUE)
-    @ApiOperation(value = "Handle claim request request ",notes = "Claim request success or failed")
-    public ResponseEntity<ApiResponse<Object>> claimRequest(@RequestBody @Valid ClaimRequestValidatorDTO claimRequestValidatorDTO, Locale locale) {
-        log.info("Claim request controller {} ", claimRequestValidatorDTO);
-        return insuranceClaimRequestService.claimRequest(gson.fromJson(gson.toJson(claimRequestValidatorDTO), ClaimRequestDTO.class), locale);
+    @ApiOperation(value = "Handle insurance claim request request ",notes = "Insurance claim request success or failed")
+    public ResponseEntity<ApiResponse<Object>> insuranceClaimRequest(@RequestBody @Valid ClaimRequestValidatorDTO claimRequestValidatorDTO, Locale locale) {
+        log.info("Insurance claim request controller {} ", claimRequestValidatorDTO);
+        return insuranceClaimRequestService.insuranceClaimRequest(gson.fromJson(gson.toJson(claimRequestValidatorDTO), ClaimRequestDTO.class), locale);
     }
 
     @PostMapping(path = "/filter-list",produces = MediaType.APPLICATION_JSON_VALUE,consumes = MediaType.APPLICATION_JSON_VALUE)
-    @ApiOperation(value = "Handle claim history request request ",notes = "Claim request history success or failed")
-    public ResponseEntity<ApiResponse<Object>> claimHistoryList(@RequestBody @Valid PaginationRequest<ClaimHistory> paginationRequest, Locale locale) {
-        log.info("Claim history request controller {} ", paginationRequest);
+    @ApiOperation(value = "Handle insurance claim history request request ",notes = "Insurance claim request history success or failed")
+    public ResponseEntity<ApiResponse<Object>> insuranceClaimHistoryList(@RequestBody @Valid PaginationRequest<ClaimHistory> paginationRequest, Locale locale) {
+        log.info("Insurance claim history request controller {} ", paginationRequest);
         Type paginationRequestType = new TypeToken<PaginationRequest<ClaimHistory>>(){}.getType();
-        return insuranceClaimRequestService.claimHistoryList(gson.fromJson(gson.toJson(paginationRequest), paginationRequestType), locale);
+        return insuranceClaimRequestService.insuranceClaimHistoryList(gson.fromJson(gson.toJson(paginationRequest), paginationRequestType), locale);
     }
 
-    @PostMapping(path = "/otp",produces = MediaType.APPLICATION_JSON_VALUE,consumes = MediaType.APPLICATION_JSON_VALUE)
-    @ApiOperation(value = "Handle claim request otp request ",notes = "Handle claim request otp request success or failed")
-    public ResponseEntity<ApiResponse<Object>> claimRequestOtp(@RequestBody @Valid OtpRequestValidatorDTO otpRequestValidatorDTO, Locale locale) {
-        log.info("Claim request otp request controller {} ", otpRequestValidatorDTO);
-        return insuranceClaimRequestService.claimRequestOtp(gson.fromJson(gson.toJson(otpRequestValidatorDTO), OtpRequestDTO.class), locale);
-    }
+//    @PostMapping(path = "/otp",produces = MediaType.APPLICATION_JSON_VALUE,consumes = MediaType.APPLICATION_JSON_VALUE)
+//    @ApiOperation(value = "Handle claim request otp request ",notes = "Handle claim request otp request success or failed")
+//    public ResponseEntity<ApiResponse<Object>> claimRequestOtp(@RequestBody @Valid OtpRequestValidatorDTO otpRequestValidatorDTO, Locale locale) {
+//        log.info("Claim request otp request controller {} ", otpRequestValidatorDTO);
+//        return insuranceClaimRequestService.claimRequestOtp(gson.fromJson(gson.toJson(otpRequestValidatorDTO), OtpRequestDTO.class), locale);
+//    }
 
 }

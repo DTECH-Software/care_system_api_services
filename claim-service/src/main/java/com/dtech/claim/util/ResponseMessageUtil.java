@@ -57,4 +57,5 @@ public class ResponseMessageUtil {
     public final static String OLDER_DATE_CLAIM_REQUEST = "val.older.date.claim.request";
     public final static String CLAIM_REQUEST_HISTORY_FILTER_LIST_SUCCESS = "val.claim.request.history.filter.list.success";
     public final static String CLAIM_DEPENDENT_NOT_FOUND_OR_FACILITY_NOT_ELIGIBLE = "val.claim.dependent.not.eligible.or.facility.not.eligible";
+    public final static String INSURANCE_CLAIMS_REFERENCE_DETAILS_SUCCESS = "val.insurance.claims.reference.details.success";
 }
