@@ -219,23 +219,21 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
                 log.info("Insurance claim reference data get dependence {} ", treatmentList);
                 List<SimpleBaseDTO> claimsDependents = claimDependentsRepository.
                         findByApplicationUserAndStatusAndEligibleFacilityIn(user, Workflow.ACTIVE, List.of(Facility.INSURANCE, Facility.BOTH))
-                        .stream().map(dep -> new SimpleBaseDTO(String.valueOf(dep.getId()),dep.getFirstName()+" "+dep.getLastName())).toList();
-
+                        .stream().map(dep -> new SimpleBaseDTO(String.valueOf(dep.getId()), dep.getFirstName() + " " + dep.getLastName())).toList();
+                List<SimpleBaseDTO> treatment = treatmentList.stream().map(val -> new SimpleBaseDTO(val.getTreatmentCode(), val.getTreatmentDescription())).toList();
                 Map<String, Object> splashData = new HashMap<>();
-                List<AvailableInsuranceLimitDTO> list =  null;
-                if(period != null) {
-                 list = treatmentList.stream().map(tre -> {
+                List<AvailableInsuranceLimitDTO> list = null;
+                if (period != null) {
+                    list = treatmentList.stream().map(tre -> {
                         ClaimsAccountBalance claimsAccountBalance = insuranceClaimsAccountBalanceRepository
                                 .findByEmployeeAndTreatmentAndInsurancePeriod(user, tre, period)
                                 .orElse(null);
                         log.info("Insurance claim reference data acc balance + treatment {} {} ", claimsAccountBalance, tre);
-                        InsuranceDetails insuranceDetails = null;
-                        if (claimsAccountBalance == null) {
-                            log.info("Insurance claim reference data acc balance is null");
-                            insuranceDetails = insuranceDetailsRepository.
-                                    findByInsurancePolicyAndInsurancePeriodAndTreatmentAndStatus(user.getInsurancePolicy(), period, tre, Status.ACTIVE).orElse(null);
-                            log.info("Insurance claim reference data balance is {} ", insuranceDetails);
-                        }
+
+                        log.info("Insurance claim reference data acc balance is null");
+                        InsuranceDetails insuranceDetails = insuranceDetailsRepository.
+                                findByInsurancePolicyAndInsurancePeriodAndTreatmentAndStatus(user.getInsurancePolicy(), period, tre, Status.ACTIVE).orElse(null);
+                        log.info("Insurance claim reference data balance is {} ", insuranceDetails);
 
                         AvailableInsuranceLimitDTO availableInsuranceLimitDTO = AvailableInsuranceLimitDTO.builder()
                                 .treatment(tre.getTreatmentCode())
@@ -249,8 +247,10 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
                 }
                 log.info("Claims data  success {}", list);
                 splashData.put("insuranceClaimsDependents", claimsDependents);
+                splashData.put("treatment", treatment);
                 splashData.put("insuranceClaimsFundLimits", list);
-                return ResponseEntity.ok().body(responseUtil.success((Object) splashData, messageSource.getMessage(ResponseMessageUtil.INSURANCE_CLAIMS_REFERENCE_DETAILS_SUCCESS, null, locale)));   }).orElseGet(() -> {
+                return ResponseEntity.ok().body(responseUtil.success((Object) splashData, messageSource.getMessage(ResponseMessageUtil.INSURANCE_CLAIMS_REFERENCE_DETAILS_SUCCESS, null, locale)));
+            }).orElseGet(() -> {
                 log.info("User insurance claim request user not found {} ", channelRequestDTO);
                 return ResponseEntity.ok().body(responseUtil.error(null, 1014, messageSource.getMessage(ResponseMessageUtil.APPLICATION_USER_NOT_FOUND, null, locale)));
             });
