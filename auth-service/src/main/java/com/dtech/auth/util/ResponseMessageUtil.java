@@ -50,6 +50,12 @@ public class ResponseMessageUtil {
     public final static String BIRTH_CERTIFICATE_MISSING = "val.birth.certificate.missing";
     public final static String MARRIED_CERTIFICATE_MISSING = "val.married.certificate.missing";
     public final static String USER_NOT_ELIGIBLE_WIFE_OR_HUSBAND_DEPENDENTS = "val.user.not.eligible.wife.or.husband.dependents";
-    public final static String MARRED_ROUND_NOT_FOUND = "val.marred.round.not.found";
+    public final static String DEPENDENT_HUSBAND_CANT_ADDED = "val.dependents.husband.cant.added";
+    public final static String DEPENDENT_WIFE_CANT_ADDED = "val.dependents.wife.cant.added";
+    public final static String DEPENDENT_GENDER_INCORRECT = "val.dependents.gender.incorrect";
+    public final static String DEPENDENT_WIFE_MARRIED_ROUND_ALREADY_FOUND = "val.dependents.wife.round.already.found";
+    public final static String DEPENDENT_HUSBAND_MARRIED_ROUND_ALREADY_FOUND = "val.dependents.husband.round.already.found";
+    public final static String DEPENDENT_FATHER_IN_LAW_MARRIED_ROUND_ALREADY_FOUND = "val.dependents.father.in.law.round.already.found";
+    public final static String DEPENDENT_MOTHER_IN_LAW_MARRIED_ROUND_ALREADY_FOUND = "val.dependents.mother.in.law.round.already.found";
 
 }

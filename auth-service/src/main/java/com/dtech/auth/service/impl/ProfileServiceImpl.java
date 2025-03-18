@@ -127,28 +127,28 @@ public class ProfileServiceImpl implements ProfileService {
                             } else if (applicationUser.getUserPersonalDetails().getGender().equals(Gender.MALE) &&
                                     detailsRequestDTO.getRelationCategory().equalsIgnoreCase(RelationCategory.HUSBAND.name())) {
                                 log.info("Can't relation husband {} ", detailsRequestDTO.getRelationCategory());
-                                return ResponseEntity.ok().body(responseUtil.error(null, 1041, messageSource.getMessage(ResponseMessageUtil.CLAIM_DEPENDENT_MOTHER_FOUND, new Object[]{clientMobile}, locale)));
+                                return ResponseEntity.ok().body(responseUtil.error(null, 1041, messageSource.getMessage(ResponseMessageUtil.DEPENDENT_HUSBAND_CANT_ADDED, new Object[]{clientMobile}, locale)));
 
                             } else if (applicationUser.getUserPersonalDetails().getGender().equals(Gender.FEMALE) &&
                                     detailsRequestDTO.getRelationCategory().equalsIgnoreCase(RelationCategory.WIFE.name())) {
                                 log.info("Can't relation wife {} ", detailsRequestDTO.getRelationCategory());
-                                return ResponseEntity.ok().body(responseUtil.error(null, 1041, messageSource.getMessage(ResponseMessageUtil.CLAIM_DEPENDENT_MOTHER_FOUND, new Object[]{clientMobile}, locale)));
+                                return ResponseEntity.ok().body(responseUtil.error(null, 1041, messageSource.getMessage(ResponseMessageUtil.DEPENDENT_WIFE_CANT_ADDED, new Object[]{clientMobile}, locale)));
 
                             } else if ((detailsRequestDTO.getRelationCategory().equalsIgnoreCase(RelationCategory.HUSBAND.name())
                                     || detailsRequestDTO.getRelationCategory().equalsIgnoreCase(RelationCategory.FATHER.name())
                                     || detailsRequestDTO.getRelationCategory().equalsIgnoreCase(RelationCategory.BROTHER.name())
-                                    || detailsRequestDTO.getRelationCategory().equalsIgnoreCase(RelationCategory.FATHER_IN_LAW.name()) && detailsRequestDTO.getGender().equalsIgnoreCase(Gender.FEMALE.name()))
+                                    || detailsRequestDTO.getRelationCategory().equalsIgnoreCase(RelationCategory.FATHER_IN_LAW.name())) && detailsRequestDTO.getGender().equalsIgnoreCase(Gender.FEMALE.name())
                             ) {
                                 log.info("Gender is not male correct {}", detailsRequestDTO.getFirstName());
-                                return ResponseEntity.ok().body(responseUtil.error(null, 1042, messageSource.getMessage(ResponseMessageUtil.CLAIM_DEPENDENT_MOTHER_FOUND, new Object[]{clientMobile}, locale)));
+                                return ResponseEntity.ok().body(responseUtil.error(null, 1042, messageSource.getMessage(ResponseMessageUtil.DEPENDENT_GENDER_INCORRECT, new Object[]{clientMobile}, locale)));
 
                             } else if ((detailsRequestDTO.getRelationCategory().equalsIgnoreCase(RelationCategory.WIFE.name())
                                     || detailsRequestDTO.getRelationCategory().equalsIgnoreCase(RelationCategory.MOTHER.name())
                                     || detailsRequestDTO.getRelationCategory().equalsIgnoreCase(RelationCategory.SISTER.name())
-                                    || detailsRequestDTO.getRelationCategory().equalsIgnoreCase(RelationCategory.MOTHER_IN_LAW.name()) && detailsRequestDTO.getGender().equalsIgnoreCase(Gender.MALE.name()))
+                                    || detailsRequestDTO.getRelationCategory().equalsIgnoreCase(RelationCategory.MOTHER_IN_LAW.name())) && detailsRequestDTO.getGender().equalsIgnoreCase(Gender.MALE.name())
                             ) {
                                 log.info("Gender is not female correct {}", detailsRequestDTO.getFirstName());
-                                return ResponseEntity.ok().body(responseUtil.error(null, 1042, messageSource.getMessage(ResponseMessageUtil.CLAIM_DEPENDENT_MOTHER_FOUND, new Object[]{clientMobile}, locale)));
+                                return ResponseEntity.ok().body(responseUtil.error(null, 1042, messageSource.getMessage(ResponseMessageUtil.DEPENDENT_GENDER_INCORRECT, new Object[]{clientMobile}, locale)));
 
                             }
 
@@ -175,7 +175,7 @@ public class ProfileServiceImpl implements ProfileService {
                                         RelationCategory.WIFE, Arrays.asList(Workflow.ACTIVE, Workflow.UNDER_REVIEW), Long.valueOf(detailsRequestDTO.getMarried()));
                                 if (existed) {
                                     log.info("User profile add dependent request already married round wife {} ", existed);
-                                    return ResponseEntity.ok().body(responseUtil.error(null, 1022, messageSource.getMessage(ResponseMessageUtil.CLAIM_DEPENDENT_FATHER_FOUND, new Object[]{clientMobile}, locale)));
+                                    return ResponseEntity.ok().body(responseUtil.error(null, 1022, messageSource.getMessage(ResponseMessageUtil.DEPENDENT_WIFE_MARRIED_ROUND_ALREADY_FOUND, new Object[]{clientMobile}, locale)));
                                 }
                             } else if (detailsRequestDTO.getRelationCategory().equalsIgnoreCase(RelationCategory.HUSBAND.name())) {
 
@@ -183,15 +183,15 @@ public class ProfileServiceImpl implements ProfileService {
                                         RelationCategory.HUSBAND, Arrays.asList(Workflow.ACTIVE, Workflow.UNDER_REVIEW), Long.valueOf(detailsRequestDTO.getMarried()));
                                 if (existed) {
                                     log.info("User profile add dependent request already married round husband {} ", existed);
-                                    return ResponseEntity.ok().body(responseUtil.error(null, 1022, messageSource.getMessage(ResponseMessageUtil.CLAIM_DEPENDENT_FATHER_FOUND, new Object[]{clientMobile}, locale)));
+                                    return ResponseEntity.ok().body(responseUtil.error(null, 1022, messageSource.getMessage(ResponseMessageUtil.DEPENDENT_HUSBAND_MARRIED_ROUND_ALREADY_FOUND, new Object[]{clientMobile}, locale)));
                                 }
                             } else if (detailsRequestDTO.getRelationCategory().equalsIgnoreCase(RelationCategory.FATHER_IN_LAW.name())) {
 
                                 boolean existed = claimDependentsRepository.existsAllByApplicationUserAndRelationCategoryAndStatusInAndMarried_Id(applicationUser,
                                         RelationCategory.FATHER_IN_LAW, Arrays.asList(Workflow.ACTIVE, Workflow.UNDER_REVIEW), Long.valueOf(detailsRequestDTO.getMarried()));
                                 if (existed) {
-                                    log.info("User profile add dependent request already married round fathe in law {} ", existed);
-                                    return ResponseEntity.ok().body(responseUtil.error(null, 1022, messageSource.getMessage(ResponseMessageUtil.CLAIM_DEPENDENT_FATHER_FOUND, new Object[]{clientMobile}, locale)));
+                                    log.info("User profile add dependent request already married round father in law {} ", existed);
+                                    return ResponseEntity.ok().body(responseUtil.error(null, 1022, messageSource.getMessage(ResponseMessageUtil.DEPENDENT_FATHER_IN_LAW_MARRIED_ROUND_ALREADY_FOUND, new Object[]{clientMobile}, locale)));
                                 }
                             } else if (detailsRequestDTO.getRelationCategory().equalsIgnoreCase(RelationCategory.MOTHER_IN_LAW.name())) {
 
@@ -199,7 +199,7 @@ public class ProfileServiceImpl implements ProfileService {
                                         RelationCategory.MOTHER_IN_LAW, Arrays.asList(Workflow.ACTIVE, Workflow.UNDER_REVIEW), Long.valueOf(detailsRequestDTO.getMarried()));
                                 if (existed) {
                                     log.info("User profile add dependent request already married round mother in law {} ", existed);
-                                    return ResponseEntity.ok().body(responseUtil.error(null, 1022, messageSource.getMessage(ResponseMessageUtil.CLAIM_DEPENDENT_FATHER_FOUND, new Object[]{clientMobile}, locale)));
+                                    return ResponseEntity.ok().body(responseUtil.error(null, 1022, messageSource.getMessage(ResponseMessageUtil.DEPENDENT_MOTHER_IN_LAW_MARRIED_ROUND_ALREADY_FOUND, new Object[]{clientMobile}, locale)));
                                 }
                             }
 
