@@ -68,11 +68,4 @@ public class InsuranceClaimRequestController {
         return insuranceClaimRequestService.insuranceClaimHistoryList(gson.fromJson(gson.toJson(paginationRequest), paginationRequestType), locale);
     }
 
-//    @PostMapping(path = "/otp",produces = MediaType.APPLICATION_JSON_VALUE,consumes = MediaType.APPLICATION_JSON_VALUE)
-//    @ApiOperation(value = "Handle claim request otp request ",notes = "Handle claim request otp request success or failed")
-//    public ResponseEntity<ApiResponse<Object>> claimRequestOtp(@RequestBody @Valid OtpRequestValidatorDTO otpRequestValidatorDTO, Locale locale) {
-//        log.info("Claim request otp request controller {} ", otpRequestValidatorDTO);
-//        return insuranceClaimRequestService.claimRequestOtp(gson.fromJson(gson.toJson(otpRequestValidatorDTO), OtpRequestDTO.class), locale);
-//    }
-
 }

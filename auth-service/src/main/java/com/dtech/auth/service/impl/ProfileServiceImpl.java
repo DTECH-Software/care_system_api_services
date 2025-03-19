@@ -213,11 +213,11 @@ public class ProfileServiceImpl implements ProfileService {
                                 } else {
 
                                     boolean birth = detailsRequestDTO.getDocuments().stream().anyMatch(val -> {
-                                        return val.getType().equals(DocType.BIRTH.name());
+                                        return val.getType().equals(DependentImageTypes.BIRTH.name());
                                     });
 
                                     boolean married = detailsRequestDTO.getDocuments().stream().anyMatch(val -> {
-                                        return val.getType().equals(DocType.MARRIED.name());
+                                        return val.getType().equals(DependentImageTypes.MARRIED.name());
                                     });
 
                                     if (!birth && !married) {
@@ -242,7 +242,7 @@ public class ProfileServiceImpl implements ProfileService {
                                     return ResponseEntity.ok().body(responseUtil.error(null, 1023, messageSource.getMessage(ResponseMessageUtil.CLAIM_DEPENDENT_OTHER_RELATION_CATEGORY_DOCUMENT_IS_EMPTY_OR_OUT_OF_RANGE, new Object[]{detailsRequestDTO.getFirstName()}, locale)));
                                 } else {
                                     boolean birth = detailsRequestDTO.getDocuments().stream().anyMatch(val -> {
-                                        return val.getType().equals(DocType.BIRTH.name());
+                                        return val.getType().equals(DependentImageTypes.BIRTH.name());
                                     });
                                     if (!birth) {
                                         log.info("Birth certificate missing");

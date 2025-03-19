@@ -7,7 +7,7 @@
 
 package com.dtech.auth.dto.request.validator;
 
-import com.dtech.auth.enums.DocType;
+import com.dtech.auth.enums.DependentImageTypes;
 import com.dtech.auth.validator.ValidEnum;
 import com.dtech.auth.validator.ValidFileType;
 import jakarta.validation.constraints.NotBlank;
@@ -16,7 +16,7 @@ import lombok.Data;
 @Data
 public class SupportingDocumentValidatorDTO {
     @NotBlank(message = "File type is required.")
-    @ValidEnum(enumClass = DocType.class, message = "Invalid file type.")
+    @ValidEnum(enumClass = DependentImageTypes.class, message = "Invalid file type.")
     private String type;
     @NotBlank(message = "File is required.")
     private String file;

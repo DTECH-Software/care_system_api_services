@@ -1,12 +1,11 @@
 package com.dtech.auth.enums;
 
-public enum DocType implements DescribableEnum{
+public enum DependentImageTypes implements DescribableEnum{
     BIRTH("Birth"),
-    MARRIED("Married"),
-    PROFILE("Profile");
+    MARRIED("Married");
 
     private final String description;
-    DocType(String description) {
+    DependentImageTypes(String description) {
         this.description = description;
     }
     public String getDescription() {

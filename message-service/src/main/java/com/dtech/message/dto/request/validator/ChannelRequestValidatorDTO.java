@@ -18,7 +18,7 @@ import lombok.Data;
 
 @Data
 @Conditional(selected = "channel", values = {"MB"}, required = {"deviceDetails"}, message = "Device details is required.")
-@Conditional(selected = "message", values = {"RESET_PASSWORD_OTP_REQUEST","RESET_PASSWORD_OTP_VALIDATION"}, required = {"username"}, message = "Username is required.")
+@Conditional(selected = "message", values = {"RESET_PASSWORD_OTP_REQUEST","RESET_PASSWORD_OTP_VALIDATION","CLAIM_REQUEST_OTP_REQUEST","CLAIM_REQUEST_OTP_VALIDATION"}, required = {"username"}, message = "Username is required.")
 public class ChannelRequestValidatorDTO {
     @NotBlank(message = "Channel is required.")
     @ValidEnum(enumClass = Channel.class, message = "Invalid channel.")

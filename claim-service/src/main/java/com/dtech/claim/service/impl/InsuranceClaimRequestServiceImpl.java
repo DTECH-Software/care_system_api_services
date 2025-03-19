@@ -17,10 +17,8 @@ import com.dtech.claim.dto.PagingResult;
 import com.dtech.claim.dto.request.*;
 import com.dtech.claim.dto.response.ApiResponse;
 import com.dtech.claim.dto.response.ClaimRequestResponseDto;
-import com.dtech.claim.dto.response.MessageResponseDTO;
 import com.dtech.claim.dto.search.ClaimHistory;
 import com.dtech.claim.feign.DocumentFeignClient;
-import com.dtech.claim.feign.MessageFeignClient;
 import com.dtech.claim.mapper.EntityToDtoMapper;
 import com.dtech.claim.model.*;
 import com.dtech.claim.repository.*;
@@ -92,13 +90,7 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
     private final CommonParameterRepository commonParameterRepository;
 
     @Autowired
-    private final ApplicationPasswordPolicyRepository applicationPasswordPolicyRepository;
-
-    @Autowired
     private final ApplicationOtpSessionRepository applicationOtpSessionRepository;
-
-    @Autowired
-    private final MessageFeignClient messageFeignClient;
 
     @Autowired
     private final Gson gson;
@@ -295,84 +287,6 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
         applicationOtpSession.setValidated(true);
         applicationUserRepository.saveAndFlush(applicationUser);
         applicationOtpSessionRepository.saveAndFlush(applicationOtpSession);
-    }
-
-    @Override
-    @Transactional
-    public ResponseEntity<ApiResponse<Object>> claimRequestOtp(OtpRequestDTO otpRequestDTO, Locale locale) {
-        try {
-            log.info("User claim request otp {}", otpRequestDTO.getUsername());
-            String username = otpRequestDTO.getUsername().trim();
-
-            return applicationUserRepository.findByUsernameAndUserPersonalDetails_UserStatus(username, Status.ACTIVE).map(user ->
-                    applicationPasswordPolicyRepository.findPasswordPolicy().map((policy) -> {
-
-                        if (user.getOtpAttemptCount() > policy.getOtpExceedCount()) {
-                            log.info("Claim request OTP request attempt exceed {} , {}", user.getOtpAttemptCount()
-                                    , policy.getAttemptExceedCount());
-                            long minutes = DateTimeUtil.getMinutes(DateTimeUtil.getYyyyMMddHHMmSsTimeFormatter(DateTimeUtil.getSeconds(user.getOtpAttemptResetTime(), 2700)));
-                            return ResponseEntity.ok().body(responseUtil.error(null, 1010, messageSource.getMessage(ResponseMessageUtil.APPLICATION_USER_OTP_EXCEED, new Object[]{minutes}, locale)));
-                        } else if (user.getOtpAttemptCount() > 0) {
-                            log.info("Claim request request otp session {}", user.getApplicationOtpSession());
-                            Optional<ApplicationOtpSession> applicationOtpSession = applicationOtpSessionRepository.
-                                    findById(user.getApplicationOtpSession() != null ? user.getApplicationOtpSession().getId() : 0);
-
-                            if (applicationOtpSession.isPresent()) {
-                                log.info("Claim request request otp session {}", applicationOtpSession.get());
-                                if (DateTimeUtil.getSeconds(applicationOtpSession.get().getCreatedDate(), 60).after(DateTimeUtil.getCurrentDateTime())) {
-                                    log.info("Claim request request otp session valid this moment {}", DateTimeUtil.getSeconds(applicationOtpSession.get().getCreatedDate(), 60));
-                                    return ResponseEntity.ok().body(responseUtil.error(null, 1012, messageSource.getMessage(ResponseMessageUtil.APPLICATION_USER_OTP_REQUEST_TRY_TO_AFTER_60S, null, locale)));
-                                }
-                                log.info("Claim request send otp session attempt exceed greater than 0 {}", user);
-                            } else {
-                                log.info("Claim request otp session not found {}", applicationOtpSession);
-                                return ResponseEntity.ok().body(responseUtil.error(null, 1011, messageSource.getMessage(ResponseMessageUtil.APPLICATION_USER_OTP_SESSION_NOT_FOUND, null, locale)));
-                            }
-                        }
-                        log.info("Profile update send otp session send message {}", user);
-                        return sendMessage(user, user.getPrimaryMobile(), locale, policy.getOtpExceedCount() - user.getOtpAttemptCount());
-                    }).orElseGet(() -> {
-                        log.info("Profile update request policy not found for username {} ", username);
-                        return ResponseEntity.ok().body(responseUtil.error(null, 1010, messageSource.getMessage(ResponseMessageUtil.APPLICATION_USER_PASSWORD_POLICY_NOT_FOUND, null, locale)));
-                    })).orElseGet(() -> {
-                log.info("Profile update request user not found for username {} ", otpRequestDTO.getUsername());
-                return ResponseEntity.ok().body(responseUtil.error(null, 1009, messageSource.getMessage(ResponseMessageUtil.APPLICATION_USER_NOT_FOUND, null, locale)));
-            });
-
-        } catch (Exception e) {
-            log.error(e);
-            throw e;
-        }
-    }
-
-    @Transactional
-    protected ResponseEntity<ApiResponse<Object>> sendMessage(ApplicationUser applicationUser, String mobileNo, Locale locale, int otpExceedCount) {
-        try {
-            log.info("Processing profile update request gen otp {} ", applicationUser.getUsername());
-            String otp = RandomGeneratorUtil.getRandom6DigitNumber();
-            log.info("Generate otp {} ", otp);
-            MessageRequestDTO messageRequestDTO = new MessageRequestDTO();
-            messageRequestDTO.setValue(otp);
-            messageRequestDTO.setMobileNo(mobileNo);
-            messageRequestDTO.setType(NotificationsType.OTP.name());
-            log.info("Before calling message service {}", messageFeignClient);
-            ResponseEntity<ApiResponse<Object>> messageResponse = messageFeignClient.sendMessage(messageRequestDTO);
-            log.info("After response message service {}", messageResponse);
-            Object objectApiResponse = ExtractApiResponseUtil.extractApiResponse(messageResponse);
-            log.info("After message mapper response {}", objectApiResponse);
-            MessageResponseDTO messageResponseDTO = gson.fromJson(gson.toJson(objectApiResponse), MessageResponseDTO.class);
-            log.info("Otp send status {}", messageResponseDTO);
-            ApplicationOtpSession applicationOtpSession = updateOtpSession(otp, messageResponseDTO != null ? messageResponseDTO.isSuccess() : false);
-            updateApplicationUser(applicationUser, applicationOtpSession);
-            log.info("Application OTP session updated successfully");
-            if (objectApiResponse != null) {
-                return ResponseEntity.ok().body(responseUtil.success(Map.of("otpRequestAttempt", otpExceedCount), messageSource.getMessage(ResponseMessageUtil.APPLICATION_USER_OTP_SEND_SUCCESS, null, locale)));
-            }
-            return ResponseEntity.ok().body(responseUtil.error(null, 1019, messageSource.getMessage(ResponseMessageUtil.OTP_SEND_FAILED, null, locale)));
-        } catch (Exception e) {
-            log.error(e);
-            throw e;
-        }
     }
 
     @Transactional
