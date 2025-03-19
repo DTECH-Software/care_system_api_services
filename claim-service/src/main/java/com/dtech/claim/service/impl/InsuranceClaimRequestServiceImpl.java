@@ -109,7 +109,7 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
                 ResponseEntity<ApiResponse<Object>> diagnosisValidationResult = validateDocumentCount(
                         claimRequestDTO.getDocuments(),
                         InsuranceClaimDocTypes.DIAGNOSIS_CARD.name(),
-                        CommonParam.DIAGNOSIS_CARD_MAZ_IMAGE.name(),
+                        CommonParam.DIAGNOSIS_CARD_MAX_IMAGE.name(),
                         ResponseMessageUtil.INSURANCE_CLAIMS_DIAGNOSIS_MAX_IMAGE_INVALID,
                         ResponseMessageUtil.INSURANCE_CLAIMS_DIAGNOSIS_MIN_IMAGE_INVALID,
                         locale
@@ -335,36 +335,6 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
         applicationOtpSession.setValidated(true);
         applicationUserRepository.saveAndFlush(applicationUser);
         applicationOtpSessionRepository.saveAndFlush(applicationOtpSession);
-    }
-
-    @Transactional
-    protected ApplicationOtpSession updateOtpSession(String otp, boolean state) {
-        try {
-            log.info("Claim request edt request gen otp application otp session update {} ", otp);
-            ApplicationOtpSession applicationOtpSession = new ApplicationOtpSession();
-            applicationOtpSession.setOtp(otp);
-            applicationOtpSession.setSuccess(state);
-            ApplicationOtpSession otpSession = applicationOtpSessionRepository.saveAndFlush(applicationOtpSession);
-            log.info("Claim request request otp session update {} ", otpSession);
-            return otpSession;
-        } catch (Exception e) {
-            log.error(e);
-            throw e;
-        }
-    }
-
-    @Transactional
-    protected void updateApplicationUser(ApplicationUser applicationUser, ApplicationOtpSession applicationOtpSession) {
-        try {
-            log.info("Claim request otp request update application user {}", applicationUser);
-            applicationUser.setApplicationOtpSession(applicationOtpSession);
-            applicationUser.setOtpAttemptCount(applicationUser.getOtpAttemptCount() + 1);
-            applicationUser.setOtpAttemptResetTime(DateTimeUtil.getCurrentDateTime());
-            applicationUserRepository.saveAndFlush(applicationUser);
-        } catch (Exception e) {
-            log.error(e);
-            throw e;
-        }
     }
 
     @Transactional
