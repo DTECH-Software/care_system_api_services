@@ -7,17 +7,16 @@
 
 package com.dtech.claim.dto.request.validator;
 
-import com.dtech.claim.enums.DocType;
+import com.dtech.claim.enums.InsuranceClaimDocTypes;
 import com.dtech.claim.validator.ValidEnum;
 import com.dtech.claim.validator.ValidFileType;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
 @Data
 public class SupportingDocumentValidatorDTO {
     @NotBlank(message = "File type is required.")
-    @ValidEnum(enumClass = DocType.class, message = "Invalid file type.")
+    @ValidEnum(enumClass = InsuranceClaimDocTypes.class, message = "Invalid file type.")
     private String type;
     @NotBlank(message = "File is required.")
     private String file;

@@ -58,4 +58,8 @@ public class ResponseMessageUtil {
     public final static String CLAIM_REQUEST_HISTORY_FILTER_LIST_SUCCESS = "val.claim.request.history.filter.list.success";
     public final static String CLAIM_DEPENDENT_NOT_FOUND_OR_FACILITY_NOT_ELIGIBLE = "val.claim.dependent.not.eligible.or.facility.not.eligible";
     public final static String INSURANCE_CLAIMS_REFERENCE_DETAILS_SUCCESS = "val.insurance.claims.reference.details.success";
+    public final static String INSURANCE_CLAIMS_DIAGNOSIS_MAX_IMAGE_INVALID  = "val.claims.diagnosis.max.image.invalid";
+    public final static String INSURANCE_CLAIMS_DIAGNOSIS_MIN_IMAGE_INVALID  = "val.claims.diagnosis.min.image.invalid";
+    public final static String INSURANCE_CLAIMS_TREATMENT_MAX_IMAGE_INVALID  = "val.claims.treatment.max.image.invalid";
+    public final static String INSURANCE_CLAIMS_TREATMENT_MIN_IMAGE_INVALID  = "val.claims.treatment.min.image.invalid";
 }

@@ -25,11 +25,11 @@ import com.dtech.claim.repository.*;
 import com.dtech.claim.service.InsuranceClaimRequestService;
 import com.dtech.claim.specifications.ClaimHistorySpecification;
 import com.dtech.claim.util.*;
-import com.google.gson.Gson;
 import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
+import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.MessageSource;
 import org.springframework.data.domain.Page;
@@ -93,10 +93,10 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
     private final ApplicationOtpSessionRepository applicationOtpSessionRepository;
 
     @Autowired
-    private final Gson gson;
+    private final DocumentFeignClient documentFeignClient;
 
     @Autowired
-    private final DocumentFeignClient documentFeignClient;
+    private ModelMapper modelMapper;
 
     @Override
     @Transactional
@@ -105,6 +105,32 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
             log.info("Claim request processing started {}", claimRequestDTO);
 
             return applicationUserRepository.findByUsernameAndUserPersonalDetails_UserStatus(claimRequestDTO.getUsername().trim(), Status.ACTIVE).map((user) -> {
+
+                ResponseEntity<ApiResponse<Object>> diagnosisValidationResult = validateDocumentCount(
+                        claimRequestDTO.getDocuments(),
+                        InsuranceClaimDocTypes.DIAGNOSIS_CARD.name(),
+                        CommonParam.DIAGNOSIS_CARD_MAZ_IMAGE.name(),
+                        ResponseMessageUtil.INSURANCE_CLAIMS_DIAGNOSIS_MAX_IMAGE_INVALID,
+                        ResponseMessageUtil.INSURANCE_CLAIMS_DIAGNOSIS_MIN_IMAGE_INVALID,
+                        locale
+                );
+                if (diagnosisValidationResult != null) {
+                    log.info("Invalid document count: {}", diagnosisValidationResult);
+                    return diagnosisValidationResult;
+                }
+
+                ResponseEntity<ApiResponse<Object>> treatmentValidationResult = validateDocumentCount(
+                        claimRequestDTO.getDocuments(),
+                        InsuranceClaimDocTypes.TREATMENT_BILL.name(),
+                        CommonParam.TREATMENT_BILL_MAX_IMAGE.name(),
+                        ResponseMessageUtil.INSURANCE_CLAIMS_TREATMENT_MAX_IMAGE_INVALID,
+                        ResponseMessageUtil.INSURANCE_CLAIMS_TREATMENT_MIN_IMAGE_INVALID,
+                        locale
+                );
+                if (treatmentValidationResult != null) {
+                    log.info("Invalid document count: {}", treatmentValidationResult);
+                    return treatmentValidationResult;
+                }
 
                 if (user.getApplicationOtpSession() != null) {
                     log.info("Otp request otp session  {} ", user.getApplicationOtpSession());
@@ -198,6 +224,28 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
             log.error(e);
             throw e;
         }
+    }
+
+    @Transactional(readOnly = true)
+    protected ResponseEntity<ApiResponse<Object>> validateDocumentCount(List<SupportingDocumentDTO> documents, String documentType,
+                                                                        String commonParamCode,String maxMessage,String minMessage, Locale locale) {
+       try {
+           long count = documents.stream().filter(val -> val.getType().equals(documentType)).count();
+           CommonParameter commonParameter = commonParameterRepository.findByCode(commonParamCode).orElse(null);
+           long maxImages = commonParameter != null ? commonParameter.getValue() : 1;
+
+           if (count > maxImages) {
+               log.info("Claim request max {} invalid", documentType);
+               return ResponseEntity.ok().body(responseUtil.error(null, 1043, messageSource.getMessage(maxMessage, new Object[]{maxImages}, locale)));
+           } else if (count == 0) {
+               log.info("Claim request min {} invalid", documentType);
+               return ResponseEntity.ok().body(responseUtil.error(null, 1044, messageSource.getMessage(minMessage, null, locale)));
+           }
+           return null;
+       }catch (Exception e) {
+           log.error(e);
+           throw e;
+       }
     }
 
     @Override
@@ -384,7 +432,7 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
             log.info("After response document service {}", documentResponse);
             Object objectApiResponse = ExtractApiResponseUtil.extractApiResponse(documentResponse);
             log.info("After document mapper response {}", objectApiResponse);
-            Document document = gson.fromJson(gson.toJson(objectApiResponse), Document.class);
+            Document document = modelMapper.map(objectApiResponse, Document.class);
             log.info("image upload success {}", document);
             return document;
         } catch (Exception e) {
