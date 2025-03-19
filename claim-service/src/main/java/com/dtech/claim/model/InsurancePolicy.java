@@ -27,10 +27,10 @@ public class InsurancePolicy extends AdminAudit implements Serializable {
     private Long id;
 
     @Column(name = "policy_code",nullable = false,updatable = false,unique = true)
-    private String policyCode;
+    private String code;
 
     @Column(name = "policy_name",nullable = false)
-    private String policyName;
+    private String description;
 
     @Column(name = "status",nullable = false)
     @Enumerated(EnumType.STRING)
