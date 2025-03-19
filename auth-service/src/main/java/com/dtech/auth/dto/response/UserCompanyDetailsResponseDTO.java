@@ -9,7 +9,6 @@ package com.dtech.auth.dto.response;
 
 
 import com.dtech.auth.dto.SimpleBaseDTO;
-import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.Data;
 
 import java.util.Date;
@@ -22,4 +21,5 @@ public class UserCompanyDetailsResponseDTO {
     private Date permanentDate;
     private Date terminateDate;
     private String designation;
+    private SimpleBaseDTO insurancePolicy;
 }

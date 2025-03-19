@@ -44,7 +44,6 @@ public class ProfileMapper {
                     String.valueOf(applicationUser.getUserPersonalDetails().getDob())));
             applicationUserDetailsResponseDTO.getUserPersonalDetails().setGenderDescription(Gender.valueOf(applicationUserDetailsResponseDTO.getUserPersonalDetails().getGender()).getDescription());
             applicationUserDetailsResponseDTO.getUserPersonalDetails().setTitleDescription(Title.valueOf(applicationUserDetailsResponseDTO.getUserPersonalDetails().getTitle()).getDescription());
-
             if (applicationUser.getProfileImg() != null) {
                 log.info("application user get profile img");
                 DocumentDownloadResponseDTO documentDownloadResponseDTO = modelMapper.map(applicationUser.getProfileImg(), DocumentDownloadResponseDTO.class);

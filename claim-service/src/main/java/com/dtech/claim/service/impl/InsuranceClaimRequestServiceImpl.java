@@ -140,7 +140,7 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
                         log.info("Otp request valid {} ", user.getApplicationOtpSession());
                         updateApplicationUserOtpData(user, user.getApplicationOtpSession());
 
-                        if (user.getInsurancePolicy() == null) {
+                        if (user.getUserPersonalDetails().getUserCompanyDetails().getInsurancePolicy() == null) {
                             log.info("User not eligible to claim request {}", claimRequestDTO.getUsername());
                             return ResponseEntity.ok().body(responseUtil.error(null, 1029, messageSource.getMessage(ResponseMessageUtil.USER_NOT_ELIGIBLE_TO_CLAIM_REQUEST, null, locale)));
                         }
@@ -151,7 +151,7 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
                                         log.info("older than claim request {}", claimRequestDTO.getUsername());
                                         return ResponseEntity.ok().body(responseUtil.error(null, 1037, messageSource.getMessage(ResponseMessageUtil.OLDER_DATE_CLAIM_REQUEST, null, locale)));
                                     }
-                                    return insurancePolicyRepository.findByIdAndStatus(user.getInsurancePolicy().getId(), Status.ACTIVE).map((policy) -> {
+                                    return insurancePolicyRepository.findByIdAndStatus(user.getUserPersonalDetails().getUserCompanyDetails().getInsurancePolicy().getId(), Status.ACTIVE).map((policy) -> {
                                         return insurancePeriodRepository.findByYearAndStatus(String.valueOf(LocalDate.now().getYear()), Status.ACTIVE).map((period) -> {
                                             return treatmentRepository.findByTreatmentCode(claimRequestDTO.getTreatment()).map((treatment) -> {
                                                 return insuranceDetailsRepository.findByInsurancePolicyAndInsurancePeriodAndTreatmentAndStatus(policy, period, treatment, Status.ACTIVE).map((insuranceDetails) -> {
@@ -198,7 +198,7 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
                                             return ResponseEntity.ok().body(responseUtil.error(null, 1031, messageSource.getMessage(ResponseMessageUtil.INSURANCE_PERIOD_NOT_FOUND, null, locale)));
                                         });
                                     }).orElseGet(() -> {
-                                        log.info("User insurance policy not found {} ", user.getInsurancePolicy().getId());
+                                        log.info("User insurance policy not found {} ", user.getUserPersonalDetails().getUserCompanyDetails().getInsurancePolicy().getId());
                                         return ResponseEntity.ok().body(responseUtil.error(null, 1030, messageSource.getMessage(ResponseMessageUtil.INSURANCE_POLICY_NOT_FOUND, null, locale)));
                                     });
                                 })
@@ -272,7 +272,7 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
 
                         log.info("Insurance claim reference data acc balance is null");
                         InsuranceDetails insuranceDetails = insuranceDetailsRepository.
-                                findByInsurancePolicyAndInsurancePeriodAndTreatmentAndStatus(user.getInsurancePolicy(), period, tre, Status.ACTIVE).orElse(null);
+                                findByInsurancePolicyAndInsurancePeriodAndTreatmentAndStatus(user.getUserPersonalDetails().getUserCompanyDetails().getInsurancePolicy(), period, tre, Status.ACTIVE).orElse(null);
                         log.info("Insurance claim reference data balance is {} ", insuranceDetails);
 
                         AvailableInsuranceLimitDTO availableInsuranceLimitDTO = AvailableInsuranceLimitDTO.builder()

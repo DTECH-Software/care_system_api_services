@@ -61,15 +61,6 @@ public class ProfileServiceImpl implements ProfileService {
     private final DocumentFeignClient documentFeignClient;
 
     @Autowired
-    private final ApplicationPasswordPolicyRepository applicationPasswordPolicyRepository;
-
-    @Autowired
-    private final ApplicationOtpSessionRepository applicationOtpSessionRepository;
-
-    @Autowired
-    private final MessageFeignClient messageFeignClient;
-
-    @Autowired
     private final MarriedRepository marriedRepository;
 
     @Override
@@ -90,8 +81,8 @@ public class ProfileServiceImpl implements ProfileService {
 
             return optionalUser.map((ap) -> {
                 log.info("User profile request user found {} ", ap);
-                ProfileMapper dependenceMapper = new ProfileMapper();
-                ApplicationUserDetailsResponseDTO applicationUserDetailsResponseDTO = dependenceMapper.mapApplicationUser(ap);
+                ProfileMapper profileMapper = new ProfileMapper();
+                ApplicationUserDetailsResponseDTO applicationUserDetailsResponseDTO = profileMapper.mapApplicationUser(ap);
                 log.info("User profile request success{} ", applicationUserDetailsResponseDTO);
                 return ResponseEntity.ok().body(responseUtil.success((Object) applicationUserDetailsResponseDTO, messageSource.getMessage(ResponseMessageUtil.APPLICATION_PROFILE_SUCCESS, null, locale)));
             }).orElseGet(() -> {

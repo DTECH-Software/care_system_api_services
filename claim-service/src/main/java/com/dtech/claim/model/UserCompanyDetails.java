@@ -55,4 +55,8 @@ public class UserCompanyDetails extends Audit implements Serializable {
     @JsonBackReference
     private UserPersonalDetails userCompanyDetails;
 
+    @ManyToOne(fetch = FetchType.LAZY,cascade = CascadeType.PERSIST)
+    @JoinColumn(name = "insurance_policy",nullable = false,referencedColumnName = "id")
+    private InsurancePolicy insurancePolicy;
+
 }
