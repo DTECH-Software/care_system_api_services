@@ -1,6 +1,5 @@
 package com.dtech.token.repository;
 
-import com.dtech.token.model.ApplicationUser;
 import com.dtech.token.model.ApplicationUserSession;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;

@@ -85,7 +85,7 @@ public class LoginServiceImpl implements LoginService {
 
     @Override
     @Transactional
-    public ResponseEntity<ApiResponse<Object>> loginRequest(LoginRequestDTO loginRequestDTO, Locale locale) {
+    public ResponseEntity<ApiResponse<Object>> logIn(LoginRequestDTO loginRequestDTO, Locale locale) {
 
         try {
             log.info("Processing login request username:-{} password:-{} ", loginRequestDTO.getUsername(), loginRequestDTO.getPassword());
@@ -294,4 +294,28 @@ public class LoginServiceImpl implements LoginService {
         }
     }
 
+    @Override
+    @Transactional
+    public ResponseEntity<ApiResponse<Object>> logOut(ChannelRequestDTO channelRequestDTO, Locale locale) {
+        try {
+            log.info("User logout action {} ", channelRequestDTO.getUsername());
+
+            ApplicationUser applicationUser = applicationUserRepository.
+                    findByUsername(channelRequestDTO.getUsername().trim()).orElse(null);
+
+            if(applicationUser != null) {
+                log.info("Inside logout user {} ",applicationUser.getUsername());
+                ApplicationUserSession applicationUserSession = applicationUserSessionRepository.
+                        findByApplicationUserAndStatus(applicationUser,Status.ACTIVE).orElse(null);
+                if(applicationUserSession != null) {
+                    log.info("Found token session inactive {}", applicationUserSession.getId());
+                    applicationUserSession.setStatus(Status.INACTIVE);
+                }
+            }
+            return ResponseEntity.ok().body(responseUtil.success(null, messageSource.getMessage(ResponseMessageUtil.LOGOUT_SUCCESS, null, locale)));
+        }catch (Exception e) {
+            log.error(e);
+            throw e;
+        }
+    }
 }
