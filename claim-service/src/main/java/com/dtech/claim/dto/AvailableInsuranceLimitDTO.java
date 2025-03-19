@@ -16,6 +16,6 @@ import java.math.BigDecimal;
 @Builder
 public class AvailableInsuranceLimitDTO {
     private String treatment;
-    private BigDecimal availableAmount;
-    private BigDecimal balanceAmount;
+    private BigDecimal availableLimit;
+    private BigDecimal fundLimit;
 }

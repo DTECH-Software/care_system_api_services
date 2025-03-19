@@ -237,8 +237,8 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
 
                         AvailableInsuranceLimitDTO availableInsuranceLimitDTO = AvailableInsuranceLimitDTO.builder()
                                 .treatment(tre.getTreatmentCode())
-                                .availableAmount(claimsAccountBalance == null ? Objects.nonNull(insuranceDetails) ? insuranceDetails.getClaimLimit() : BigDecimal.valueOf(0.00) : claimsAccountBalance.getAvailableBalance())
-                                .balanceAmount(Objects.nonNull(insuranceDetails) ? insuranceDetails.getClaimLimit() : BigDecimal.valueOf(0.00))
+                                .availableLimit(claimsAccountBalance == null ? Objects.nonNull(insuranceDetails) ? insuranceDetails.getClaimLimit() : BigDecimal.valueOf(0.00) : claimsAccountBalance.getAvailableBalance())
+                                .fundLimit(Objects.nonNull(insuranceDetails) ? insuranceDetails.getClaimLimit() : BigDecimal.valueOf(0.00))
                                 .build();
                         log.info("AvailableInsuranceLimitDTO create success {}", availableInsuranceLimitDTO);
                         return availableInsuranceLimitDTO;
