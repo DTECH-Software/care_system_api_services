@@ -8,6 +8,6 @@ import org.springframework.stereotype.Repository;
 import java.util.Optional;
 
 @Repository
-public interface InsuranceRepository extends JpaRepository<InsurancePolicy,Long> {
+public interface InsurancePolicyRepository extends JpaRepository<InsurancePolicy,Long> {
     Optional<InsurancePolicy> findByIdAndStatus(Long id, Status status);
 }

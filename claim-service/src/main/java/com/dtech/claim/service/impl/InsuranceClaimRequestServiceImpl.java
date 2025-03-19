@@ -68,7 +68,7 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
     private final InsuranceDetailsRepository insuranceDetailsRepository;
 
     @Autowired
-    private final InsuranceRepository insuranceRepository;
+    private final InsurancePolicyRepository insurancePolicyRepository;
 
     @Autowired
     private final InsurancePeriodRepository insurancePeriodRepository;
@@ -133,7 +133,7 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
                                         log.info("older than claim request {}", claimRequestDTO.getUsername());
                                         return ResponseEntity.ok().body(responseUtil.error(null, 1037, messageSource.getMessage(ResponseMessageUtil.OLDER_DATE_CLAIM_REQUEST, null, locale)));
                                     }
-                                    return insuranceRepository.findByIdAndStatus(user.getInsurancePolicy().getId(), Status.ACTIVE).map((policy) -> {
+                                    return insurancePolicyRepository.findByIdAndStatus(user.getInsurancePolicy().getId(), Status.ACTIVE).map((policy) -> {
                                         return insurancePeriodRepository.findByYearAndStatus(String.valueOf(LocalDate.now().getYear()), Status.ACTIVE).map((period) -> {
                                             return treatmentRepository.findByTreatmentCode(claimRequestDTO.getTreatment()).map((treatment) -> {
                                                 return insuranceDetailsRepository.findByInsurancePolicyAndInsurancePeriodAndTreatmentAndStatus(policy, period, treatment, Status.ACTIVE).map((insuranceDetails) -> {
