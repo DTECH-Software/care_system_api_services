@@ -7,11 +7,7 @@
 
 package com.dtech.login.controller;
 
-import com.dtech.login.dto.request.ChannelRequestDTO;
-import com.dtech.login.dto.request.OtpRequestDTO;
 import com.dtech.login.dto.request.ResetPasswordDTO;
-import com.dtech.login.dto.request.validator.ChannelRequestValidatorDTO;
-import com.dtech.login.dto.request.validator.OtpRequestValidatorDTO;
 import com.dtech.login.dto.request.validator.ResetPasswordValidatorDTO;
 import com.dtech.login.dto.response.ApiResponse;
 import com.dtech.login.service.ResetPasswordService;

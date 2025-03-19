@@ -9,11 +9,9 @@ package com.dtech.claim.controller;
 
 import com.dtech.claim.dto.request.ChannelRequestDTO;
 import com.dtech.claim.dto.request.ClaimRequestDTO;
-import com.dtech.claim.dto.request.OtpRequestDTO;
 import com.dtech.claim.dto.request.PaginationRequest;
 import com.dtech.claim.dto.request.validator.ChannelRequestValidatorDTO;
 import com.dtech.claim.dto.request.validator.ClaimRequestValidatorDTO;
-import com.dtech.claim.dto.request.validator.OtpRequestValidatorDTO;
 import com.dtech.claim.dto.response.ApiResponse;
 import com.dtech.claim.dto.search.ClaimHistory;
 import com.dtech.claim.service.InsuranceClaimRequestService;
