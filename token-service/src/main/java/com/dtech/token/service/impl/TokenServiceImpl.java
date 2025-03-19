@@ -96,7 +96,7 @@ public class TokenServiceImpl implements TokenService {
         try {
             log.info("validate token {}", token);
             AtomicBoolean isValid = new AtomicBoolean(false);
-            applicationUserSessionRepository.findByToken(token)
+            applicationUserSessionRepository.findByTokenAndStatus(token,Status.ACTIVE)
                     .ifPresent(applicationUserSession -> {
                         log.info("validate token present {}", token);
                         isValid.set(jwtUtil.validateToken(token));
