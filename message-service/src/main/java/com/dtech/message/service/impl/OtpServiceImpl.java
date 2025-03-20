@@ -144,7 +144,9 @@ public class OtpServiceImpl implements OtpService {
                             log.info("Signup otp request user not found {}", otpRequestDTO);
                             return ResponseEntity.ok().body(responseUtil.error(null, 1017, messageSource.getMessage(ResponseMessageUtil.EMPLOYEE_DETAILS_NOT_FOUND_ON_SYSTEM, new Object[]{otpRequestDTO.getPrimaryMobile()}, locale)));
                         });
-            } else if (otpRequestDTO.getMessage().equalsIgnoreCase(Messages.RESET_PASSWORD_OTP_REQUEST.name()) || otpRequestDTO.getMessage().equalsIgnoreCase(Messages.CLAIM_REQUEST_OTP_REQUEST.name())) {
+            } else if (otpRequestDTO.getMessage().equalsIgnoreCase(Messages.RESET_PASSWORD_OTP_REQUEST.name())
+                    || otpRequestDTO.getMessage().equalsIgnoreCase(Messages.CLAIM_REQUEST_OTP_REQUEST.name())
+                    || otpRequestDTO.getMessage().equalsIgnoreCase(Messages.PROFILE_UPDATE_OTP_REQUEST.name())){
 
                 log.info("Processing reset password request gen otp {} ", otpRequestDTO.getUsername());
                 String username = otpRequestDTO.getUsername().trim();
@@ -158,7 +160,7 @@ public class OtpServiceImpl implements OtpService {
 
                 return optionalUser.map(user -> applicationPasswordPolicyRepository.findPasswordPolicy().map((policy) -> {
 
-                    if (user.getOtpAttemptCount() > policy.getOtpExceedCount()) {
+                    if (user.getOtpAttemptCount() >= policy.getOtpExceedCount()) {
                         log.info("Reset password OTP request attempt exceed {} , {}", user.getOtpAttemptCount(), policy.getAttemptExceedCount());
                         long minutes = DateTimeUtil.getMinutes(DateTimeUtil.getYyyyMMddHHMmSsTimeFormatter(DateTimeUtil.getSeconds(user.getOtpAttemptResetTime(), 2700)));
                         return ResponseEntity.ok().body(responseUtil.error(null, 1010, messageSource.getMessage(ResponseMessageUtil.APPLICATION_USER_OTP_EXCEED, new Object[]{minutes}, locale)));
@@ -188,7 +190,7 @@ public class OtpServiceImpl implements OtpService {
                     ApplicationOtpSession applicationOtpSession = updateOtpSession(otp, messageResponseDTO.isSuccess());
                     updateApplicationUser(user, applicationOtpSession);
                     if (messageResponseDTO.isSuccess()) {
-                        return ResponseEntity.ok().body(responseUtil.success((Object) Map.of("otpRequestAttempt", Math.max(0,policy.getOtpExceedCount() - user.getOtpAttemptCount())), messageResponseDTO.getMessage()));
+                        return ResponseEntity.ok().body(responseUtil.success((Object) Map.of("otpRequestAttempt",Math.max(0,policy.getOtpExceedCount() - user.getOtpAttemptCount())), messageResponseDTO.getMessage()));
                     }
                     return ResponseEntity.ok().body(
                             responseUtil.error(null, 1038,
@@ -316,7 +318,8 @@ public class OtpServiceImpl implements OtpService {
                             );
                         });
             }else if(otpValidationDTO.getMessage().equalsIgnoreCase(Messages.RESET_PASSWORD_OTP_VALIDATION.name())
-                    || otpValidationDTO.getMessage().equalsIgnoreCase(Messages.CLAIM_REQUEST_OTP_VALIDATION.name())) {
+                    || otpValidationDTO.getMessage().equalsIgnoreCase(Messages.CLAIM_REQUEST_OTP_VALIDATION.name())
+                    || otpValidationDTO.getMessage().equalsIgnoreCase(Messages.PROFILE_UPDATE_OTP_VALIDATION.name())) {
                 log.info("processing otp validation request {}", otpValidationDTO);
                 String username = otpValidationDTO.getUsername().trim();
                 Optional<ApplicationUser> optionalUser = applicationUserRepository
