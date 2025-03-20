@@ -82,7 +82,6 @@ public class LoginServiceImpl implements LoginService {
     @Autowired
     private final ModelMapper modelMapper;
 
-
     @Override
     @Transactional
     public ResponseEntity<ApiResponse<Object>> logIn(LoginRequestDTO loginRequestDTO, Locale locale) {
@@ -103,7 +102,7 @@ public class LoginServiceImpl implements LoginService {
 
                 if(user.isReset() || user.getLoginStatus() == Status.INACTIVE) {
                     log.info("user is reset state or inactive {}",user.getUsername());
-                    return ResponseEntity.ok().body(responseUtil.error(null, 1005, messageSource.getMessage(ResponseMessageUtil.LOGIN_STATUS_INACTIVE_OR_EXPECTED_RESET, null, locale)));
+                    return ResponseEntity.ok().body(responseUtil.error(null, 1004, messageSource.getMessage(ResponseMessageUtil.LOGIN_STATUS_INACTIVE_OR_EXPECTED_RESET, null, locale)));
                 }
 
                 String hashPasswordRequest = "";
@@ -251,6 +250,7 @@ public class LoginServiceImpl implements LoginService {
                 log.info("Processing wrong login request username {} attempt {} login status {} ", applicationUser.getUsername()
                         , applicationUser.getAttemptCount(), applicationUser.getLoginStatus());
                 applicationUser.setLoginStatus(Status.INACTIVE);
+                applicationUser.setReset(true);
             }
             applicationUser.setAttemptCount(applicationUser.getAttemptCount() + 1);
             applicationUserRepository.saveAndFlush(applicationUser);
