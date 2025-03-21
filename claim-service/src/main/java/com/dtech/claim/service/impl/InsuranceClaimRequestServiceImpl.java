@@ -255,14 +255,17 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
             log.info("Insurance claim reference data {}", channelRequestDTO);
             return applicationUserRepository.findByUsernameAndUserPersonalDetails_UserStatus(channelRequestDTO.getUsername().trim(), Status.ACTIVE).map((user) -> {
                 InsurancePeriod period = insurancePeriodRepository.findByYearAndStatus(String.valueOf(LocalDate.now().getYear()), Status.ACTIVE).orElse(null);
-                List<Treatment> treatmentList = treatmentRepository.findAllByStatus(Status.ACTIVE);
-                log.info("Insurance claim reference data get dependence {} ", treatmentList);
+              List<Treatment> treatmentList = treatmentRepository.findAllByStatus(Status.ACTIVE);
+               log.info("Insurance claim reference data get dependence {} ", treatmentList);
                 List<SimpleBaseDTO> claimsDependents = claimDependentsRepository.
                         findByApplicationUserAndStatusAndEligibleFacilityIn(user, Workflow.ACTIVE, List.of(Facility.INSURANCE, Facility.BOTH))
                         .stream().map(dep -> new SimpleBaseDTO(String.valueOf(dep.getId()), dep.getFirstName() + " " + dep.getLastName())).toList();
+
                 List<SimpleBaseDTO> treatment = treatmentList.stream().map(val -> new SimpleBaseDTO(val.getTreatmentCode(), val.getTreatmentDescription())).toList();
+
                 Map<String, Object> splashData = new HashMap<>();
                 List<AvailableInsuranceLimitDTO> list = null;
+                List<SimpleBaseDTO> userWiseTreatment = new ArrayList<>();
                 if (period != null) {
                     list = treatmentList.stream().map(tre -> {
                         ClaimsAccountBalance claimsAccountBalance = insuranceClaimsAccountBalanceRepository
@@ -275,6 +278,10 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
                                 findByInsurancePolicyAndInsurancePeriodAndTreatmentAndStatus(user.getUserPersonalDetails().getUserCompanyDetails().getInsurancePolicy(), period, tre, Status.ACTIVE).orElse(null);
                         log.info("Insurance claim reference data balance is {} ", insuranceDetails);
 
+                        userWiseTreatment.add(new SimpleBaseDTO(insuranceDetails.getTreatment()
+                                .getTreatmentCode(),insuranceDetails.getTreatment()
+                                .getTreatmentDescription()));
+
                         AvailableInsuranceLimitDTO availableInsuranceLimitDTO = AvailableInsuranceLimitDTO.builder()
                                 .treatment(tre.getTreatmentCode())
                                 .availableLimit(claimsAccountBalance == null ? Objects.nonNull(insuranceDetails) ? insuranceDetails.getClaimLimit() : BigDecimal.valueOf(0.00) : claimsAccountBalance.getAvailableBalance())
@@ -285,9 +292,9 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
 
                     }).toList();
                 }
-                log.info("Claims data  success {}", list);
+                log.info("Claims data success {}", list);
                 splashData.put("insuranceClaimsDependents", claimsDependents);
-                splashData.put("treatment", treatment);
+                splashData.put("treatment", userWiseTreatment);
                 splashData.put("insuranceClaimsFundLimits", list);
                 return ResponseEntity.ok().body(responseUtil.success((Object) splashData, messageSource.getMessage(ResponseMessageUtil.INSURANCE_CLAIMS_REFERENCE_DETAILS_SUCCESS, null, locale)));
             }).orElseGet(() -> {
