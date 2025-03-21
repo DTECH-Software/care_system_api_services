@@ -79,6 +79,7 @@ public class ProfileMapper {
                 claimDependentDetailsResponseDTO.setRelationCategoryDescription(ifNotOrEmpty(String.valueOf(dependents.getRelationCategory().getDescription())));
                 claimDependentDetailsResponseDTO.setStatus(ifNotOrEmpty(String.valueOf(dependents.getStatus())));
                 claimDependentDetailsResponseDTO.setStatusDescription(ifNotOrEmpty(String.valueOf(dependents.getStatus().getDescription())));
+                claimDependentDetailsResponseDTO.setTitle(ifNotOrEmpty(dependents.getTitle().name()));
                 claimDependentDetailsResponseDTO.setTitleDescription(Title.valueOf(dependents.getTitle().name()).getDescription());
                 if(dependents.getMarried() != null) {
                     claimDependentDetailsResponseDTO.setMarried(new SimpleBaseDTO(ifNotOrEmpty(String.valueOf(dependents.getMarried().getCode()))
