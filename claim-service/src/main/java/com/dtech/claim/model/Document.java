@@ -21,7 +21,7 @@ import java.util.List;
 @Entity
 @Table(name = "document")
 @Data
-@ToString(exclude = "claimsDependents")
+@ToString(exclude = {"claimsDependents","doc"})
 public class Document extends Audit implements Serializable {
 
     private static final long serialVersionUID = 1L;
@@ -47,8 +47,5 @@ public class Document extends Audit implements Serializable {
 
     @ManyToMany(mappedBy = "documents")
     private List<ClaimsDependents> claimsDependents = new ArrayList<>();
-
-//    @ManyToMany(mappedBy = "documents")
-//    private List<ClaimsRequest> claimsRequests = new ArrayList<>();
 
 }

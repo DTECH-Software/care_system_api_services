@@ -14,6 +14,7 @@ import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.ToString;
 
 import java.io.Serializable;
 import java.util.Date;
@@ -28,6 +29,7 @@ import java.util.List;
 @Index(name = "idx_expect_first_time_logging", columnList = "expecting_first_time_loging")
 })
 @Data
+@ToString(exclude = "profileImg")
 public class ApplicationUser extends Audit implements Serializable {
 
     private static final long serialVersionUID = 1L;
@@ -72,6 +74,14 @@ public class ApplicationUser extends Audit implements Serializable {
     @Column(name = "last_logged_date",nullable = false)
     @Temporal(TemporalType.TIMESTAMP)
     private Date lastLoggedDate;
+
+    @Column(name = "mb_last_logged_date")
+    @Temporal(TemporalType.TIMESTAMP)
+    private Date mbLastLoggedDate;
+
+    @Column(name = "op_last_logged_date")
+    @Temporal(TemporalType.TIMESTAMP)
+    private Date opLastLoggedDate;
 
     @Column(name = "expecting_first_time_loging",nullable = false)
     private boolean expectingFirstTimeLogging;

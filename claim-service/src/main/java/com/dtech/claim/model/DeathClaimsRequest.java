@@ -11,6 +11,7 @@ import com.dtech.claim.enums.Workflow;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.ToString;
 
 import java.io.Serializable;
 import java.math.BigDecimal;
@@ -22,6 +23,7 @@ import java.util.List;
 @Entity
 @Table(name = "death_claims_request")
 @Data
+@ToString(exclude = "documents")
 public class DeathClaimsRequest extends Audit implements Serializable {
     private static final long serialVersionUID = 1L;
 

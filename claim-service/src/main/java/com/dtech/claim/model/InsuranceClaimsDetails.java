@@ -10,6 +10,7 @@ package com.dtech.claim.model;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.ToString;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -20,6 +21,7 @@ import java.util.List;
 @Entity
 @Table(name = "insurance_claims_details")
 @Data
+@ToString(exclude = "documents")
 public class InsuranceClaimsDetails extends Audit implements Serializable {
 
     private static final long serialVersionUID = 1L;

@@ -11,12 +11,14 @@ import com.dtech.document.enums.DocType;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.ToString;
 
 import java.io.Serializable;
 @EqualsAndHashCode(callSuper = true)
 @Entity
 @Table(name = "document")
 @Data
+@ToString(exclude = "doc")
 public class Document extends Audit implements Serializable {
 
     private static final long serialVersionUID = 1L;

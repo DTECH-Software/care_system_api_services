@@ -11,6 +11,7 @@ import com.dtech.claim.enums.*;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.ToString;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -21,6 +22,7 @@ import java.util.List;
 @Entity
 @Table(name = "claims_dependents")
 @Data
+@ToString(exclude = "documents")
 public class ClaimsDependents extends Audit implements Serializable {
 
     private static final long serialVersionUID = 1L;
