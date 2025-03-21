@@ -278,9 +278,11 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
                                 findByInsurancePolicyAndInsurancePeriodAndTreatmentAndStatus(user.getUserPersonalDetails().getUserCompanyDetails().getInsurancePolicy(), period, tre, Status.ACTIVE).orElse(null);
                         log.info("Insurance claim reference data balance is {} ", insuranceDetails);
 
-                        userWiseTreatment.add(new SimpleBaseDTO(insuranceDetails.getTreatment()
-                                .getTreatmentCode(),insuranceDetails.getTreatment()
-                                .getTreatmentDescription()));
+                        if(insuranceDetails != null && insuranceDetails.getTreatment() != null){
+                            userWiseTreatment.add(new SimpleBaseDTO(insuranceDetails.getTreatment()
+                                    .getTreatmentCode(),insuranceDetails.getTreatment()
+                                    .getTreatmentDescription()));
+                        }
 
                         AvailableInsuranceLimitDTO availableInsuranceLimitDTO = AvailableInsuranceLimitDTO.builder()
                                 .treatment(tre.getTreatmentCode())
