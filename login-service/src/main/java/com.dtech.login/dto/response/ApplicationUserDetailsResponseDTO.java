@@ -7,10 +7,8 @@
 
 package com.dtech.login.dto.response;
 
-import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.Data;
 
-import java.util.Date;
 
 @Data
 public class ApplicationUserDetailsResponseDTO {
@@ -19,15 +17,11 @@ public class ApplicationUserDetailsResponseDTO {
     private String primaryEmail;
     private String primaryMobile;
     private boolean isReset;
-    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
-    private Date lastPasswordChangeDate;
-    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
-    private Date lastLoggedDate;
+    private String lastPasswordChangeDate;
+    private String lastLoggedDate;
     private boolean expectingFirstTimeLogging;
-  //  private boolean mbExpectingFirstTimeLogging;
     private boolean expectingDependentsRegister;
-    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
-    private Date passwordExpiredDate;
+    private String passwordExpiredDate;
     private UserPersonalDetailsResponseDTO userPersonalDetails;
     private DocumentDownloadResponseDTO profileImg;
 }

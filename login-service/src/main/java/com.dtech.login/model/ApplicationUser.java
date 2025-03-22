@@ -9,17 +9,21 @@ package com.dtech.login.model;
 
 import com.dtech.login.enums.Channel;
 import com.dtech.login.enums.Status;
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.Setter;
 
 import java.io.Serializable;
 import java.util.Date;
 
-@EqualsAndHashCode(callSuper = true)
 @Entity
 @Table(name = "application_user")
-@Data
+@Getter
+@Setter
 public class ApplicationUser extends Audit implements Serializable {
 
     private static final long serialVersionUID = 1L;
@@ -91,6 +95,7 @@ public class ApplicationUser extends Audit implements Serializable {
 
     @OneToOne(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @JoinColumn(name = "otp_session",referencedColumnName = "id")
+    @JsonManagedReference
     private ApplicationOtpSession applicationOtpSession;
 
     @Column(name = "otp_attempt_reset_time")
@@ -99,10 +104,38 @@ public class ApplicationUser extends Audit implements Serializable {
 
     @ManyToOne(fetch = FetchType.LAZY,cascade = CascadeType.ALL)
     @JoinColumn(name = "device_id",referencedColumnName = "id")
+    @JsonBackReference
     private ApplicationUserDeviceDetails applicationUserDeviceDetails;
 
     @OneToOne(fetch = FetchType.LAZY,cascade = CascadeType.ALL)
     @JoinColumn(name = "user_personal_details",referencedColumnName = "id")
+    @JsonBackReference
     private UserPersonalDetails userPersonalDetails;
+
+    @Override
+    public String toString() {
+        return "ApplicationUser [id=" + id +
+                ", username=" + username +
+                ", password=" + (password != null ? "[PROTECTED]" : null) +
+                ", primaryEmail=" + primaryEmail +
+                ", primaryMobile=" + primaryMobile +
+                ", loginStatus=" + loginStatus +
+                ", isReset=" + isReset +
+                ", userKey=" + (userKey != null ? "[PROTECTED]" : null) +
+                ", lastLoggedChannel=" + lastLoggedChannel +
+                ", lastPasswordChangeDate=" + lastPasswordChangeDate +
+                ", lastLoggedDate=" + lastLoggedDate +
+                ", mbLastLoggedDate=" + mbLastLoggedDate +
+                ", opLastLoggedDate=" + opLastLoggedDate +
+                ", expectingFirstTimeLogging=" + expectingFirstTimeLogging +
+                ", expectingDependentsRegister=" + expectingDependentsRegister +
+                ", passwordExpiredDate=" + passwordExpiredDate +
+                ", attemptCount=" + attemptCount +
+                ", otpAttemptCount=" + otpAttemptCount +
+                ", otpAttemptResetTime=" + otpAttemptResetTime +
+                ", applicationOtpSessionId=" + (applicationOtpSession != null ? applicationOtpSession.getId() : null) +
+                ", applicationUserDeviceDetailsId=" + (applicationUserDeviceDetails != null ? applicationUserDeviceDetails.getId() : null) +
+                ", userPersonalDetailsId=" + (userPersonalDetails != null ? userPersonalDetails.getId() : null) + "]";
+    }
 
 }
