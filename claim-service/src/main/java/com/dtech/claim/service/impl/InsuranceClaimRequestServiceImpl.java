@@ -404,7 +404,7 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
 
     protected Document uploadImage(String tye, String file, String fileType, String fileName) throws IOException {
         try {
-            log.info("Upload profile image");
+            log.info("Upload Document image");
             MultipartFile multipartFile = MultipartFileUtil.convertToMultipartFile(file, fileType, fileName);
             log.info("Before calling document service {}", documentFeignClient);
             ResponseEntity<ApiResponse<Object>> documentResponse = documentFeignClient.upload(tye, multipartFile);
