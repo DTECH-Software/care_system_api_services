@@ -144,7 +144,7 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
                             log.info("User not eligible to claim request {}", claimRequestDTO.getUsername());
                             return ResponseEntity.ok().body(responseUtil.error(null, 1029, messageSource.getMessage(ResponseMessageUtil.USER_NOT_ELIGIBLE_TO_CLAIM_REQUEST, null, locale)));
                         }
-                        return commonParameterRepository.findByCode(CommonParam.INSURANCE_CLIM_REQUEST_PERIOD.name()).map((param) -> {
+                        return commonParameterRepository.findByCode(CommonParam.INSURANCE_CLAIM_REQUEST_PERIOD.name()).map((param) -> {
                                     log.info("get - date from claim request {}", param);
                                     Date minuesDate = DateTimeUtil.getMinuesDate(param.getValue());
                                     if (claimRequestDTO.getToDate().before(minuesDate)) {
@@ -260,9 +260,9 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
                 List<SimpleBaseDTO> claimsDependents = claimDependentsRepository.
                         findByApplicationUserAndStatusAndEligibleFacilityIn(user, Workflow.ACTIVE, List.of(Facility.INSURANCE, Facility.BOTH))
                         .stream().map(dep -> new SimpleBaseDTO(String.valueOf(dep.getId()), dep.getFirstName() + " " + dep.getLastName())).toList();
-
-                List<SimpleBaseDTO> treatment = treatmentList.stream().map(val -> new SimpleBaseDTO(val.getTreatmentCode(), val.getTreatmentDescription())).toList();
-
+                log.info("Call minus insurance claim date");
+                Date minuesDate = DateTimeUtil.getMinuesDate(Objects.requireNonNull(commonParameterRepository.findByCode(CommonParam.INSURANCE_CLAIM_REQUEST_PERIOD.name()).orElse(null)).getValue());
+                log.info("Get minus insurance claim date {} ",minuesDate);
                 Map<String, Object> splashData = new HashMap<>();
                 List<AvailableInsuranceLimitDTO> list = null;
                 List<SimpleBaseDTO> userWiseTreatment = new ArrayList<>();
@@ -298,6 +298,7 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
                 splashData.put("insuranceClaimsDependents", claimsDependents);
                 splashData.put("treatment", userWiseTreatment);
                 splashData.put("insuranceClaimsFundLimits", list);
+                splashData.put("insuranceMinPastDate", minuesDate);
                 return ResponseEntity.ok().body(responseUtil.success((Object) splashData, messageSource.getMessage(ResponseMessageUtil.INSURANCE_CLAIMS_REFERENCE_DETAILS_SUCCESS, null, locale)));
             }).orElseGet(() -> {
                 log.info("User insurance claim request user not found {} ", channelRequestDTO);
