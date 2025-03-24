@@ -46,7 +46,7 @@ public class InsuranceClaimsDetails extends Audit implements Serializable {
     @Column(name = "disease", nullable = false)
     private String disease;
 
-    @ManyToMany
+    @ManyToMany(fetch = FetchType.LAZY, cascade = CascadeType.REFRESH)
     @JoinTable(
             name = "insurance_claims_details_document",
             joinColumns = @JoinColumn(name = "insurance_claims_details_id", referencedColumnName = "id"),
