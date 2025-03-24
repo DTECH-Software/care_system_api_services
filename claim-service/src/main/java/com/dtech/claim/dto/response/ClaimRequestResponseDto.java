@@ -7,7 +7,6 @@
 
 package com.dtech.claim.dto.response;
 
-import com.dtech.claim.enums.Workflow;
 import lombok.Data;
 
 import java.math.BigDecimal;
@@ -17,7 +16,8 @@ public class ClaimRequestResponseDto {
     private Long id;
     private String requestId;
     private BigDecimal requestAmount;
-    private Workflow requestStatus;
+    private String requestStatus;
+    private String requestStatusDescription;
     private String remark;
     private ClaimsDependentsResponseDto claimsDependents;
     private InsuranceClaimsDetailsResponseDto insuranceClaimsDetails;

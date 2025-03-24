@@ -168,7 +168,7 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
 
                                                         if (claimsDependents.isEmpty()) {
                                                             log.info("Claim dependent not found or not eligible for insurance");
-                                                            return ResponseEntity.ok().body(responseUtil.error(null, 1034, messageSource.getMessage(ResponseMessageUtil.CLAIM_DEPENDENT_NOT_FOUND, null, locale)));
+                                                            return ResponseEntity.ok().body(responseUtil.error(null, 1034, messageSource.getMessage(ResponseMessageUtil.CLAIM_DEPENDENT_NOT_FOUND_OR_FACILITY_NOT_ELIGIBLE, null, locale)));
                                                         }
                                                     }
 

@@ -10,6 +10,7 @@ package com.dtech.claim.dto.response;
 import lombok.Data;
 
 import java.util.Date;
+import java.util.List;
 
 @Data
 public class InsuranceClaimsDetailsResponseDto {
@@ -18,4 +19,5 @@ public class InsuranceClaimsDetailsResponseDto {
     private Date fromTreatmentDate;
     private Date toTreatmentDate;
     private String disease;
+    private List<DocumentDownloadResponseDTO> documents;
 }
