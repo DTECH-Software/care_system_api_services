@@ -14,6 +14,7 @@ import com.dtech.claim.validator.ValidEnum;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
+import lombok.experimental.SuperBuilder;
 
 @Data
 @Conditional(selected = "channel", values = {"MB"}, required = {"deviceDetails"}, message = "Device details is required.")
@@ -30,7 +31,8 @@ import lombok.Data;
                 "PROFILE_UPDATE",
                 "INSURANCE_CLAIM_REQUEST",
                 "INSURANCE_CLAIM_OTP_REQUEST",
-                "INSURANCE_CLAIM_REQUEST_REF_DATA"
+                "INSURANCE_CLAIM_REQUEST_REF_DATA",
+                "INSURANCE_CLAIM_FILTER_LIST"
         }, required = {"username"}, message = "Username is required.")
 public class ChannelRequestValidatorDTO {
     @NotBlank(message = "Channel is required.")

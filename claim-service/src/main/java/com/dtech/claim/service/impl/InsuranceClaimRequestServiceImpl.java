@@ -315,22 +315,31 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
     public ResponseEntity<ApiResponse<Object>> insuranceClaimHistoryList(PaginationRequest<ClaimHistory> paginationRequest, Locale locale) {
         try {
             log.info("Claim history filter list {}", paginationRequest);
-            Pageable pageable = PaginationUtil.getPageable(paginationRequest);
 
-            Page<ClaimsRequest> claimsRequests = Objects.nonNull(paginationRequest.getSearch()) ?
-                    insuranceClaimsRequestRepository.findAll(ClaimHistorySpecification.getSpecification(paginationRequest.getSearch()), pageable) :
-                    insuranceClaimsRequestRepository.findAll(pageable);
+            return applicationUserRepository.findByUsernameAndUserPersonalDetails_UserStatus(paginationRequest.getUsername().trim(), Status.ACTIVE).map((user) -> {
 
-            long totalElements = Objects.nonNull(paginationRequest.getSearch()) ?
-                    insuranceClaimsRequestRepository.count(ClaimHistorySpecification.getSpecification(paginationRequest.getSearch())) :
-                    insuranceClaimsRequestRepository.count();
-            log.info("Filter list data fetching success");
-            List<ClaimRequestResponseDto> collectList = claimsRequests.stream()
-                    .map(EntityToDtoMapper::mapClaimHistoryDetails).toList();
-            log.info("Filter list {} success", collectList);
-            return ResponseEntity.ok().body(responseUtil.success(new PagingResult<ClaimRequestResponseDto>(collectList, collectList.size(), totalElements),
-                    messageSource.getMessage(ResponseMessageUtil.CLAIM_REQUEST_HISTORY_FILTER_LIST_SUCCESS,
-                            null, locale)));
+                Pageable pageable = PaginationUtil.getPageable(paginationRequest);
+
+                Page<ClaimsRequest> claimsRequests = Objects.nonNull(paginationRequest.getSearch()) ?
+                        insuranceClaimsRequestRepository.findAll(ClaimHistorySpecification.getSpecification(paginationRequest.getSearch(),user.getId()), pageable) :
+                        insuranceClaimsRequestRepository.findAll(ClaimHistorySpecification.getSpecification(user.getId()), pageable);
+                log.info("Filter records {}", claimsRequests);
+                long totalElements = Objects.nonNull(paginationRequest.getSearch()) ?
+                        insuranceClaimsRequestRepository.count(ClaimHistorySpecification.getSpecification(paginationRequest.getSearch(),user.getId())) :
+                        insuranceClaimsRequestRepository.count(ClaimHistorySpecification.getSpecification(user.getId()));
+                log.info("Total elements count records {}", totalElements);
+                log.info("Filter list data fetching success");
+                List<ClaimRequestResponseDto> collectList = claimsRequests.stream()
+                        .map(EntityToDtoMapper::mapClaimHistoryDetails).toList();
+                log.info("Filter list {} success", collectList);
+                return ResponseEntity.ok().body(responseUtil.success((Object) new PagingResult<ClaimRequestResponseDto>(collectList, collectList.size(), totalElements),
+                        messageSource.getMessage(ResponseMessageUtil.CLAIM_REQUEST_HISTORY_FILTER_LIST_SUCCESS,
+                                null, locale)));
+
+            }).orElseGet(() -> {
+                log.info("User insurance claim filter request user not found {} ", paginationRequest);
+                return ResponseEntity.ok().body(responseUtil.error(null, 1014, messageSource.getMessage(ResponseMessageUtil.APPLICATION_USER_NOT_FOUND, null, locale)));
+            });
 
         } catch (Exception e) {
             log.error(e);

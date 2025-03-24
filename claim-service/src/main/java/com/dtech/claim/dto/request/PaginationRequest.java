@@ -1,24 +1,18 @@
 package com.dtech.claim.dto.request;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import com.dtech.claim.dto.request.validator.ChannelRequestValidatorDTO;
+import lombok.*;
 import lombok.experimental.SuperBuilder;
 import org.springframework.data.domain.Sort;
 
+@EqualsAndHashCode(callSuper = true)
 @Data
-@SuperBuilder
 @NoArgsConstructor
 @AllArgsConstructor
-public class PaginationRequest<T> {
-    @Builder.Default
+public class PaginationRequest<T> extends ChannelRequestValidatorDTO {
     private Integer page = 1;
-    @Builder.Default
     private Integer size = 10;
-    @Builder.Default
     private String sortColumn = "lastModifiedDate";
-    @Builder.Default
     private Sort.Direction sortDirection = Sort.Direction.DESC;
     private T search;
 }

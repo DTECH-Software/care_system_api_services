@@ -8,6 +8,7 @@
 package com.dtech.claim.specifications;
 
 import com.dtech.claim.dto.search.ClaimHistory;
+import com.dtech.claim.model.ApplicationUser;
 import com.dtech.claim.model.ClaimsDependents;
 import com.dtech.claim.model.ClaimsRequest;
 import com.dtech.claim.model.InsuranceClaimsDetails;
@@ -22,13 +23,14 @@ import java.util.List;
 
 @Log4j2
 public class ClaimHistorySpecification {
-    public static Specification<ClaimsRequest> getSpecification(ClaimHistory filterDto) {
+    public static Specification<ClaimsRequest> getSpecification(ClaimHistory filterDto,Long userId) {
         log.info("Claim history filter: " + filterDto);
         return (root, query,criteriaBuilder) -> {
             List<Predicate> predicates = new ArrayList<>();
 
             Join<ClaimsRequest,ClaimsDependents> claimDependents = root.join("claimsDependents", JoinType.LEFT);
             Join<ClaimsRequest, InsuranceClaimsDetails> insuranceClaimsDetails = root.join("insuranceClaimsDetails", JoinType.LEFT);
+            Join<ClaimsRequest, ApplicationUser> employee = root.join("employee", JoinType.LEFT);
 
             if (filterDto.getFromDate() != null) {
                 predicates.add(criteriaBuilder.greaterThanOrEqualTo(root.get("fromDate"), filterDto.getFromDate()));
@@ -54,6 +56,19 @@ public class ClaimHistorySpecification {
                 predicates.add(criteriaBuilder.equal(insuranceClaimsDetails.get("id"), filterDto.getInsuranceClaimsDetails()));
             }
 
+            predicates.add(criteriaBuilder.equal(employee.get("id"), userId));
+
+            return criteriaBuilder.and(predicates.toArray(new Predicate[0]));
+
+        };
+    }
+
+    public static Specification<ClaimsRequest> getSpecification(Long userId) {
+        log.info("Claim history filter default : " + userId);
+        return (root, query,criteriaBuilder) -> {
+            List<Predicate> predicates = new ArrayList<>();
+            Join<ClaimsRequest, ApplicationUser> employee = root.join("employee", JoinType.LEFT);
+            predicates.add(criteriaBuilder.equal(employee.get("id"), userId));
             return criteriaBuilder.and(predicates.toArray(new Predicate[0]));
 
         };
