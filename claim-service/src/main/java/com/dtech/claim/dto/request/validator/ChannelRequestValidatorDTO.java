@@ -14,7 +14,7 @@ import com.dtech.claim.validator.ValidEnum;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
-import lombok.experimental.SuperBuilder;
+
 
 @Data
 @Conditional(selected = "channel", values = {"MB"}, required = {"deviceDetails"}, message = "Device details is required.")
@@ -26,12 +26,9 @@ import lombok.experimental.SuperBuilder;
                 "ADD_DEPENDENT",
                 "DETAILS_DEPENDENT",
                 "PROFILE_IMAGE_UPDATE",
-                "PROFILE_DETAILS_UPDATE_OTP_REQUEST",
-                "PROFILE_UPDATE_OTP_VALIDATION",
                 "PROFILE_UPDATE",
                 "INSURANCE_CLAIM_REQUEST",
                 "DEATH_CLAIM_REQUEST",
-                "INSURANCE_CLAIM_OTP_REQUEST",
                 "INSURANCE_CLAIM_REQUEST_REF_DATA",
                 "DEATH_CLAIM_REQUEST_REF_DATA",
                 "INSURANCE_CLAIM_FILTER_LIST",
