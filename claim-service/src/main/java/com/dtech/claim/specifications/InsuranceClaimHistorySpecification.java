@@ -8,6 +8,7 @@
 package com.dtech.claim.specifications;
 
 import com.dtech.claim.dto.search.ClaimHistory;
+import com.dtech.claim.enums.Workflow;
 import com.dtech.claim.model.ApplicationUser;
 import com.dtech.claim.model.ClaimsDependents;
 import com.dtech.claim.model.ClaimsRequest;
@@ -22,7 +23,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Log4j2
-public class ClaimHistorySpecification {
+public class InsuranceClaimHistorySpecification {
     public static Specification<ClaimsRequest> getSpecification(ClaimHistory filterDto,Long userId) {
         log.info("Claim history filter: " + filterDto);
         return (root, query,criteriaBuilder) -> {
@@ -33,11 +34,11 @@ public class ClaimHistorySpecification {
             Join<ClaimsRequest, ApplicationUser> employee = root.join("employee", JoinType.LEFT);
 
             if (filterDto.getFromDate() != null) {
-                predicates.add(criteriaBuilder.greaterThanOrEqualTo(root.get("fromDate"), filterDto.getFromDate()));
+                predicates.add(criteriaBuilder.greaterThanOrEqualTo(root.get("createdDate"), filterDto.getFromDate()));
             }
 
             if (filterDto.getToDate() != null) {
-                predicates.add(criteriaBuilder.lessThanOrEqualTo(root.get("toDate"), filterDto.getToDate()));
+                predicates.add(criteriaBuilder.lessThanOrEqualTo(root.get("createdDate"), filterDto.getToDate()));
             }
 
             if (filterDto.getRequestId() != null && !filterDto.getRequestId().isEmpty()) {
@@ -46,6 +47,10 @@ public class ClaimHistorySpecification {
 
             if (filterDto.getRequestAmount() != null) {
                 predicates.add(criteriaBuilder.equal(root.get("requestAmount"), filterDto.getRequestAmount()));
+            }
+
+            if (filterDto.getRequestStatus() != null) {
+                predicates.add(criteriaBuilder.equal(root.get("requestStatus"), Workflow.valueOf(filterDto.getRequestStatus())));
             }
 
             if (filterDto.getClaimsDependents() != null && !filterDto.getClaimsDependents().isEmpty()) {

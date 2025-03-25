@@ -11,7 +11,7 @@ package com.dtech.claim.dto.response;
 import lombok.Data;
 
 @Data
-public class TreatmentResponseDto {
+public class TreatmentResponseDTO {
     private Long id;
     private String treatmentCode;
     private String treatmentDescription;

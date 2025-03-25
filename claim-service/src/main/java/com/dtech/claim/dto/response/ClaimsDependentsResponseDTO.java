@@ -12,7 +12,7 @@ import lombok.Data;
 
 
 @Data
-public class ClaimsDependentsResponseDto {
+public class ClaimsDependentsResponseDTO {
     private Long id;
     private String initials;
     private String firstName;

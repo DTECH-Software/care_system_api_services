@@ -8,23 +8,32 @@
 package com.dtech.claim.service.impl;
 
 import com.dtech.claim.dto.DeathLimitDTO;
+import com.dtech.claim.dto.PagingResult;
 import com.dtech.claim.dto.SimpleBaseDTO;
 import com.dtech.claim.dto.request.ChannelRequestDTO;
 import com.dtech.claim.dto.request.DeathClaimRequestDTO;
+import com.dtech.claim.dto.request.PaginationRequest;
 import com.dtech.claim.dto.request.SupportingDocumentDTO;
 import com.dtech.claim.dto.response.ApiResponse;
+import com.dtech.claim.dto.response.DeathClaimRequestResponseDTO;
+import com.dtech.claim.dto.response.InsuranceClaimRequestResponseDTO;
+import com.dtech.claim.dto.search.ClaimHistory;
 import com.dtech.claim.enums.*;
 import com.dtech.claim.enums.DeathBeneficiary;
 import com.dtech.claim.feign.DocumentFeignClient;
+import com.dtech.claim.mapper.EntityToDtoMapper;
 import com.dtech.claim.model.*;
 import com.dtech.claim.repository.*;
 import com.dtech.claim.service.DeathClaimRequestService;
+import com.dtech.claim.specifications.DeathClaimHistorySpecification;
 import com.dtech.claim.util.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.MessageSource;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -121,7 +130,6 @@ public class DeathClaimRequestServiceImpl implements DeathClaimRequestService {
                                 .build());
                     }
                 });
-
                 log.info("Call minus insurance claim date");
                 Date minuesDate = DateTimeUtil.getMinuesDate(Objects.requireNonNull(commonParameterRepository.findByCode(CommonParam.DEATH_CLAIM_REQUEST_PERIOD.name()).orElse(null)).getValue());
                 splashData.put("insuranceClaimsDependents", claimDependent);
@@ -280,6 +288,41 @@ public class DeathClaimRequestServiceImpl implements DeathClaimRequestService {
         }
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public ResponseEntity<ApiResponse<Object>> deathClaimHistoryList(PaginationRequest<ClaimHistory> paginationRequest, Locale locale) {
+       try {
+           log.info("Death claim history filter list {}", paginationRequest);
+
+           return applicationUserRepository.findByUsernameAndUserPersonalDetails_UserStatus(paginationRequest.getUsername().trim(), Status.ACTIVE).map((user) -> {
+
+               Pageable pageable = PaginationUtil.getPageable(paginationRequest);
+
+               Page<DeathClaimRequest> claimsRequests = Objects.nonNull(paginationRequest.getSearch()) ?
+                       deathClaimRequestRepository.findAll(DeathClaimHistorySpecification.getSpecification(paginationRequest.getSearch(), user.getId()), pageable) :
+                       deathClaimRequestRepository.findAll(DeathClaimHistorySpecification.getSpecification(user.getId()), pageable);
+               log.info("Filter records {}", claimsRequests);
+               long totalElements = Objects.nonNull(paginationRequest.getSearch()) ?
+                       deathClaimRequestRepository.count(DeathClaimHistorySpecification.getSpecification(paginationRequest.getSearch(), user.getId())) :
+                       deathClaimRequestRepository.count(DeathClaimHistorySpecification.getSpecification(user.getId()));
+               log.info("Total elements count records death{}", totalElements);
+               log.info("Filter list data fetching death success");
+               List<DeathClaimRequestResponseDTO> collectList = claimsRequests.stream()
+                       .map(EntityToDtoMapper::mapDeathClaimHistoryDetails).toList();
+               log.info("Filter list death {} success", collectList);
+               return ResponseEntity.ok().body(responseUtil.success((Object) new PagingResult<DeathClaimRequestResponseDTO>(collectList, collectList.size(), totalElements),
+                       messageSource.getMessage(ResponseMessageUtil.DEATH_CLAIM_REQUEST_HISTORY_FILTER_LIST_SUCCESS,
+                               null, locale)));
+
+           }).orElseGet(() -> {
+               log.info("User insurance claim filter request user not found {} ", paginationRequest);
+               return ResponseEntity.ok().body(responseUtil.error(null, 1014, messageSource.getMessage(ResponseMessageUtil.APPLICATION_USER_NOT_FOUND, null, locale)));
+           });
+       }catch (Exception e) {
+           log.error(e);
+           throw e;
+       }
+    }
 
     @Transactional(readOnly = true)
     protected ResponseEntity<ApiResponse<Object>> validateDocumentCount(List<SupportingDocumentDTO> documents, String documentType,

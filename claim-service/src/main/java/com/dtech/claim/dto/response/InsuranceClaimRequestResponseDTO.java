@@ -10,15 +10,16 @@ package com.dtech.claim.dto.response;
 import lombok.Data;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 @Data
-public class ClaimRequestResponseDto {
+public class InsuranceClaimRequestResponseDTO {
     private Long id;
     private String requestId;
     private BigDecimal requestAmount;
     private String requestStatus;
     private String requestStatusDescription;
     private String remark;
-    private ClaimsDependentsResponseDto claimsDependents;
-    private InsuranceClaimsDetailsResponseDto insuranceClaimsDetails;
+    private ClaimsDependentsResponseDTO claimsDependents;
+    private InsuranceClaimsDetailsResponseDTO insuranceClaimsDetails;
 }

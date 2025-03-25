@@ -34,7 +34,8 @@ import lombok.experimental.SuperBuilder;
                 "INSURANCE_CLAIM_OTP_REQUEST",
                 "INSURANCE_CLAIM_REQUEST_REF_DATA",
                 "DEATH_CLAIM_REQUEST_REF_DATA",
-                "INSURANCE_CLAIM_FILTER_LIST"
+                "INSURANCE_CLAIM_FILTER_LIST",
+                "DEATH_CLAIM_FILTER_LIST"
         }, required = {"username"}, message = "Username is required.")
 public class ChannelRequestValidatorDTO {
     @NotBlank(message = "Channel is required.")

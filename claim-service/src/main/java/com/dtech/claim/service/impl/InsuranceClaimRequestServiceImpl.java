@@ -16,14 +16,14 @@ import com.dtech.claim.dto.ClaimRequestIdGen;
 import com.dtech.claim.dto.PagingResult;
 import com.dtech.claim.dto.request.*;
 import com.dtech.claim.dto.response.ApiResponse;
-import com.dtech.claim.dto.response.ClaimRequestResponseDto;
+import com.dtech.claim.dto.response.InsuranceClaimRequestResponseDTO;
 import com.dtech.claim.dto.search.ClaimHistory;
 import com.dtech.claim.feign.DocumentFeignClient;
 import com.dtech.claim.mapper.EntityToDtoMapper;
 import com.dtech.claim.model.*;
 import com.dtech.claim.repository.*;
 import com.dtech.claim.service.InsuranceClaimRequestService;
-import com.dtech.claim.specifications.ClaimHistorySpecification;
+import com.dtech.claim.specifications.InsuranceClaimHistorySpecification;
 import com.dtech.claim.util.*;
 import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
@@ -321,19 +321,19 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
                 Pageable pageable = PaginationUtil.getPageable(paginationRequest);
 
                 Page<ClaimsRequest> claimsRequests = Objects.nonNull(paginationRequest.getSearch()) ?
-                        insuranceClaimsRequestRepository.findAll(ClaimHistorySpecification.getSpecification(paginationRequest.getSearch(), user.getId()), pageable) :
-                        insuranceClaimsRequestRepository.findAll(ClaimHistorySpecification.getSpecification(user.getId()), pageable);
+                        insuranceClaimsRequestRepository.findAll(InsuranceClaimHistorySpecification.getSpecification(paginationRequest.getSearch(), user.getId()), pageable) :
+                        insuranceClaimsRequestRepository.findAll(InsuranceClaimHistorySpecification.getSpecification(user.getId()), pageable);
                 log.info("Filter records {}", claimsRequests);
                 long totalElements = Objects.nonNull(paginationRequest.getSearch()) ?
-                        insuranceClaimsRequestRepository.count(ClaimHistorySpecification.getSpecification(paginationRequest.getSearch(), user.getId())) :
-                        insuranceClaimsRequestRepository.count(ClaimHistorySpecification.getSpecification(user.getId()));
+                        insuranceClaimsRequestRepository.count(InsuranceClaimHistorySpecification.getSpecification(paginationRequest.getSearch(), user.getId())) :
+                        insuranceClaimsRequestRepository.count(InsuranceClaimHistorySpecification.getSpecification(user.getId()));
                 log.info("Total elements count records {}", totalElements);
                 log.info("Filter list data fetching success");
-                List<ClaimRequestResponseDto> collectList = claimsRequests.stream()
-                        .map(EntityToDtoMapper::mapClaimHistoryDetails).toList();
+                List<InsuranceClaimRequestResponseDTO> collectList = claimsRequests.stream()
+                        .map(EntityToDtoMapper::mapInsuranceClaimHistoryDetails).toList();
                 log.info("Filter list {} success", collectList);
-                return ResponseEntity.ok().body(responseUtil.success((Object) new PagingResult<ClaimRequestResponseDto>(collectList, collectList.size(), totalElements),
-                        messageSource.getMessage(ResponseMessageUtil.CLAIM_REQUEST_HISTORY_FILTER_LIST_SUCCESS,
+                return ResponseEntity.ok().body(responseUtil.success((Object) new PagingResult<InsuranceClaimRequestResponseDTO>(collectList, collectList.size(), totalElements),
+                        messageSource.getMessage(ResponseMessageUtil.INSURANCE_CLAIM_REQUEST_HISTORY_FILTER_LIST_SUCCESS,
                                 null, locale)));
 
             }).orElseGet(() -> {

@@ -9,11 +9,14 @@ package com.dtech.claim.controller;
 
 import com.dtech.claim.dto.request.ChannelRequestDTO;
 import com.dtech.claim.dto.request.DeathClaimRequestDTO;
+import com.dtech.claim.dto.request.PaginationRequest;
 import com.dtech.claim.dto.request.validator.ChannelRequestValidatorDTO;
 import com.dtech.claim.dto.request.validator.DeathClaimRequestValidatorDTO;
 import com.dtech.claim.dto.response.ApiResponse;
+import com.dtech.claim.dto.search.ClaimHistory;
 import com.dtech.claim.service.DeathClaimRequestService;
 import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
 import io.swagger.annotations.ApiOperation;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -26,6 +29,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.lang.reflect.Type;
 import java.util.Locale;
 
 @RestController
@@ -52,6 +56,14 @@ public class DeathClaimRequestController {
     public ResponseEntity<ApiResponse<Object>> deathClaimRequest(@RequestBody @Valid DeathClaimRequestValidatorDTO deathClaimRequestValidatorDTO, Locale locale) {
         log.info("Death claim request controller {} ", deathClaimRequestValidatorDTO);
         return deathClaimRequestService.deathClaimRequest(gson.fromJson(gson.toJson(deathClaimRequestValidatorDTO), DeathClaimRequestDTO.class), locale);
+    }
+
+    @PostMapping(path = "/filter-list",produces = MediaType.APPLICATION_JSON_VALUE,consumes = MediaType.APPLICATION_JSON_VALUE)
+    @ApiOperation(value = "Handle death claim history request request ",notes = "Death claim request history success or failed")
+    public ResponseEntity<ApiResponse<Object>> deathClaimHistoryList(@RequestBody @Valid PaginationRequest<ClaimHistory> paginationRequest, Locale locale) {
+        log.info("Death claim history request controller {} ", paginationRequest);
+        Type paginationRequestType = new TypeToken<PaginationRequest<ClaimHistory>>(){}.getType();
+        return deathClaimRequestService.deathClaimHistoryList(gson.fromJson(gson.toJson(paginationRequest), paginationRequestType), locale);
     }
 
 }

@@ -13,9 +13,9 @@ import java.util.Date;
 import java.util.List;
 
 @Data
-public class InsuranceClaimsDetailsResponseDto {
+public class InsuranceClaimsDetailsResponseDTO {
     private Long id;
-    private TreatmentResponseDto treatment;
+    private TreatmentResponseDTO treatment;
     private Date fromTreatmentDate;
     private Date toTreatmentDate;
     private String disease;
