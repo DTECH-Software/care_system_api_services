@@ -14,9 +14,9 @@ import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 
 @Data
-public class SupportingDocumentValidatorDTO {
-    @NotBlank(message = "File type is required.")
-    @ValidEnum(enumClass = InsuranceClaimDocTypes.class, message = "Invalid file type.")
+public class InsuranceSupportingDocumentValidatorDTO {
+    @NotBlank(message = "Type is required.")
+    @ValidEnum(enumClass = InsuranceClaimDocTypes.class, message = "Invalid type.")
     private String type;
     @NotBlank(message = "File is required.")
     private String file;

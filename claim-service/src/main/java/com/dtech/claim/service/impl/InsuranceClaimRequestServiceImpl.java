@@ -183,7 +183,7 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
                                                     }
                                                     saveClaimRequest(claimRequestDTO, period, user, claimsDependents, treatment);
                                                     updateAccountBalance(claimsAccountBalance.orElse(null), claimRequestDTO, treatment, insuranceDetails, user, period);
-                                                    return ResponseEntity.ok().body(responseUtil.success(null, messageSource.getMessage(ResponseMessageUtil.CLAIM_REQUEST_SUBMIT_SUCCESS, null, locale)));
+                                                    return ResponseEntity.ok().body(responseUtil.success(null, messageSource.getMessage(ResponseMessageUtil.INSURANCE_CLAIM_REQUEST_SUBMIT_SUCCESS, null, locale)));
 
                                                 }).orElseGet(() -> {
                                                     log.info("User insurance policy period treatment not found");

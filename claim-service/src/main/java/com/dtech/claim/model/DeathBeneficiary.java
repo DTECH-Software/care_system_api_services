@@ -7,6 +7,7 @@
 
 package com.dtech.claim.model;
 
+import com.dtech.claim.enums.Range;
 import com.dtech.claim.enums.Status;
 import jakarta.persistence.*;
 import lombok.Data;
@@ -38,7 +39,8 @@ public class DeathBeneficiary extends Audit implements Serializable {
     @Enumerated(EnumType.STRING)
     private Status status;
 
-    @ManyToOne(fetch = FetchType.LAZY,cascade = CascadeType.ALL)
-    @JoinColumn(name = "death_age_limit",referencedColumnName = "id")
-    private DeathAgeLimit deathAgeLimit;
+    @Column(name = "range")
+    @Enumerated(EnumType.STRING)
+    private Range range;
+
 }

@@ -30,6 +30,7 @@ import lombok.experimental.SuperBuilder;
                 "PROFILE_UPDATE_OTP_VALIDATION",
                 "PROFILE_UPDATE",
                 "INSURANCE_CLAIM_REQUEST",
+                "DEATH_CLAIM_REQUEST",
                 "INSURANCE_CLAIM_OTP_REQUEST",
                 "INSURANCE_CLAIM_REQUEST_REF_DATA",
                 "INSURANCE_CLAIM_FILTER_LIST"

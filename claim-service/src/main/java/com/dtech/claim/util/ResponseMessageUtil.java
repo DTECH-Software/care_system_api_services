@@ -51,15 +51,20 @@ public class ResponseMessageUtil {
     public final static String INSURANCE_POLICY_NOT_FOUND = "val.insurance.policy.not.found";
     public final static String INSURANCE_PERIOD_NOT_FOUND = "val.insurance.period.not.found";
     public final static String TREATMENT_NOT_FOUND = "val.treatment.not.found";
-    public final static String CLAIM_REQUEST_SUBMIT_SUCCESS = "val.claim.request.submit.success";
+    public final static String INSURANCE_CLAIM_REQUEST_SUBMIT_SUCCESS = "val.insurance.claim.request.submit.success";
+    public final static String DEATH_CLAIM_REQUEST_SUBMIT_SUCCESS = "val.death.claim.request.submit.success";
     public final static String POLICY_TREATMENT_PERIOD_NOT_FOUND_OR_INACTIVE = "val.policy.treatment.period.not.found.or.inactive";
     public final static String COMMON_PARAM_NOT_FOUND = "val.common.param.not.found";
     public final static String OLDER_DATE_CLAIM_REQUEST = "val.older.date.claim.request";
     public final static String CLAIM_REQUEST_HISTORY_FILTER_LIST_SUCCESS = "val.claim.request.history.filter.list.success";
     public final static String CLAIM_DEPENDENT_NOT_FOUND_OR_FACILITY_NOT_ELIGIBLE = "val.claim.dependent.not.eligible.or.facility.not.eligible";
+    public final static String BENEFICIARY_NOT_FOUND_OR_FACILITY_NOT_ELIGIBLE = "val.beneficiary.not.eligible.or.facility.not.eligible";
     public final static String INSURANCE_CLAIMS_REFERENCE_DETAILS_SUCCESS = "val.insurance.claims.reference.details.success";
     public final static String INSURANCE_CLAIMS_DIAGNOSIS_MAX_IMAGE_INVALID  = "val.claims.diagnosis.max.image.invalid";
     public final static String INSURANCE_CLAIMS_DIAGNOSIS_MIN_IMAGE_INVALID  = "val.claims.diagnosis.min.image.invalid";
     public final static String INSURANCE_CLAIMS_TREATMENT_MAX_IMAGE_INVALID  = "val.claims.treatment.max.image.invalid";
     public final static String INSURANCE_CLAIMS_TREATMENT_MIN_IMAGE_INVALID  = "val.claims.treatment.min.image.invalid";
+    public final static String DEATH_CLAIM_ALREADY_PAID_OR_UNDER_REVIEW  = "val.death.claim.already.paid.or.under.review";
+    public final static String DEATH_CLAIMS_DEATH_MAX_IMAGE_INVALID  = "val.death.claims.death.max.image.invalid";
+    public final static String DEATH_CLAIMS_DEATH_MIN_IMAGE_INVALID  = "val.death.claims.death.min.image.invalid";
 }

@@ -47,5 +47,4 @@ public class Document extends Audit implements Serializable {
 
     @ManyToMany(mappedBy = "documents")
     private List<ClaimsDependents> claimsDependents = new ArrayList<>();
-
 }

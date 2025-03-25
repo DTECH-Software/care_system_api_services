@@ -1,0 +1,35 @@
+/**
+ * User: Himal_J
+ * Date: 3/25/2025
+ * Time: 10:18 AM
+ * <p>
+ */
+
+package com.dtech.claim.dto.request.validator;
+
+
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+
+import java.util.Date;
+import java.util.List;
+
+@EqualsAndHashCode(callSuper = true)
+@Data
+public class DeathClaimRequestValidatorDTO extends ChannelRequestValidatorDTO{
+    private String remark;
+    @NotNull(message = "Claim dependent is required.")
+    private long claimsDependentId;
+    @NotNull(message = "Death date is required.")
+    private Date deathDate;
+    @NotNull(message = "Death certificate is required.")
+    @NotEmpty(message = "Death certificate document is required.")
+    @Valid
+    private List<DeathSupportingDocumentValidatorDTO> documents;
+    @Size(min = 6, max = 6, message = "OTP length must be exactly 6")
+    private String otp;
+}

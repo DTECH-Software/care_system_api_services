@@ -18,10 +18,8 @@ import java.util.List;
 @Data
 public class DeathClaimRequestDTO extends ChannelRequestDTO{
     private String requestId;
-    private BigDecimal requestAmount;
     private String remark;
     private long claimsDependentId;
-    private Boolean isEmployee = false;
     private Date deathDate;
     private List<SupportingDocumentDTO> documents;
     private String otp;

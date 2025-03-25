@@ -33,7 +33,7 @@ import java.lang.reflect.Type;
 import java.util.Locale;
 
 @RestController
-@RequestMapping(path = "api/v1/claims")
+@RequestMapping(path = "api/v1/insurance")
 @Log4j2
 @RequiredArgsConstructor
 public class InsuranceClaimRequestController {

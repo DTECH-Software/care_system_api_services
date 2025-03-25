@@ -1,17 +1,17 @@
 /**
  * User: Himal_J
- * Date: 3/16/2025
- * Time: 8:35 AM
+ * Date: 3/24/2025
+ * Time: 7:57 PM
  * <p>
  */
 
 package com.dtech.claim.model;
 
+import com.dtech.claim.enums.PaymentType;
 import com.dtech.claim.enums.Workflow;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import lombok.ToString;
 
 import java.io.Serializable;
 import java.math.BigDecimal;
@@ -21,10 +21,9 @@ import java.util.List;
 
 @EqualsAndHashCode(callSuper = true)
 @Entity
-@Table(name = "death_claims_request")
+@Table(name = "death_claim_request")
 @Data
-@ToString(exclude = "documents")
-public class DeathClaimsRequest extends Audit implements Serializable {
+public class DeathClaimRequest extends Audit implements Serializable {
     private static final long serialVersionUID = 1L;
 
     @Id
@@ -35,8 +34,9 @@ public class DeathClaimsRequest extends Audit implements Serializable {
     @Column(name = "request_id", nullable = false, updatable = false, unique = true)
     private String requestId;
 
-    @Column(name = "request_amount", nullable = false)
-    private BigDecimal requestAmount;
+    @Column(name = "death_date", nullable = false)
+    @Temporal(TemporalType.DATE)
+    private Date deathDate;
 
     @Column(name = "request_status", nullable = false)
     @Enumerated(EnumType.STRING)
@@ -45,22 +45,29 @@ public class DeathClaimsRequest extends Audit implements Serializable {
     @Column(name = "remark")
     private String remark;
 
-    @Column(name = "death_date", nullable = false)
-    @Temporal(TemporalType.DATE)
-    private Date deathDate;
+    @Column(name = "payment_type",nullable = false)
+    @Enumerated(EnumType.STRING)
+    private PaymentType paymentType;
 
-    @ManyToOne(fetch = FetchType.LAZY, cascade = CascadeType.PERSIST)
+    @Column(name = "utilize_amount",nullable = false)
+    private BigDecimal utilizeAmount;
+
+    @ManyToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     @JoinColumn(name = "dependent", updatable = false,referencedColumnName = "id")
     private ClaimsDependents claimsDependents;
 
-    @ManyToOne(fetch = FetchType.LAZY, cascade = CascadeType.PERSIST)
+    @ManyToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     @JoinColumn(name = "employee", nullable = false, updatable = false,referencedColumnName = "id")
     private ApplicationUser employee;
 
-    @ManyToMany
+    @ManyToOne(fetch = FetchType.LAZY,cascade = CascadeType.ALL)
+    @JoinColumn(name = "death_beneficiary",updatable = false)
+    private DeathBeneficiary deathBeneficiary;
+
+    @ManyToMany(cascade = CascadeType.MERGE,fetch = FetchType.LAZY)
     @JoinTable(
-            name = "death_claims_details_document",
-            joinColumns = @JoinColumn(name = "death_claims_details_id", referencedColumnName = "id"),
+            name = "death_claims_document",
+            joinColumns = @JoinColumn(name = "death_claims__id", referencedColumnName = "id"),
             inverseJoinColumns = @JoinColumn(name = "document_id", referencedColumnName = "id")
     )
     private List<Document> documents = new ArrayList<>();

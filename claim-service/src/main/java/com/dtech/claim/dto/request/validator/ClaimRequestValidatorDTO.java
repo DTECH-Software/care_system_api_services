@@ -45,7 +45,7 @@ public class ClaimRequestValidatorDTO extends ChannelRequestValidatorDTO {
     @NotNull(message = "Patient document is required.")
     @NotEmpty(message = "Patient document is required.")
     @Valid
-    private List<SupportingDocumentValidatorDTO> documents;
+    private List<InsuranceSupportingDocumentValidatorDTO> documents;
     @NotEmpty(message = "OTP is required")
     @Size(min = 6, max = 6, message = "OTP length must be exactly 6")
     private String otp;
