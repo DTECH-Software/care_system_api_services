@@ -1,5 +1,5 @@
 package com.dtech.message.enums;
 
 public enum NotificationsType {
- OTP
+ OTP,INSURANCE_CLAIM
 }

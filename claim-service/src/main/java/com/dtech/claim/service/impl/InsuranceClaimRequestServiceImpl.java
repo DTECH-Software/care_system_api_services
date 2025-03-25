@@ -11,6 +11,7 @@ package com.dtech.claim.service.impl;
 import com.dtech.claim.dto.AvailableInsuranceLimitDTO;
 import com.dtech.claim.dto.SimpleBaseDTO;
 import com.dtech.claim.enums.*;
+import com.dtech.claim.feign.MessageFeignClient;
 import com.dtech.claim.util.MultipartFileUtil;
 import com.dtech.claim.dto.ClaimRequestIdGen;
 import com.dtech.claim.dto.PagingResult;
@@ -31,10 +32,12 @@ import lombok.extern.log4j.Log4j2;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.MessageSource;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -97,6 +100,9 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
 
     @Autowired
     private ModelMapper modelMapper;
+
+    @Autowired
+    private MessageFeignClient messageFeignClient;
 
     @Override
     @Transactional
@@ -181,8 +187,9 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
                                                         log.info("validation filed {} ", message);
                                                         return ResponseEntity.ok().body(responseUtil.error(null, 1035, message));
                                                     }
-                                                    saveClaimRequest(claimRequestDTO, period, user, claimsDependents, treatment);
+                                                    String claimRequestId = saveClaimRequest(claimRequestDTO, period, user, claimsDependents, treatment);
                                                     updateAccountBalance(claimsAccountBalance.orElse(null), claimRequestDTO, treatment, insuranceDetails, user, period);
+                                                    notifyMessage(user.getPrimaryMobile(),claimRequestId);
                                                     return ResponseEntity.ok().body(responseUtil.success(null, messageSource.getMessage(ResponseMessageUtil.INSURANCE_CLAIM_REQUEST_SUBMIT_SUCCESS, null, locale)));
 
                                                 }).orElseGet(() -> {
@@ -221,6 +228,23 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
             });
 
         } catch (Exception e) {
+            log.error(e);
+            throw e;
+        }
+    }
+
+    @Async
+    protected void notifyMessage(String mobile, String requestId) {
+        try {
+            log.info("Insurance request notify email");
+            MessageRequestDTO messageRequestDTO = new MessageRequestDTO();
+            messageRequestDTO.setValue(requestId);
+            messageRequestDTO.setMobileNo(mobile);
+            messageRequestDTO.setType(NotificationsType.INSURANCE_CLAIM.name());
+            log.info("Before message request mapper {} ", messageRequestDTO);
+            log.info("Before calling message service {}", messageFeignClient);
+            messageFeignClient.sendMessage(messageRequestDTO);
+        } catch (RuntimeException e) {
             log.error(e);
             throw e;
         }
@@ -431,7 +455,7 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
     }
 
     @Transactional
-    protected void saveClaimRequest(ClaimRequestDTO claimRequestDTO, InsurancePeriod insurancePeriod, ApplicationUser applicationUser,
+    protected String saveClaimRequest(ClaimRequestDTO claimRequestDTO, InsurancePeriod insurancePeriod, ApplicationUser applicationUser,
                                     Optional<ClaimsDependents> claimsDependents, Treatment treatment) {
         try {
             log.info("Claim request save started {}", claimRequestDTO);
@@ -453,6 +477,7 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
             claimsRequest.setInsuranceClaimsDetails(insuranceClaimsDetails);
             insuranceClaimsRequestRepository.saveAndFlush(claimsRequest);
             log.info("Complete save claim request id {}", claimRequestId);
+            return claimRequestId;
         } catch (Exception e) {
             log.error(e);
             throw e;
