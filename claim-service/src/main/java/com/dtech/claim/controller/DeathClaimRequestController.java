@@ -7,7 +7,9 @@
 
 package com.dtech.claim.controller;
 
+import com.dtech.claim.dto.request.ChannelRequestDTO;
 import com.dtech.claim.dto.request.DeathClaimRequestDTO;
+import com.dtech.claim.dto.request.validator.ChannelRequestValidatorDTO;
 import com.dtech.claim.dto.request.validator.DeathClaimRequestValidatorDTO;
 import com.dtech.claim.dto.response.ApiResponse;
 import com.dtech.claim.service.DeathClaimRequestService;
@@ -37,6 +39,13 @@ public class DeathClaimRequestController {
 
     @Autowired
     private final Gson gson;
+
+    @PostMapping(path = "/reference-data",produces = MediaType.APPLICATION_JSON_VALUE,consumes = MediaType.APPLICATION_JSON_VALUE)
+    @ApiOperation(value = "Handle death claim request request ",notes = "Death claim request success or failed")
+    public ResponseEntity<ApiResponse<Object>> deathClaimReferenceData(@RequestBody @Valid ChannelRequestValidatorDTO channelRequestValidatorDTO, Locale locale) {
+        log.info("Death claim request reference data controller {} ", channelRequestValidatorDTO);
+        return deathClaimRequestService.deathClaimReferenceData(gson.fromJson(gson.toJson(channelRequestValidatorDTO), ChannelRequestDTO.class), locale);
+    }
 
     @PostMapping(path = "/request",produces = MediaType.APPLICATION_JSON_VALUE,consumes = MediaType.APPLICATION_JSON_VALUE)
     @ApiOperation(value = "Handle death claim request request ",notes = "Death claim request success or failed")

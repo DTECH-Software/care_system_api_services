@@ -228,24 +228,24 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
 
     @Transactional(readOnly = true)
     protected ResponseEntity<ApiResponse<Object>> validateDocumentCount(List<SupportingDocumentDTO> documents, String documentType,
-                                                                        String commonParamCode,String maxMessage,String minMessage, Locale locale) {
-       try {
-           long count = documents.stream().filter(val -> val.getType().equals(documentType)).count();
-           CommonParameter commonParameter = commonParameterRepository.findByCode(commonParamCode).orElse(null);
-           long maxImages = commonParameter != null ? commonParameter.getValue() : 1;
+                                                                        String commonParamCode, String maxMessage, String minMessage, Locale locale) {
+        try {
+            long count = documents.stream().filter(val -> val.getType().equals(documentType)).count();
+            CommonParameter commonParameter = commonParameterRepository.findByCode(commonParamCode).orElse(null);
+            long maxImages = commonParameter != null ? commonParameter.getValue() : 1;
 
-           if (count > maxImages) {
-               log.info("Claim request max {} invalid", documentType);
-               return ResponseEntity.ok().body(responseUtil.error(null, 1043, messageSource.getMessage(maxMessage, new Object[]{maxImages}, locale)));
-           } else if (count == 0) {
-               log.info("Claim request min {} invalid", documentType);
-               return ResponseEntity.ok().body(responseUtil.error(null, 1044, messageSource.getMessage(minMessage, null, locale)));
-           }
-           return null;
-       }catch (Exception e) {
-           log.error(e);
-           throw e;
-       }
+            if (count > maxImages) {
+                log.info("Claim request max {} invalid", documentType);
+                return ResponseEntity.ok().body(responseUtil.error(null, 1043, messageSource.getMessage(maxMessage, new Object[]{maxImages}, locale)));
+            } else if (count == 0) {
+                log.info("Claim request min {} invalid", documentType);
+                return ResponseEntity.ok().body(responseUtil.error(null, 1044, messageSource.getMessage(minMessage, null, locale)));
+            }
+            return null;
+        } catch (Exception e) {
+            log.error(e);
+            throw e;
+        }
     }
 
     @Override
@@ -255,14 +255,14 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
             log.info("Insurance claim reference data {}", channelRequestDTO);
             return applicationUserRepository.findByUsernameAndUserPersonalDetails_UserStatus(channelRequestDTO.getUsername().trim(), Status.ACTIVE).map((user) -> {
                 InsurancePeriod period = insurancePeriodRepository.findByYearAndStatus(String.valueOf(LocalDate.now().getYear()), Status.ACTIVE).orElse(null);
-              List<Treatment> treatmentList = treatmentRepository.findAllByStatus(Status.ACTIVE);
-               log.info("Insurance claim reference data get dependence {} ", treatmentList);
+                List<Treatment> treatmentList = treatmentRepository.findAllByStatus(Status.ACTIVE);
+                log.info("Insurance claim reference data get dependence {} ", treatmentList);
                 List<SimpleBaseDTO> claimsDependents = claimDependentsRepository.
                         findByApplicationUserAndStatusAndEligibleFacilityIn(user, Workflow.ACTIVE, List.of(Facility.INSURANCE, Facility.BOTH))
                         .stream().map(dep -> new SimpleBaseDTO(String.valueOf(dep.getId()), dep.getFirstName() + " " + dep.getLastName())).toList();
                 log.info("Call minus insurance claim date");
                 Date minuesDate = DateTimeUtil.getMinuesDate(Objects.requireNonNull(commonParameterRepository.findByCode(CommonParam.INSURANCE_CLAIM_REQUEST_PERIOD.name()).orElse(null)).getValue());
-                log.info("Get minus insurance claim date {} ",minuesDate);
+                log.info("Get minus insurance claim date {} ", minuesDate);
                 Map<String, Object> splashData = new HashMap<>();
                 List<AvailableInsuranceLimitDTO> list = null;
                 List<SimpleBaseDTO> userWiseTreatment = new ArrayList<>();
@@ -278,9 +278,9 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
                                 findByInsurancePolicyAndInsurancePeriodAndTreatmentAndStatus(user.getUserPersonalDetails().getUserCompanyDetails().getInsurancePolicy(), period, tre, Status.ACTIVE).orElse(null);
                         log.info("Insurance claim reference data balance is {} ", insuranceDetails);
 
-                        if(insuranceDetails != null && insuranceDetails.getTreatment() != null){
+                        if (insuranceDetails != null && insuranceDetails.getTreatment() != null) {
                             userWiseTreatment.add(new SimpleBaseDTO(insuranceDetails.getTreatment()
-                                    .getTreatmentCode(),insuranceDetails.getTreatment()
+                                    .getTreatmentCode(), insuranceDetails.getTreatment()
                                     .getTreatmentDescription()));
                         }
 
@@ -321,11 +321,11 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
                 Pageable pageable = PaginationUtil.getPageable(paginationRequest);
 
                 Page<ClaimsRequest> claimsRequests = Objects.nonNull(paginationRequest.getSearch()) ?
-                        insuranceClaimsRequestRepository.findAll(ClaimHistorySpecification.getSpecification(paginationRequest.getSearch(),user.getId()), pageable) :
+                        insuranceClaimsRequestRepository.findAll(ClaimHistorySpecification.getSpecification(paginationRequest.getSearch(), user.getId()), pageable) :
                         insuranceClaimsRequestRepository.findAll(ClaimHistorySpecification.getSpecification(user.getId()), pageable);
                 log.info("Filter records {}", claimsRequests);
                 long totalElements = Objects.nonNull(paginationRequest.getSearch()) ?
-                        insuranceClaimsRequestRepository.count(ClaimHistorySpecification.getSpecification(paginationRequest.getSearch(),user.getId())) :
+                        insuranceClaimsRequestRepository.count(ClaimHistorySpecification.getSpecification(paginationRequest.getSearch(), user.getId())) :
                         insuranceClaimsRequestRepository.count(ClaimHistorySpecification.getSpecification(user.getId()));
                 log.info("Total elements count records {}", totalElements);
                 log.info("Filter list data fetching success");

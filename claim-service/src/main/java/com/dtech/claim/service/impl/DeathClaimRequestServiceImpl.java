@@ -7,6 +7,9 @@
 
 package com.dtech.claim.service.impl;
 
+import com.dtech.claim.dto.DeathLimitDTO;
+import com.dtech.claim.dto.SimpleBaseDTO;
+import com.dtech.claim.dto.request.ChannelRequestDTO;
 import com.dtech.claim.dto.request.DeathClaimRequestDTO;
 import com.dtech.claim.dto.request.SupportingDocumentDTO;
 import com.dtech.claim.dto.response.ApiResponse;
@@ -29,10 +32,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.math.BigDecimal;
-import java.util.Date;
-import java.util.List;
-import java.util.Locale;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
@@ -70,6 +70,77 @@ public class DeathClaimRequestServiceImpl implements DeathClaimRequestService {
     private ModelMapper modelMapper;
 
     @Override
+    @Transactional(readOnly = true)
+    public ResponseEntity<ApiResponse<Object>> deathClaimReferenceData(ChannelRequestDTO channelRequestDTO, Locale locale) {
+        try {
+            log.info("Death claim reference data {} ", channelRequestDTO);
+            return applicationUserRepository.findByUsernameAndUserPersonalDetails_UserStatus(channelRequestDTO.getUsername().trim(), Status.ACTIVE).map((user) -> {
+                Map<String, Object> splashData = new HashMap<>();
+
+                List<ClaimsDependents> claimsDependents = claimDependentsRepository.
+                        findByApplicationUserAndStatusAndEligibleFacilityIn(user, Workflow.ACTIVE, List.of(Facility.DEATH, Facility.BOTH));
+
+                CommonParameter deathAge = commonParameterRepository.findByCode(CommonParam.DEATH_AGE.name()).orElse(null);
+
+                ArrayList<DeathLimitDTO> deathLimitDTOS = new ArrayList<>();
+                ArrayList<SimpleBaseDTO> claimDependent = new ArrayList<>();
+
+                claimsDependents.forEach((dep) -> {
+                    claimDependent.add(new SimpleBaseDTO(String.valueOf(dep.getId()),dep.getFirstName() + " "+ dep.getLastName()));
+
+                    if (dep.getRelationCategory().equals(RelationCategory.CHILD) ||
+                            dep.getRelationCategory().equals(RelationCategory.SISTER) ||
+                            dep.getRelationCategory().equals(RelationCategory.BROTHER)) {
+                        log.info("Relation claim reference data {} ", dep.getRelationCategory());
+                        int age = DateTimeUtil.getAge(String.valueOf(dep.getDob()));
+                        Range range = Range.LOWER;
+
+                        if (age > (deathAge != null ? deathAge.getValue() : 1)) {
+                            log.info("Upper range claim reference data {} ", age);
+                            range = Range.UPPER;
+                        }
+                        com.dtech.claim.model.DeathBeneficiary deathBeneficiary = deathBeneficiaryRepository.
+                                findByCodeAndRangeAndStatus(DeathBeneficiary.valueOf(dep.getRelationCategory().name()),
+                                range, Status.ACTIVE).orElse(null);
+
+                        deathLimitDTOS.add(DeathLimitDTO.builder()
+                                .dependentId(String.valueOf(dep.getId()))
+                                .deathLimit(deathBeneficiary != null ? deathBeneficiary.getClaimLimit() : null)
+                                .ageRange(deathBeneficiary != null ? deathBeneficiary.getRange().name() : null)
+                                .build());
+
+                    } else {
+
+                        com.dtech.claim.model.DeathBeneficiary deathBeneficiary = deathBeneficiaryRepository.
+                                findByCodeAndStatus(DeathBeneficiary.valueOf(dep.getRelationCategory().name()), Status.ACTIVE).orElse(null);
+
+                        deathLimitDTOS.add(DeathLimitDTO.builder()
+                                .dependentId(String.valueOf(dep.getId()))
+                                .deathLimit(deathBeneficiary != null ? deathBeneficiary.getClaimLimit() : null)
+                                .ageRange(deathBeneficiary != null ? deathBeneficiary.getRange() != null ? deathBeneficiary.getRange().name():null : null)
+                                .build());
+                    }
+                });
+
+                log.info("Call minus insurance claim date");
+                Date minuesDate = DateTimeUtil.getMinuesDate(Objects.requireNonNull(commonParameterRepository.findByCode(CommonParam.DEATH_CLAIM_REQUEST_PERIOD.name()).orElse(null)).getValue());
+                splashData.put("insuranceClaimsDependents", claimDependent);
+                splashData.put("deathClaimsFundLimits", deathLimitDTOS);
+                splashData.put("deathMinPastDate", minuesDate);
+                return ResponseEntity.ok().body(responseUtil.success((Object) splashData, messageSource.getMessage(ResponseMessageUtil.DEATH_CLAIMS_REFERENCE_DETAILS_SUCCESS, null, locale)));
+
+            }).orElseGet(() -> {
+                log.info("User death claim request user not found {} ", channelRequestDTO);
+                return ResponseEntity.ok().body(responseUtil.error(null, 1014, messageSource.getMessage(ResponseMessageUtil.APPLICATION_USER_NOT_FOUND, null, locale)));
+            });
+
+        } catch (Exception e) {
+            log.error(e);
+            throw e;
+        }
+    }
+
+    @Override
     @Transactional
     public ResponseEntity<ApiResponse<Object>> deathClaimRequest(DeathClaimRequestDTO deathClaimRequestDTO, Locale locale) {
         try {
@@ -92,7 +163,7 @@ public class DeathClaimRequestServiceImpl implements DeathClaimRequestService {
 
                         if (user.getApplicationOtpSession() != null) {
                             if (DateTimeUtil.getSeconds(user.getApplicationOtpSession().getCreatedDate(), 600).after(DateTimeUtil.getCurrentDateTime()) &&
-                                    user.getApplicationOtpSession().getOtp().equals(deathClaimRequestDTO.getOtp()) && user.getApplicationOtpSession().isValidated())  {
+                                    user.getApplicationOtpSession().getOtp().equals(deathClaimRequestDTO.getOtp()) && user.getApplicationOtpSession().isValidated()) {
 
                                 log.info("Otp request valid {} ", user.getApplicationOtpSession());
                                 return commonParameterRepository.findByCode(CommonParam.DEATH_CLAIM_REQUEST_PERIOD.name())
@@ -124,7 +195,7 @@ public class DeathClaimRequestServiceImpl implements DeathClaimRequestService {
                                                 log.info("get - date from death claim request {}", dob);
                                                 int age = DateTimeUtil.getAge(String.valueOf(dob));
 
-                                                 commonParameterRepository.findByCode(CommonParam.DEATH_AGE.name())
+                                                commonParameterRepository.findByCode(CommonParam.DEATH_AGE.name())
                                                         .map((dAge) -> {
 
                                                             if (age <= dAge.getValue()) {
@@ -134,7 +205,7 @@ public class DeathClaimRequestServiceImpl implements DeathClaimRequestService {
                                                                 log.info("Age greater than death claim request {} {}", age, dAge.getValue());
                                                                 range.set(Range.UPPER);
                                                             }
-                                                           return null;
+                                                            return null;
                                                         })
                                                         .orElseGet(() -> {
                                                             log.info("User common param death claim age request {}", deathClaimRequestDTO.getUsername());
@@ -212,10 +283,10 @@ public class DeathClaimRequestServiceImpl implements DeathClaimRequestService {
 
     @Transactional(readOnly = true)
     protected ResponseEntity<ApiResponse<Object>> validateDocumentCount(List<SupportingDocumentDTO> documents, String documentType,
-                                                                         String maxMessage, String minMessage, Locale locale) {
+                                                                        String maxMessage, String minMessage, Locale locale) {
         try {
             long count = documents.stream().filter(val -> val.getType().equals(documentType)).count();
-            long maxImages =  1;
+            long maxImages = 1;
 
             if (count > maxImages) {
                 log.info("Claim death request max {} invalid", documentType);
@@ -225,7 +296,7 @@ public class DeathClaimRequestServiceImpl implements DeathClaimRequestService {
                 return ResponseEntity.ok().body(responseUtil.error(null, 1044, messageSource.getMessage(minMessage, null, locale)));
             }
             return null;
-        }catch (Exception e) {
+        } catch (Exception e) {
             log.error(e);
             throw e;
         }
@@ -236,8 +307,8 @@ public class DeathClaimRequestServiceImpl implements DeathClaimRequestService {
                                          PaymentType paymentType, BigDecimal amount,
                                          ClaimsDependents claimsDependents,
                                          ApplicationUser applicationUser,
-                                         com.dtech.claim.model.DeathBeneficiary deathBeneficiary,List<Document> uploadSupportingDocument) {
-        try{
+                                         com.dtech.claim.model.DeathBeneficiary deathBeneficiary, List<Document> uploadSupportingDocument) {
+        try {
             log.info("Save death claim request {}", deathClaimRequestDTO);
             DeathClaimRequest deathClaimRequest = new DeathClaimRequest();
             deathClaimRequest.setDeathDate(deathClaimRequestDTO.getDeathDate());
@@ -251,7 +322,7 @@ public class DeathClaimRequestServiceImpl implements DeathClaimRequestService {
             deathClaimRequest.setDocuments(uploadSupportingDocument);
             log.info("Save death claim request {}", deathClaimRequestDTO);
             deathClaimRequestRepository.saveAndFlush(deathClaimRequest);
-        }catch (Exception e) {
+        } catch (Exception e) {
             log.error(e);
             throw e;
         }

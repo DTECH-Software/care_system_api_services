@@ -7,6 +7,7 @@
 
 package com.dtech.claim.service;
 
+import com.dtech.claim.dto.request.ChannelRequestDTO;
 import com.dtech.claim.dto.request.DeathClaimRequestDTO;
 import com.dtech.claim.dto.response.ApiResponse;
 import org.springframework.http.ResponseEntity;
@@ -14,5 +15,6 @@ import org.springframework.http.ResponseEntity;
 import java.util.Locale;
 
 public interface DeathClaimRequestService {
+    ResponseEntity<ApiResponse<Object>> deathClaimReferenceData(ChannelRequestDTO channelRequestDTO, Locale locale);
     ResponseEntity<ApiResponse<Object>> deathClaimRequest(DeathClaimRequestDTO deathClaimRequestDTO, Locale locale);
 }
