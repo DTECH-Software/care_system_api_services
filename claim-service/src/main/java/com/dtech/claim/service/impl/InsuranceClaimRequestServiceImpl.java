@@ -285,6 +285,8 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
                         .stream().map(dep -> new SimpleBaseDTO(String.valueOf(dep.getId()), dep.getFirstName() + " " + dep.getLastName())).toList();
                 log.info("Call minus insurance claim date");
                 Date minuesDate = DateTimeUtil.getMinuesDate(Objects.requireNonNull(commonParameterRepository.findByCode(CommonParam.INSURANCE_CLAIM_REQUEST_PERIOD.name()).orElse(null)).getValue());
+                int diagnosis = Objects.requireNonNull(commonParameterRepository.findByCode(CommonParam.DIAGNOSIS_CARD_MAX_IMAGE.name()).orElse(null)).getValue();
+                int treatment = Objects.requireNonNull(commonParameterRepository.findByCode(CommonParam.TREATMENT_BILL_MAX_IMAGE.name()).orElse(null)).getValue();
                 log.info("Get minus insurance claim date {} ", minuesDate);
                 Map<String, Object> splashData = new HashMap<>();
                 List<AvailableInsuranceLimitDTO> list = null;
@@ -322,6 +324,8 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
                 splashData.put("treatment", userWiseTreatment);
                 splashData.put("insuranceClaimsFundLimits", list);
                 splashData.put("insuranceMinPastDate", minuesDate);
+                splashData.put("maxImageForDiagnosis", diagnosis);
+                splashData.put("maxImageForTreatment", treatment);
                 return ResponseEntity.ok().body(responseUtil.success((Object) splashData, messageSource.getMessage(ResponseMessageUtil.INSURANCE_CLAIMS_REFERENCE_DETAILS_SUCCESS, null, locale)));
             }).orElseGet(() -> {
                 log.info("User insurance claim request user not found {} ", channelRequestDTO);
