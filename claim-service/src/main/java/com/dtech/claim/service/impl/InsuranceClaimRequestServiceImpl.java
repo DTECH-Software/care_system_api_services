@@ -151,7 +151,7 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
                         }
                         return commonParameterRepository.findByCode(CommonParam.INSURANCE_CLAIM_REQUEST_PERIOD.name()).map((param) -> {
                                     log.info("get - date from claim request {}", param);
-                                    Date minuesDate = DateTimeUtil.getMinuesDate(param.getValue());
+                                    Date minuesDate = DateTimeUtil.getMinuesDate(param.getValue()+1);
                                     if (claimRequestDTO.getToDate().before(minuesDate)) {
                                         log.info("older than claim request {}", claimRequestDTO.getUsername());
                                         return ResponseEntity.ok().body(responseUtil.error(null, 1037, messageSource.getMessage(ResponseMessageUtil.OLDER_DATE_CLAIM_REQUEST, null, locale)));
