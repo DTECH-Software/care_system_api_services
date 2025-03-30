@@ -69,4 +69,5 @@ public class ResponseMessageUtil {
     public final static String DEATH_CLAIM_ALREADY_PAID_OR_UNDER_REVIEW  = "val.death.claim.already.paid.or.under.review";
     public final static String DEATH_CLAIMS_DEATH_MAX_IMAGE_INVALID  = "val.death.claims.death.max.image.invalid";
     public final static String DEATH_CLAIMS_DEATH_MIN_IMAGE_INVALID  = "val.death.claims.death.min.image.invalid";
+    public final static String DASHBOARD_SUMMARY_SUCCESS  = "val.dashboard.summary.success";
 }

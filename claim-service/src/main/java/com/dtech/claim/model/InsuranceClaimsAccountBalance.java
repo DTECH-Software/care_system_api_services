@@ -18,7 +18,7 @@ import java.math.BigDecimal;
 @Entity
 @Table(name = "claims_account_balance")
 @Data
-public class ClaimsAccountBalance extends Audit implements Serializable {
+public class InsuranceClaimsAccountBalance extends Audit implements Serializable {
 
     private static final long serialVersionUID = 1L;
 

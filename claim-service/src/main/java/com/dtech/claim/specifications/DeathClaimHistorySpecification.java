@@ -26,8 +26,8 @@ public class DeathClaimHistorySpecification {
         return (root, query,criteriaBuilder) -> {
             List<Predicate> predicates = new ArrayList<>();
 
-            Join<ClaimsRequest, ClaimsDependents> claimDependents = root.join("claimsDependents", JoinType.LEFT);
-            Join<ClaimsRequest, ApplicationUser> employee = root.join("employee", JoinType.LEFT);
+            Join<DeathClaimRequest, ClaimsDependents> claimDependents = root.join("claimsDependents", JoinType.LEFT);
+            Join<DeathClaimRequest, ApplicationUser> employee = root.join("employee", JoinType.LEFT);
 
             if (filterDto.getFromDate() != null) {
                 predicates.add(criteriaBuilder.greaterThanOrEqualTo(root.get("createdDate"), filterDto.getFromDate()));
@@ -56,7 +56,7 @@ public class DeathClaimHistorySpecification {
         log.info("Claim death history filter default : " + userId);
         return (root, query,criteriaBuilder) -> {
             List<Predicate> predicates = new ArrayList<>();
-            Join<ClaimsRequest, ApplicationUser> employee = root.join("employee", JoinType.LEFT);
+            Join<DeathClaimRequest, ApplicationUser> employee = root.join("employee", JoinType.LEFT);
             predicates.add(criteriaBuilder.equal(employee.get("id"), userId));
             return criteriaBuilder.and(predicates.toArray(new Predicate[0]));
 

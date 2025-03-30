@@ -9,10 +9,7 @@ package com.dtech.claim.specifications;
 
 import com.dtech.claim.dto.search.ClaimHistory;
 import com.dtech.claim.enums.Workflow;
-import com.dtech.claim.model.ApplicationUser;
-import com.dtech.claim.model.ClaimsDependents;
-import com.dtech.claim.model.ClaimsRequest;
-import com.dtech.claim.model.InsuranceClaimsDetails;
+import com.dtech.claim.model.*;
 import jakarta.persistence.criteria.Join;
 import jakarta.persistence.criteria.JoinType;
 import jakarta.persistence.criteria.Predicate;
@@ -24,14 +21,14 @@ import java.util.List;
 
 @Log4j2
 public class InsuranceClaimHistorySpecification {
-    public static Specification<ClaimsRequest> getSpecification(ClaimHistory filterDto,Long userId) {
+    public static Specification<InsuranceClaimsRequest> getSpecification(ClaimHistory filterDto, Long userId) {
         log.info("Claim history filter: " + filterDto);
         return (root, query,criteriaBuilder) -> {
             List<Predicate> predicates = new ArrayList<>();
 
-            Join<ClaimsRequest,ClaimsDependents> claimDependents = root.join("claimsDependents", JoinType.LEFT);
-            Join<ClaimsRequest, InsuranceClaimsDetails> insuranceClaimsDetails = root.join("insuranceClaimsDetails", JoinType.LEFT);
-            Join<ClaimsRequest, ApplicationUser> employee = root.join("employee", JoinType.LEFT);
+            Join<InsuranceClaimsRequest,ClaimsDependents> claimDependents = root.join("claimsDependents", JoinType.LEFT);
+            Join<InsuranceClaimsRequest, InsuranceClaimsDetails> insuranceClaimsDetails = root.join("insuranceClaimsDetails", JoinType.LEFT);
+            Join<InsuranceClaimsRequest, ApplicationUser> employee = root.join("employee", JoinType.LEFT);
 
             if (filterDto.getFromDate() != null) {
                 predicates.add(criteriaBuilder.greaterThanOrEqualTo(root.get("createdDate"), filterDto.getFromDate()));
@@ -68,11 +65,11 @@ public class InsuranceClaimHistorySpecification {
         };
     }
 
-    public static Specification<ClaimsRequest> getSpecification(Long userId) {
+    public static Specification<InsuranceClaimsRequest> getSpecification(Long userId) {
         log.info("Claim history filter default : " + userId);
         return (root, query,criteriaBuilder) -> {
             List<Predicate> predicates = new ArrayList<>();
-            Join<ClaimsRequest, ApplicationUser> employee = root.join("employee", JoinType.LEFT);
+            Join<InsuranceClaimsRequest, ApplicationUser> employee = root.join("employee", JoinType.LEFT);
             predicates.add(criteriaBuilder.equal(employee.get("id"), userId));
             return criteriaBuilder.and(predicates.toArray(new Predicate[0]));
 

@@ -24,6 +24,12 @@ public class DateTimeUtil {
         return Date.from(instant);
     }
 
+    public static int getCurrentYear() {
+        log.info("get Current Year");
+        LocalDateTime localDateTime = LocalDateTime.now();
+        return localDateTime.getYear();
+    }
+
     public static Date get30FutureDate() {
         log.info("get 30 future DateTime");
         LocalDateTime futureDate = LocalDateTime.now().plusDays(28);

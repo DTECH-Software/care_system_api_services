@@ -32,7 +32,8 @@ import lombok.Data;
                 "INSURANCE_CLAIM_REQUEST_REF_DATA",
                 "DEATH_CLAIM_REQUEST_REF_DATA",
                 "INSURANCE_CLAIM_FILTER_LIST",
-                "DEATH_CLAIM_FILTER_LIST"
+                "DEATH_CLAIM_FILTER_LIST",
+                "DASHBOARD_SUMMARY"
         }, required = {"username"}, message = "Username is required.")
 public class ChannelRequestValidatorDTO {
     @NotBlank(message = "Channel is required.")
@@ -45,5 +46,5 @@ public class ChannelRequestValidatorDTO {
     private String message;
     private String username;
     @Valid
-    private ChannelMbDeviceDetailsValidatorsDTO deviceDetails;
+    private ChannelMbDeviceDetailsValidatorDTO deviceDetails;
 }

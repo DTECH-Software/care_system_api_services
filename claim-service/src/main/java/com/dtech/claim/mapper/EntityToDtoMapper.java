@@ -12,7 +12,7 @@ import com.dtech.claim.dto.response.InsuranceClaimRequestResponseDTO;
 import com.dtech.claim.dto.response.DocumentDownloadResponseDTO;
 import com.dtech.claim.enums.PaymentType;
 import com.dtech.claim.enums.Workflow;
-import com.dtech.claim.model.ClaimsRequest;
+import com.dtech.claim.model.InsuranceClaimsRequest;
 import com.dtech.claim.model.DeathClaimRequest;
 import lombok.extern.log4j.Log4j2;
 import org.modelmapper.ModelMapper;
@@ -23,12 +23,12 @@ import java.util.stream.Collectors;
 @Log4j2
 public class EntityToDtoMapper {
     private static final ModelMapper modelMapper = new ModelMapper();
-    public static InsuranceClaimRequestResponseDTO mapInsuranceClaimHistoryDetails(ClaimsRequest claimsRequest) {
+    public static InsuranceClaimRequestResponseDTO mapInsuranceClaimHistoryDetails(InsuranceClaimsRequest insuranceClaimsRequest) {
         try {
-            log.info("Call to mapClaimHistoryDetails method {} ", claimsRequest);
-            InsuranceClaimRequestResponseDTO insuranceClaimRequestResponseDto = modelMapper.map(claimsRequest, InsuranceClaimRequestResponseDTO.class);
+            log.info("Call to mapClaimHistoryDetails method {} ", insuranceClaimsRequest);
+            InsuranceClaimRequestResponseDTO insuranceClaimRequestResponseDto = modelMapper.map(insuranceClaimsRequest, InsuranceClaimRequestResponseDTO.class);
             insuranceClaimRequestResponseDto.setRequestStatusDescription(Workflow.valueOf(insuranceClaimRequestResponseDto.getRequestStatus()).getDescription());
-            List<DocumentDownloadResponseDTO> collect = claimsRequest.getInsuranceClaimsDetails().getDocuments().stream().map((document -> {
+            List<DocumentDownloadResponseDTO> collect = insuranceClaimsRequest.getInsuranceClaimsDetails().getDocuments().stream().map((document -> {
                 log.info("inside document mapper {} ",document);
                 return new DocumentDownloadResponseDTO(String.valueOf(document.getType()), document.getFileName(), document.getFileType(),document.getDoc());
             })).collect(Collectors.toList());

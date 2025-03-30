@@ -177,7 +177,7 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
                                                         }
                                                     }
 
-                                                    Optional<ClaimsAccountBalance> claimsAccountBalance = insuranceClaimsAccountBalanceRepository.findByEmployeeAndTreatmentAndInsurancePeriod(user, treatment, period);
+                                                    Optional<InsuranceClaimsAccountBalance> claimsAccountBalance = insuranceClaimsAccountBalanceRepository.findByEmployeeAndTreatmentAndInsurancePeriod(user, treatment, period);
 
                                                     //check available fund
                                                     String message = checkFundLimits(insuranceDetails, claimRequestDTO, claimsAccountBalance.orElse(null));
@@ -293,10 +293,10 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
                 List<SimpleBaseDTO> userWiseTreatment = new ArrayList<>();
                 if (period != null) {
                     list = treatmentList.stream().map(tre -> {
-                        ClaimsAccountBalance claimsAccountBalance = insuranceClaimsAccountBalanceRepository
+                        InsuranceClaimsAccountBalance insuranceClaimsAccountBalance = insuranceClaimsAccountBalanceRepository
                                 .findByEmployeeAndTreatmentAndInsurancePeriod(user, tre, period)
                                 .orElse(null);
-                        log.info("Insurance claim reference data acc balance + treatment {} {} ", claimsAccountBalance, tre);
+                        log.info("Insurance claim reference data acc balance + treatment {} {} ", insuranceClaimsAccountBalance, tre);
 
                         log.info("Insurance claim reference data acc balance is null");
                         InsuranceDetails insuranceDetails = insuranceDetailsRepository.
@@ -311,7 +311,7 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
 
                         AvailableInsuranceLimitDTO availableInsuranceLimitDTO = AvailableInsuranceLimitDTO.builder()
                                 .treatment(tre.getTreatmentCode())
-                                .availableLimit(claimsAccountBalance == null ? Objects.nonNull(insuranceDetails) ? insuranceDetails.getClaimLimit() : BigDecimal.valueOf(0.00) : claimsAccountBalance.getAvailableBalance())
+                                .availableLimit(insuranceClaimsAccountBalance == null ? Objects.nonNull(insuranceDetails) ? insuranceDetails.getClaimLimit() : BigDecimal.valueOf(0.00) : insuranceClaimsAccountBalance.getAvailableBalance())
                                 .fundLimit(Objects.nonNull(insuranceDetails) ? insuranceDetails.getClaimLimit() : BigDecimal.valueOf(0.00))
                                 .build();
                         log.info("AvailableInsuranceLimitDTO create success {}", availableInsuranceLimitDTO);
@@ -347,7 +347,7 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
 
                 Pageable pageable = PaginationUtil.getPageable(paginationRequest);
 
-                Page<ClaimsRequest> claimsRequests = Objects.nonNull(paginationRequest.getSearch()) ?
+                Page<InsuranceClaimsRequest> claimsRequests = Objects.nonNull(paginationRequest.getSearch()) ?
                         insuranceClaimsRequestRepository.findAll(InsuranceClaimHistorySpecification.getSpecification(paginationRequest.getSearch(), user.getId()), pageable) :
                         insuranceClaimsRequestRepository.findAll(InsuranceClaimHistorySpecification.getSpecification(user.getId()), pageable);
                 log.info("Filter records {}", claimsRequests);
@@ -384,25 +384,25 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
     }
 
     @Transactional
-    protected void updateAccountBalance(ClaimsAccountBalance claimsAccountBalance, ClaimRequestDTO claimRequestDTO, Treatment treatment, InsuranceDetails insuranceDetails, ApplicationUser applicationUser, InsurancePeriod insurancePeriod) {
+    protected void updateAccountBalance(InsuranceClaimsAccountBalance insuranceClaimsAccountBalance, ClaimRequestDTO claimRequestDTO, Treatment treatment, InsuranceDetails insuranceDetails, ApplicationUser applicationUser, InsurancePeriod insurancePeriod) {
         try {
             log.info("Claim request account balance update started {}", claimRequestDTO);
 
-            if (claimsAccountBalance == null) {
+            if (insuranceClaimsAccountBalance == null) {
                 log.info("Claim request account balance is null");
-                claimsAccountBalance = new ClaimsAccountBalance();
-                claimsAccountBalance.setUtilizeAmount(claimRequestDTO.getRequestAmount());
-                claimsAccountBalance.setAvailableBalance(insuranceDetails.getClaimLimit().subtract(claimRequestDTO.getRequestAmount()));
-                claimsAccountBalance.setEmployee(applicationUser);
-                claimsAccountBalance.setTreatment(treatment);
-                claimsAccountBalance.setInsurancePeriod(insurancePeriod);
+                insuranceClaimsAccountBalance = new InsuranceClaimsAccountBalance();
+                insuranceClaimsAccountBalance.setUtilizeAmount(claimRequestDTO.getRequestAmount());
+                insuranceClaimsAccountBalance.setAvailableBalance(insuranceDetails.getClaimLimit().subtract(claimRequestDTO.getRequestAmount()));
+                insuranceClaimsAccountBalance.setEmployee(applicationUser);
+                insuranceClaimsAccountBalance.setTreatment(treatment);
+                insuranceClaimsAccountBalance.setInsurancePeriod(insurancePeriod);
 
             } else {
                 log.info("claim request account balance not null {}", claimRequestDTO);
-                claimsAccountBalance.setUtilizeAmount(claimsAccountBalance.getUtilizeAmount().add(claimRequestDTO.getRequestAmount()));
-                claimsAccountBalance.setAvailableBalance(claimsAccountBalance.getAvailableBalance().subtract(claimRequestDTO.getRequestAmount()));
+                insuranceClaimsAccountBalance.setUtilizeAmount(insuranceClaimsAccountBalance.getUtilizeAmount().add(claimRequestDTO.getRequestAmount()));
+                insuranceClaimsAccountBalance.setAvailableBalance(insuranceClaimsAccountBalance.getAvailableBalance().subtract(claimRequestDTO.getRequestAmount()));
             }
-            insuranceClaimsAccountBalanceRepository.saveAndFlush(claimsAccountBalance);
+            insuranceClaimsAccountBalanceRepository.saveAndFlush(insuranceClaimsAccountBalance);
             log.info("claim request account balance update finished");
         } catch (Exception e) {
             log.error(e);
@@ -465,20 +465,20 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
 
             InsuranceClaimsDetails insuranceClaimsDetails = saveClaimRequestDetails(claimRequestDTO, treatment);
 
-            ClaimRequestIdGen claimRequestIdGen = ClaimRequestIdGen.builder().year(insurancePeriod.getYear()).company(applicationUser.getUserPersonalDetails().getUserCompanyDetails().getCompanyTypes().getCode()).staffCategory(applicationUser.getUserPersonalDetails().getUserCompanyDetails().getStaffTypes().getCode()).build();
+            ClaimRequestIdGen claimRequestIdGen = ClaimRequestIdGen.builder().year(String.valueOf(insurancePeriod.getYear())).company(applicationUser.getUserPersonalDetails().getUserCompanyDetails().getCompanyTypes().getCode()).staffCategory(applicationUser.getUserPersonalDetails().getUserCompanyDetails().getStaffTypes().getCode()).build();
             RequestIdGenUtil requestIdGenUtil = new RequestIdGenUtil();
             log.info("Generate request id {}", claimRequestIdGen);
             String claimRequestId = (String) requestIdGenUtil.generate(entityManager.unwrap(SharedSessionContractImplementor.class), claimRequestIdGen);
             log.info("after generate request id {}", claimRequestId);
-            ClaimsRequest claimsRequest = new ClaimsRequest();
-            claimsRequest.setRequestId(claimRequestId);
-            claimsRequest.setRequestAmount(claimRequestDTO.getRequestAmount());
-            claimsRequest.setRequestStatus(Workflow.UNDER_REVIEW);
-            claimsRequest.setRemark(claimRequestDTO.getRemark());
-            claimsRequest.setClaimsDependents(claimsDependents.orElse(null));
-            claimsRequest.setEmployee(applicationUser);
-            claimsRequest.setInsuranceClaimsDetails(insuranceClaimsDetails);
-            insuranceClaimsRequestRepository.saveAndFlush(claimsRequest);
+            InsuranceClaimsRequest insuranceClaimsRequest = new InsuranceClaimsRequest();
+            insuranceClaimsRequest.setRequestId(claimRequestId);
+            insuranceClaimsRequest.setRequestAmount(claimRequestDTO.getRequestAmount());
+            insuranceClaimsRequest.setRequestStatus(Workflow.UNDER_REVIEW);
+            insuranceClaimsRequest.setRemark(claimRequestDTO.getRemark());
+            insuranceClaimsRequest.setClaimsDependents(claimsDependents.orElse(null));
+            insuranceClaimsRequest.setEmployee(applicationUser);
+            insuranceClaimsRequest.setInsuranceClaimsDetails(insuranceClaimsDetails);
+            insuranceClaimsRequestRepository.saveAndFlush(insuranceClaimsRequest);
             log.info("Complete save claim request id {}", claimRequestId);
             return claimRequestId;
         } catch (Exception e) {
@@ -488,12 +488,12 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
     }
 
     @Transactional
-    protected String checkFundLimits(InsuranceDetails insuranceDetails, ClaimRequestDTO claimRequestDTO, ClaimsAccountBalance claimsAccountBalance) {
+    protected String checkFundLimits(InsuranceDetails insuranceDetails, ClaimRequestDTO claimRequestDTO, InsuranceClaimsAccountBalance insuranceClaimsAccountBalance) {
         try {
             log.info("Check global credit limit");
             String message = "";
-            if (claimsAccountBalance != null) {
-                message = checkClaimLimitExceeded(claimsAccountBalance.getAvailableBalance(), claimRequestDTO.getRequestAmount(), "Claim limit exceeded", "val.request.account.balance.insufficient");
+            if (insuranceClaimsAccountBalance != null) {
+                message = checkClaimLimitExceeded(insuranceClaimsAccountBalance.getAvailableBalance(), claimRequestDTO.getRequestAmount(), "Claim limit exceeded", "val.request.account.balance.insufficient");
                 if (message != null) {
                     return message;
                 }

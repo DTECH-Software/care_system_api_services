@@ -24,7 +24,7 @@ public class RequestIdGenUtil implements org.hibernate.id.IdentifierGenerator {
             String prefix = staffCategory + "/" + year + "/" + company + "/";
             log.info("Generating request id set prefix  " + prefix);
             String hql = "SELECT MAX(CAST(SUBSTRING(requestId, LENGTH(:prefix) + 1) AS int)) " +
-                    "FROM ClaimsRequest WHERE requestId LIKE :idPrefix";
+                    "FROM InsuranceClaimsRequest WHERE requestId LIKE :idPrefix";
             Query<Integer> query = session.createQuery(hql, Integer.class);
             query.setParameter("prefix", prefix);
             query.setParameter("idPrefix", prefix + "%");

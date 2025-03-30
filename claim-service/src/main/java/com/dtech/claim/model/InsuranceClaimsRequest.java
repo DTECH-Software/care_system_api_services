@@ -20,7 +20,7 @@ import java.math.BigDecimal;
 @Entity
 @Table(name = "claims_request")
 @Data
-public class ClaimsRequest extends Audit implements Serializable {
+public class InsuranceClaimsRequest extends Audit implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
