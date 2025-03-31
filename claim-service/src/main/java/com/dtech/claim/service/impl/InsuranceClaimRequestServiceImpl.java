@@ -102,6 +102,8 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
 
     @Autowired
     private MessageFeignClient messageFeignClient;
+    @Autowired
+    private DeathClaimRequestRepository deathClaimRequestRepository;
 
     @Override
     @Transactional
@@ -175,6 +177,15 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
                                                             log.info("Claim dependent not found or not eligible for insurance");
                                                             return ResponseEntity.ok().body(responseUtil.error(null, 1034, messageSource.getMessage(ResponseMessageUtil.CLAIM_DEPENDENT_NOT_FOUND_OR_FACILITY_NOT_ELIGIBLE, null, locale)));
                                                         }
+
+                                                        Optional<DeathClaimRequest> deathClaimRequest = deathClaimRequestRepository
+                                                                .findByClaimsDependentsAndEmployeeAndRequestStatusIn(claimsDependents.get(), user, List.of(Workflow.APPROVED));
+
+                                                        if(deathClaimRequest.isPresent()) {
+                                                            log.info("Claim dependent death claim request approved {}", true);
+                                                            return ResponseEntity.ok().body(responseUtil.error(null, 1047, messageSource.getMessage(ResponseMessageUtil.CLAIM_DEPENDENT_DEATH_REQUEST_ALREADY_PROCEED, null, locale)));
+                                                        }
+
                                                     }
 
                                                     Optional<InsuranceClaimsAccountBalance> claimsAccountBalance = insuranceClaimsAccountBalanceRepository.findByEmployeeAndTreatmentAndInsurancePeriod(user, treatment, period);
