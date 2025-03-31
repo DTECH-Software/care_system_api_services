@@ -153,7 +153,7 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
                         }
                         return commonParameterRepository.findByCode(CommonParam.INSURANCE_CLAIM_REQUEST_PERIOD.name()).map((param) -> {
                                     log.info("get - date from claim request {}", param);
-                                    Date minuesDate = DateTimeUtil.getMinuesDate(param.getValue()+1);
+                                    Date minuesDate = DateTimeUtil.getMinuesDate(param.getValue() + 1);
                                     if (claimRequestDTO.getToDate().before(minuesDate)) {
                                         log.info("older than claim request {}", claimRequestDTO.getUsername());
                                         return ResponseEntity.ok().body(responseUtil.error(null, 1037, messageSource.getMessage(ResponseMessageUtil.OLDER_DATE_INSURANCE_CLAIM_REQUEST, null, locale)));
@@ -178,10 +178,10 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
                                                             return ResponseEntity.ok().body(responseUtil.error(null, 1034, messageSource.getMessage(ResponseMessageUtil.CLAIM_DEPENDENT_NOT_FOUND_OR_FACILITY_NOT_ELIGIBLE, null, locale)));
                                                         }
 
-                                                        Optional<DeathClaimRequest> deathClaimRequest = deathClaimRequestRepository
-                                                                .findByClaimsDependentsAndEmployeeAndRequestStatusIn(claimsDependents.get(), user, List.of(Workflow.APPROVED));
+                                                        boolean existsed = deathClaimRequestRepository
+                                                                .existsByClaimsDependentsAndEmployeeAndRequestStatusIn(claimsDependents.get(), user, List.of(Workflow.APPROVED));
 
-                                                        if(deathClaimRequest.isPresent()) {
+                                                        if (existsed) {
                                                             log.info("Claim dependent death claim request approved {}", true);
                                                             return ResponseEntity.ok().body(responseUtil.error(null, 1047, messageSource.getMessage(ResponseMessageUtil.CLAIM_DEPENDENT_DEATH_REQUEST_ALREADY_PROCEED, null, locale)));
                                                         }
@@ -199,7 +199,7 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
                                                     }
                                                     String claimRequestId = saveClaimRequest(claimRequestDTO, period, user, claimsDependents, treatment);
                                                     updateAccountBalance(claimsAccountBalance.orElse(null), claimRequestDTO, treatment, insuranceDetails, user, period);
-                                                    notifyMessage(user.getPrimaryMobile(),claimRequestId);
+                                                    notifyMessage(user.getPrimaryMobile(), claimRequestId);
                                                     return ResponseEntity.ok().body(responseUtil.success(null, messageSource.getMessage(ResponseMessageUtil.INSURANCE_CLAIM_REQUEST_SUBMIT_SUCCESS, null, locale)));
 
                                                 }).orElseGet(() -> {
@@ -291,9 +291,17 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
                 InsurancePeriod period = insurancePeriodRepository.findByYearAndStatus(String.valueOf(LocalDate.now().getYear()), Status.ACTIVE).orElse(null);
                 List<Treatment> treatmentList = treatmentRepository.findAllByStatus(Status.ACTIVE);
                 log.info("Insurance claim reference data get dependence {} ", treatmentList);
-                List<SimpleBaseDTO> claimsDependents = claimDependentsRepository.
-                        findByApplicationUserAndStatusAndEligibleFacilityIn(user, Workflow.ACTIVE, List.of(Facility.INSURANCE, Facility.BOTH))
-                        .stream().map(dep -> new SimpleBaseDTO(String.valueOf(dep.getId()), dep.getFirstName() + " " + dep.getLastName())).toList();
+                List<SimpleBaseDTO> claimsDependents = claimDependentsRepository
+                        .findByApplicationUserAndStatusAndEligibleFacilityIn(user, Workflow.ACTIVE, List.of(Facility.INSURANCE, Facility.BOTH))
+                        .stream()
+                        .filter(dep -> {
+                            boolean ex = deathClaimRequestRepository.existsByClaimsDependentsAndEmployeeAndRequestStatusIn(dep, user, List.of(Workflow.APPROVED));
+                            return !ex;
+                        })
+                        .map(dep -> new SimpleBaseDTO(
+                                String.valueOf(dep.getId()), dep.getFirstName() + " " + dep.getLastName()
+                        ))
+                        .toList();
                 log.info("Call minus insurance claim date");
                 Date minuesDate = DateTimeUtil.getMinuesDate(Objects.requireNonNull(commonParameterRepository.findByCode(CommonParam.INSURANCE_CLAIM_REQUEST_PERIOD.name()).orElse(null)).getValue());
                 int diagnosis = Objects.requireNonNull(commonParameterRepository.findByCode(CommonParam.DIAGNOSIS_CARD_MAX_IMAGE.name()).orElse(null)).getValue();
@@ -427,7 +435,7 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
             log.info("Claim request details save started {}", claimRequestDTO);
             InsuranceClaimsDetails insuranceClaimsDetails = new InsuranceClaimsDetails();
             insuranceClaimsDetails.setTreatment(treatment);
-            if(claimRequestDTO.getFromDate() != null){
+            if (claimRequestDTO.getFromDate() != null) {
                 insuranceClaimsDetails.setFromTreatmentDate(claimRequestDTO.getFromDate());
             }
             insuranceClaimsDetails.setToTreatmentDate(claimRequestDTO.getToDate());
@@ -472,7 +480,7 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
 
     @Transactional
     protected String saveClaimRequest(ClaimRequestDTO claimRequestDTO, InsurancePeriod insurancePeriod, ApplicationUser applicationUser,
-                                    Optional<ClaimsDependents> claimsDependents, Treatment treatment) {
+                                      Optional<ClaimsDependents> claimsDependents, Treatment treatment) {
         try {
             log.info("Claim request save started {}", claimRequestDTO);
 

@@ -96,7 +96,11 @@ public class DeathClaimRequestServiceImpl implements DeathClaimRequestService {
                 Map<String, Object> splashData = new HashMap<>();
 
                 List<ClaimsDependents> claimsDependents = claimDependentsRepository.
-                        findByApplicationUserAndStatusAndEligibleFacilityIn(user, Workflow.ACTIVE, List.of(Facility.DEATH, Facility.BOTH));
+                        findByApplicationUserAndStatusAndEligibleFacilityIn(user, Workflow.ACTIVE, List.of(Facility.DEATH, Facility.BOTH))
+                        .stream().filter(dep -> {
+                            boolean exists = deathClaimRequestRepository.existsByClaimsDependentsAndEmployeeAndRequestStatusIn(dep, user, List.of(Workflow.APPROVED, Workflow.UNDER_REVIEW));
+                            return !exists;
+                        }).toList();
 
                 CommonParameter deathAge = commonParameterRepository.findByCode(CommonParam.DEATH_AGE.name()).orElse(null);
 
@@ -104,7 +108,7 @@ public class DeathClaimRequestServiceImpl implements DeathClaimRequestService {
                 ArrayList<SimpleBaseDTO> claimDependent = new ArrayList<>();
 
                 claimsDependents.forEach((dep) -> {
-                    claimDependent.add(new SimpleBaseDTO(String.valueOf(dep.getId()),dep.getFirstName() + " "+ dep.getLastName()));
+                    claimDependent.add(new SimpleBaseDTO(String.valueOf(dep.getId()), dep.getFirstName() + " " + dep.getLastName()));
 
                     if (dep.getRelationCategory().equals(RelationCategory.CHILD) ||
                             dep.getRelationCategory().equals(RelationCategory.SISTER) ||
@@ -119,7 +123,7 @@ public class DeathClaimRequestServiceImpl implements DeathClaimRequestService {
                         }
                         com.dtech.claim.model.DeathBeneficiary deathBeneficiary = deathBeneficiaryRepository.
                                 findByCodeAndRangeAndStatus(DeathBeneficiary.valueOf(dep.getRelationCategory().name()),
-                                range, Status.ACTIVE).orElse(null);
+                                        range, Status.ACTIVE).orElse(null);
 
                         deathLimitDTOS.add(DeathLimitDTO.builder()
                                 .dependentId(String.valueOf(dep.getId()))
@@ -135,7 +139,7 @@ public class DeathClaimRequestServiceImpl implements DeathClaimRequestService {
                         deathLimitDTOS.add(DeathLimitDTO.builder()
                                 .dependentId(String.valueOf(dep.getId()))
                                 .deathLimit(deathBeneficiary != null ? deathBeneficiary.getClaimLimit() : null)
-                                .ageRange(deathBeneficiary != null ? deathBeneficiary.getRange() != null ? deathBeneficiary.getRange().name():null : null)
+                                .ageRange(deathBeneficiary != null ? deathBeneficiary.getRange() != null ? deathBeneficiary.getRange().name() : null : null)
                                 .build());
                     }
                 });
@@ -187,7 +191,7 @@ public class DeathClaimRequestServiceImpl implements DeathClaimRequestService {
                                 return commonParameterRepository.findByCode(CommonParam.DEATH_CLAIM_REQUEST_PERIOD.name())
                                         .map((param) -> {
                                             log.info("get - date from death claim request {}", param);
-                                            Date minuesDate = DateTimeUtil.getMinuesDate(param.getValue()+1);
+                                            Date minuesDate = DateTimeUtil.getMinuesDate(param.getValue() + 1);
                                             if (deathClaimRequestDTO.getDeathDate().before(minuesDate)) {
                                                 log.info("older than claim request {}", deathClaimRequestDTO.getUsername());
                                                 return ResponseEntity.ok().body(responseUtil.error(null, 1037, messageSource.getMessage(ResponseMessageUtil.OLDER_DATE_DEATH_CLAIM_REQUEST, null, locale)));
@@ -263,7 +267,7 @@ public class DeathClaimRequestServiceImpl implements DeathClaimRequestService {
                                                                                 }).collect(Collectors.toList());
 
                                                                                 String claimRequestId = saveDeathClaimRequest(deathClaimRequestDTO, paymentType, amount, claimsDependents.get(), user, deathBeneficiary, uploadSupportingDocument);
-                                                                                notifyMessage(user.getPrimaryMobile(),claimRequestId);
+                                                                                notifyMessage(user.getPrimaryMobile(), claimRequestId);
                                                                                 return ResponseEntity.ok().body(responseUtil.success(null, messageSource.getMessage(ResponseMessageUtil.DEATH_CLAIM_REQUEST_SUBMIT_SUCCESS, null, locale)));
                                                                             })
                                                                             .orElseGet(() -> {
@@ -319,37 +323,37 @@ public class DeathClaimRequestServiceImpl implements DeathClaimRequestService {
     @Override
     @Transactional(readOnly = true)
     public ResponseEntity<ApiResponse<Object>> deathClaimHistoryList(PaginationRequest<ClaimHistory> paginationRequest, Locale locale) {
-       try {
-           log.info("Death claim history filter list {}", paginationRequest);
+        try {
+            log.info("Death claim history filter list {}", paginationRequest);
 
-           return applicationUserRepository.findByUsernameAndUserPersonalDetails_UserStatus(paginationRequest.getUsername().trim(), Status.ACTIVE).map((user) -> {
+            return applicationUserRepository.findByUsernameAndUserPersonalDetails_UserStatus(paginationRequest.getUsername().trim(), Status.ACTIVE).map((user) -> {
 
-               Pageable pageable = PaginationUtil.getPageable(paginationRequest);
+                Pageable pageable = PaginationUtil.getPageable(paginationRequest);
 
-               Page<DeathClaimRequest> claimsRequests = Objects.nonNull(paginationRequest.getSearch()) ?
-                       deathClaimRequestRepository.findAll(DeathClaimHistorySpecification.getSpecification(paginationRequest.getSearch(), user.getId()), pageable) :
-                       deathClaimRequestRepository.findAll(DeathClaimHistorySpecification.getSpecification(user.getId()), pageable);
-               log.info("Filter records {}", claimsRequests);
-               long totalElements = Objects.nonNull(paginationRequest.getSearch()) ?
-                       deathClaimRequestRepository.count(DeathClaimHistorySpecification.getSpecification(paginationRequest.getSearch(), user.getId())) :
-                       deathClaimRequestRepository.count(DeathClaimHistorySpecification.getSpecification(user.getId()));
-               log.info("Total elements count records death{}", totalElements);
-               log.info("Filter list data fetching death success");
-               List<DeathClaimRequestResponseDTO> collectList = claimsRequests.stream()
-                       .map(EntityToDtoMapper::mapDeathClaimHistoryDetails).toList();
-               log.info("Filter list death {} success", collectList);
-               return ResponseEntity.ok().body(responseUtil.success((Object) new PagingResult<DeathClaimRequestResponseDTO>(collectList, collectList.size(), totalElements),
-                       messageSource.getMessage(ResponseMessageUtil.DEATH_CLAIM_REQUEST_HISTORY_FILTER_LIST_SUCCESS,
-                               null, locale)));
+                Page<DeathClaimRequest> claimsRequests = Objects.nonNull(paginationRequest.getSearch()) ?
+                        deathClaimRequestRepository.findAll(DeathClaimHistorySpecification.getSpecification(paginationRequest.getSearch(), user.getId()), pageable) :
+                        deathClaimRequestRepository.findAll(DeathClaimHistorySpecification.getSpecification(user.getId()), pageable);
+                log.info("Filter records {}", claimsRequests);
+                long totalElements = Objects.nonNull(paginationRequest.getSearch()) ?
+                        deathClaimRequestRepository.count(DeathClaimHistorySpecification.getSpecification(paginationRequest.getSearch(), user.getId())) :
+                        deathClaimRequestRepository.count(DeathClaimHistorySpecification.getSpecification(user.getId()));
+                log.info("Total elements count records death{}", totalElements);
+                log.info("Filter list data fetching death success");
+                List<DeathClaimRequestResponseDTO> collectList = claimsRequests.stream()
+                        .map(EntityToDtoMapper::mapDeathClaimHistoryDetails).toList();
+                log.info("Filter list death {} success", collectList);
+                return ResponseEntity.ok().body(responseUtil.success((Object) new PagingResult<DeathClaimRequestResponseDTO>(collectList, collectList.size(), totalElements),
+                        messageSource.getMessage(ResponseMessageUtil.DEATH_CLAIM_REQUEST_HISTORY_FILTER_LIST_SUCCESS,
+                                null, locale)));
 
-           }).orElseGet(() -> {
-               log.info("User insurance claim filter request user not found {} ", paginationRequest);
-               return ResponseEntity.ok().body(responseUtil.error(null, 1014, messageSource.getMessage(ResponseMessageUtil.APPLICATION_USER_NOT_FOUND, null, locale)));
-           });
-       }catch (Exception e) {
-           log.error(e);
-           throw e;
-       }
+            }).orElseGet(() -> {
+                log.info("User insurance claim filter request user not found {} ", paginationRequest);
+                return ResponseEntity.ok().body(responseUtil.error(null, 1014, messageSource.getMessage(ResponseMessageUtil.APPLICATION_USER_NOT_FOUND, null, locale)));
+            });
+        } catch (Exception e) {
+            log.error(e);
+            throw e;
+        }
     }
 
     @Transactional(readOnly = true)
@@ -376,10 +380,10 @@ public class DeathClaimRequestServiceImpl implements DeathClaimRequestService {
 
     @Transactional
     protected String saveDeathClaimRequest(DeathClaimRequestDTO deathClaimRequestDTO,
-                                         PaymentType paymentType, BigDecimal amount,
-                                         ClaimsDependents claimsDependents,
-                                         ApplicationUser applicationUser,
-                                         com.dtech.claim.model.DeathBeneficiary deathBeneficiary, List<Document> uploadSupportingDocument) {
+                                           PaymentType paymentType, BigDecimal amount,
+                                           ClaimsDependents claimsDependents,
+                                           ApplicationUser applicationUser,
+                                           com.dtech.claim.model.DeathBeneficiary deathBeneficiary, List<Document> uploadSupportingDocument) {
         try {
             log.info("Save death claim request death{}", deathClaimRequestDTO);
             ClaimRequestIdGen claimRequestIdGen = ClaimRequestIdGen.builder()

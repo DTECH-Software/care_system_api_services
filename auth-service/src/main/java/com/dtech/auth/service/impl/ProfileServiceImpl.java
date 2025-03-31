@@ -11,7 +11,6 @@ import com.dtech.auth.dto.request.*;
 import com.dtech.auth.dto.response.*;
 import com.dtech.auth.enums.*;
 import com.dtech.auth.feign.DocumentFeignClient;
-import com.dtech.auth.feign.MessageFeignClient;
 import com.dtech.auth.mapper.DtoToEntity.DependenceMapper;
 import com.dtech.auth.mapper.EntityToDto.ProfileMapper;
 import com.dtech.auth.model.*;
