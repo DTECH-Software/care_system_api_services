@@ -8,6 +8,7 @@
 package com.dtech.claim.specifications;
 
 import com.dtech.claim.dto.search.ClaimHistory;
+import com.dtech.claim.enums.RelationCategory;
 import com.dtech.claim.enums.Workflow;
 import com.dtech.claim.model.*;
 import jakarta.persistence.criteria.Join;
@@ -27,8 +28,9 @@ public class InsuranceClaimHistorySpecification {
             List<Predicate> predicates = new ArrayList<>();
 
             Join<InsuranceClaimsRequest,ClaimsDependents> claimDependents = root.join("claimsDependents", JoinType.LEFT);
-            Join<InsuranceClaimsRequest, InsuranceClaimsDetails> insuranceClaimsDetails = root.join("insuranceClaimsDetails", JoinType.LEFT);
+            Join<InsuranceClaimsDetails, Treatment> treatment =  root.join("insuranceClaimsDetails", JoinType.LEFT).join("treatment", JoinType.LEFT);
             Join<InsuranceClaimsRequest, ApplicationUser> employee = root.join("employee", JoinType.LEFT);
+            Join<InsuranceClaimsRequest, ClaimsDependents> claimsDependents = employee.join("claimsDependents",JoinType.LEFT);
 
             if (filterDto.getFromDate() != null) {
                 predicates.add(criteriaBuilder.greaterThanOrEqualTo(root.get("createdDate"), filterDto.getFromDate()));
@@ -54,8 +56,12 @@ public class InsuranceClaimHistorySpecification {
                 predicates.add(criteriaBuilder.equal(claimDependents.get("id"), filterDto.getClaimsDependents()));
             }
 
-            if (filterDto.getInsuranceClaimsDetails() != null && !filterDto.getInsuranceClaimsDetails().isEmpty()) {
-                predicates.add(criteriaBuilder.equal(insuranceClaimsDetails.get("id"), filterDto.getInsuranceClaimsDetails()));
+            if (filterDto.getTreatmentType() != null && !filterDto.getTreatmentType().isEmpty()) {
+                predicates.add(criteriaBuilder.equal(treatment.get("treatmentCode"), filterDto.getTreatmentType()));
+            }
+
+            if (filterDto.getRelationCategory() != null && !filterDto.getRelationCategory().isEmpty()) {
+                predicates.add(criteriaBuilder.equal(claimsDependents.get("relationCategory"), RelationCategory.valueOf(filterDto.getRelationCategory())));
             }
 
             predicates.add(criteriaBuilder.equal(employee.get("id"), userId));

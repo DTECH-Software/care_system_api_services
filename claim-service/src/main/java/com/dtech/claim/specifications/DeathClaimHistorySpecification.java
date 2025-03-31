@@ -8,6 +8,7 @@
 package com.dtech.claim.specifications;
 
 import com.dtech.claim.dto.search.ClaimHistory;
+import com.dtech.claim.enums.RelationCategory;
 import com.dtech.claim.enums.Workflow;
 import com.dtech.claim.model.*;
 import jakarta.persistence.criteria.Join;
@@ -28,6 +29,7 @@ public class DeathClaimHistorySpecification {
 
             Join<DeathClaimRequest, ClaimsDependents> claimDependents = root.join("claimsDependents", JoinType.LEFT);
             Join<DeathClaimRequest, ApplicationUser> employee = root.join("employee", JoinType.LEFT);
+            Join<InsuranceClaimsRequest, ClaimsDependents> claimsDependents = employee.join("claimsDependents",JoinType.LEFT);
 
             if (filterDto.getFromDate() != null) {
                 predicates.add(criteriaBuilder.greaterThanOrEqualTo(root.get("createdDate"), filterDto.getFromDate()));
@@ -43,6 +45,10 @@ public class DeathClaimHistorySpecification {
 
             if (filterDto.getClaimsDependents() != null && !filterDto.getClaimsDependents().isEmpty()) {
                 predicates.add(criteriaBuilder.equal(claimDependents.get("id"), filterDto.getClaimsDependents()));
+            }
+
+            if (filterDto.getRelationCategory() != null && !filterDto.getRelationCategory().isEmpty()) {
+                predicates.add(criteriaBuilder.equal(claimsDependents.get("relationCategory"), RelationCategory.valueOf(filterDto.getRelationCategory())));
             }
 
             predicates.add(criteriaBuilder.equal(employee.get("id"), userId));

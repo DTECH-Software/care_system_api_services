@@ -20,5 +20,6 @@ public class ClaimHistory {
     private BigDecimal requestAmount;
     private String requestStatus;
     private String claimsDependents;
-    private String insuranceClaimsDetails;
+    private String treatmentType;
+    private String relationCategory;
 }
