@@ -7,13 +7,11 @@
 
 package com.dtech.claim.service.impl;
 
+import com.dtech.claim.dto.ClaimRequestIdGen;
 import com.dtech.claim.dto.DeathLimitDTO;
 import com.dtech.claim.dto.PagingResult;
 import com.dtech.claim.dto.SimpleBaseDTO;
-import com.dtech.claim.dto.request.ChannelRequestDTO;
-import com.dtech.claim.dto.request.DeathClaimRequestDTO;
-import com.dtech.claim.dto.request.PaginationRequest;
-import com.dtech.claim.dto.request.SupportingDocumentDTO;
+import com.dtech.claim.dto.request.*;
 import com.dtech.claim.dto.response.ApiResponse;
 import com.dtech.claim.dto.response.DeathClaimRequestResponseDTO;
 import com.dtech.claim.dto.response.InsuranceClaimRequestResponseDTO;
@@ -21,26 +19,31 @@ import com.dtech.claim.dto.search.ClaimHistory;
 import com.dtech.claim.enums.*;
 import com.dtech.claim.enums.DeathBeneficiary;
 import com.dtech.claim.feign.DocumentFeignClient;
+import com.dtech.claim.feign.MessageFeignClient;
 import com.dtech.claim.mapper.EntityToDtoMapper;
 import com.dtech.claim.model.*;
 import com.dtech.claim.repository.*;
 import com.dtech.claim.service.DeathClaimRequestService;
 import com.dtech.claim.specifications.DeathClaimHistorySpecification;
 import com.dtech.claim.util.*;
+import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
+import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.MessageSource;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
@@ -77,6 +80,12 @@ public class DeathClaimRequestServiceImpl implements DeathClaimRequestService {
 
     @Autowired
     private ModelMapper modelMapper;
+
+    @Autowired
+    private final EntityManager entityManager;
+
+    @Autowired
+    private MessageFeignClient messageFeignClient;
 
     @Override
     @Transactional(readOnly = true)
@@ -253,7 +262,8 @@ public class DeathClaimRequestServiceImpl implements DeathClaimRequestService {
                                                                                     }
                                                                                 }).collect(Collectors.toList());
 
-                                                                                saveDeathClaimRequest(deathClaimRequestDTO, paymentType, amount, claimsDependents.get(), user, deathBeneficiary, uploadSupportingDocument);
+                                                                                String claimRequestId = saveDeathClaimRequest(deathClaimRequestDTO, paymentType, amount, claimsDependents.get(), user, deathBeneficiary, uploadSupportingDocument);
+                                                                                notifyMessage(user.getPrimaryMobile(),claimRequestId);
                                                                                 return ResponseEntity.ok().body(responseUtil.success(null, messageSource.getMessage(ResponseMessageUtil.DEATH_CLAIM_REQUEST_SUBMIT_SUCCESS, null, locale)));
                                                                             })
                                                                             .orElseGet(() -> {
@@ -284,6 +294,23 @@ public class DeathClaimRequestServiceImpl implements DeathClaimRequestService {
                         return ResponseEntity.ok().body(responseUtil.error(null, 1014, messageSource.getMessage(ResponseMessageUtil.APPLICATION_USER_NOT_FOUND, null, locale)));
                     });
         } catch (Exception e) {
+            log.error(e);
+            throw e;
+        }
+    }
+
+    @Async
+    protected void notifyMessage(String mobile, String requestId) {
+        try {
+            log.info("Death request notify email");
+            MessageRequestDTO messageRequestDTO = new MessageRequestDTO();
+            messageRequestDTO.setValue(requestId);
+            messageRequestDTO.setMobileNo(mobile);
+            messageRequestDTO.setType(NotificationsType.DEATH_CLAIM.name());
+            log.info("Before message request mapper {} ", messageRequestDTO);
+            log.info("Before calling message service {}", messageFeignClient);
+            messageFeignClient.sendMessage(messageRequestDTO);
+        } catch (RuntimeException e) {
             log.error(e);
             throw e;
         }
@@ -348,13 +375,22 @@ public class DeathClaimRequestServiceImpl implements DeathClaimRequestService {
     }
 
     @Transactional
-    protected void saveDeathClaimRequest(DeathClaimRequestDTO deathClaimRequestDTO,
+    protected String saveDeathClaimRequest(DeathClaimRequestDTO deathClaimRequestDTO,
                                          PaymentType paymentType, BigDecimal amount,
                                          ClaimsDependents claimsDependents,
                                          ApplicationUser applicationUser,
                                          com.dtech.claim.model.DeathBeneficiary deathBeneficiary, List<Document> uploadSupportingDocument) {
         try {
-            log.info("Save death claim request {}", deathClaimRequestDTO);
+            log.info("Save death claim request death{}", deathClaimRequestDTO);
+            ClaimRequestIdGen claimRequestIdGen = ClaimRequestIdGen.builder()
+                    .year(String.valueOf(LocalDate.now().getYear()))
+                    .company(applicationUser.getUserPersonalDetails().getUserCompanyDetails().getCompanyTypes().getCode())
+                    .staffCategory(applicationUser.getUserPersonalDetails().getUserCompanyDetails().getStaffTypes().getCode())
+                    .build();
+            RequestIdGenUtil requestIdGenUtil = new RequestIdGenUtil(false);
+            log.info("Generate request id death {}", claimRequestIdGen);
+            String claimRequestId = (String) requestIdGenUtil.generate(entityManager.unwrap(SharedSessionContractImplementor.class), claimRequestIdGen);
+            log.info("after generate request id death {}", claimRequestId);
             DeathClaimRequest deathClaimRequest = new DeathClaimRequest();
             deathClaimRequest.setDeathDate(deathClaimRequestDTO.getDeathDate());
             deathClaimRequest.setRequestStatus(Workflow.UNDER_REVIEW);
@@ -367,6 +403,7 @@ public class DeathClaimRequestServiceImpl implements DeathClaimRequestService {
             deathClaimRequest.setDocuments(uploadSupportingDocument);
             log.info("Save death claim request {}", deathClaimRequestDTO);
             deathClaimRequestRepository.saveAndFlush(deathClaimRequest);
+            return claimRequestId;
         } catch (Exception e) {
             log.error(e);
             throw e;

@@ -468,7 +468,7 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
             InsuranceClaimsDetails insuranceClaimsDetails = saveClaimRequestDetails(claimRequestDTO, treatment);
 
             ClaimRequestIdGen claimRequestIdGen = ClaimRequestIdGen.builder().year(String.valueOf(insurancePeriod.getYear())).company(applicationUser.getUserPersonalDetails().getUserCompanyDetails().getCompanyTypes().getCode()).staffCategory(applicationUser.getUserPersonalDetails().getUserCompanyDetails().getStaffTypes().getCode()).build();
-            RequestIdGenUtil requestIdGenUtil = new RequestIdGenUtil();
+            RequestIdGenUtil requestIdGenUtil = new RequestIdGenUtil(true);
             log.info("Generate request id {}", claimRequestIdGen);
             String claimRequestId = (String) requestIdGenUtil.generate(entityManager.unwrap(SharedSessionContractImplementor.class), claimRequestIdGen);
             log.info("after generate request id {}", claimRequestId);

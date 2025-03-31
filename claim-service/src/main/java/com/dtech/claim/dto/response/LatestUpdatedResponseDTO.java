@@ -37,4 +37,15 @@ public class LatestUpdatedResponseDTO {
         this.passion = passion;
         this.requestDate = requestDate;
     }
+
+    public LatestUpdatedResponseDTO(Long id,String requestId, String remark,
+                                    BigDecimal amount, String passion,
+                                    Date requestDate) {
+        this.id = id;
+        this.requestId = requestId;
+        this.remark = remark;
+        this.amount = amount;
+        this.passion = passion;
+        this.requestDate = requestDate;
+    }
 }

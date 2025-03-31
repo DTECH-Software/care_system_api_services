@@ -4,7 +4,6 @@ import com.dtech.claim.dto.request.DashboardSummaryDTO;
 import com.dtech.claim.dto.response.CountTypeResponseDTO;
 import com.dtech.claim.dto.response.LatestUpdatedResponseDTO;
 import com.dtech.claim.model.InsuranceClaimsRequest;
-import com.dtech.claim.repository.custom.InsuranceClaimsRequestRepositoryCustom;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
