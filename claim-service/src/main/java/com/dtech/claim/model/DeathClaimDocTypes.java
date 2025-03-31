@@ -11,7 +11,7 @@ import com.dtech.claim.enums.DescribableEnum;
 
 public enum DeathClaimDocTypes implements DescribableEnum {
 
-    DEATH_CERTIFICATE("Death certificate"),;
+    DEATH_CERTIFICATE("Death certificate");
 
     private final String description;
     DeathClaimDocTypes(String description) {

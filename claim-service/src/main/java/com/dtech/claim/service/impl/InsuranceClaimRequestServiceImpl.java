@@ -416,7 +416,9 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
             log.info("Claim request details save started {}", claimRequestDTO);
             InsuranceClaimsDetails insuranceClaimsDetails = new InsuranceClaimsDetails();
             insuranceClaimsDetails.setTreatment(treatment);
-            insuranceClaimsDetails.setFromTreatmentDate(claimRequestDTO.getFromDate());
+            if(claimRequestDTO.getFromDate() != null){
+                insuranceClaimsDetails.setFromTreatmentDate(claimRequestDTO.getFromDate());
+            }
             insuranceClaimsDetails.setToTreatmentDate(claimRequestDTO.getToDate());
             insuranceClaimsDetails.setDisease(claimRequestDTO.getDisease());
             List<Document> uploadSupportingDocument = claimRequestDTO.getDocuments().stream().map(doc -> {

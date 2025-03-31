@@ -159,6 +159,7 @@ public class DeathClaimRequestServiceImpl implements DeathClaimRequestService {
                         ResponseEntity<ApiResponse<Object>> deathCertification = validateDocumentCount(
                                 deathClaimRequestDTO.getDocuments(),
                                 DeathClaimDocTypes.DEATH_CERTIFICATE.name(),
+                                CommonParam.DEATH_CERTIFICATE_MAX_IMAGE.name(),
                                 ResponseMessageUtil.DEATH_CLAIMS_DEATH_MAX_IMAGE_INVALID,
                                 ResponseMessageUtil.DEATH_CLAIMS_DEATH_MIN_IMAGE_INVALID,
                                 locale
@@ -326,16 +327,17 @@ public class DeathClaimRequestServiceImpl implements DeathClaimRequestService {
 
     @Transactional(readOnly = true)
     protected ResponseEntity<ApiResponse<Object>> validateDocumentCount(List<SupportingDocumentDTO> documents, String documentType,
-                                                                        String maxMessage, String minMessage, Locale locale) {
+                                                                        String commonParamCode, String maxMessage, String minMessage, Locale locale) {
         try {
             long count = documents.stream().filter(val -> val.getType().equals(documentType)).count();
-            long maxImages = 1;
+            CommonParameter commonParameter = commonParameterRepository.findByCode(commonParamCode).orElse(null);
+            long maxImages = commonParameter != null ? commonParameter.getValue() : 1;
 
             if (count > maxImages) {
-                log.info("Claim death request max {} invalid", documentType);
+                log.info("Claim request max {} invalid", documentType);
                 return ResponseEntity.ok().body(responseUtil.error(null, 1043, messageSource.getMessage(maxMessage, new Object[]{maxImages}, locale)));
             } else if (count == 0) {
-                log.info("Claim death request min {} invalid", documentType);
+                log.info("Claim request min {} invalid", documentType);
                 return ResponseEntity.ok().body(responseUtil.error(null, 1044, messageSource.getMessage(minMessage, null, locale)));
             }
             return null;
