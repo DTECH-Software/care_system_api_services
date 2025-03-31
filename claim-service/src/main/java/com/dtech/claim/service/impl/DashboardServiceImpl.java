@@ -30,8 +30,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.math.BigDecimal;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -55,6 +53,7 @@ public class DashboardServiceImpl implements DashboardService {
 
     @Autowired
     private DeathClaimRequestRepository deathClaimRequestRepository;
+
     @Autowired
     private InsuranceClaimsAccountBalanceRepository insuranceClaimsAccountBalanceRepository;
 
@@ -67,24 +66,23 @@ public class DashboardServiceImpl implements DashboardService {
 
                 HashMap<String,Object> list = new HashMap<>();
 
-                //get count insurance
+                /*Insurance*/
+                log.info("tart insurance claims");
                 CountTypeResponseDTO summary = insuranceClaimsRequestRepository.
                         findSummary(dashboardSummaryDTO, user.getId());
+                log.info("tart insurance claims counts success");
                 //get latest update insurance
-
-                List<LatestUpdatedResponseDTO> approed = insuranceClaimsRequestRepository.getLatestUpdatedRecordSummary(user.getId(), Workflow.APPROVED.name());
+                List<LatestUpdatedResponseDTO> approved = insuranceClaimsRequestRepository.getLatestUpdatedRecordSummary(user.getId(), Workflow.APPROVED.name());
                 List<LatestUpdatedResponseDTO> rejected = insuranceClaimsRequestRepository.getLatestUpdatedRecordSummary(user.getId(), Workflow.REJECTED.name());
-                List<LatestUpdatedResponseDTO> underReiew = insuranceClaimsRequestRepository.getLatestUpdatedRecordSummary(user.getId(), Workflow.UNDER_REVIEW.name());
-
-                CountResponseDTO ff = new CountResponseDTO();
-
-                ff.setApproved(approed);
-                ff.setRejected(rejected);
-                ff.setUnderReview(underReiew);
-                ff.setCountDetails(summary);
-
-                list.put("insurance", ff);
-
+                List<LatestUpdatedResponseDTO> underReview = insuranceClaimsRequestRepository.getLatestUpdatedRecordSummary(user.getId(), Workflow.UNDER_REVIEW.name());
+                log.info("tart insurance claims list success");
+                CountResponseDTO insurance = CountResponseDTO.builder()
+                        .approved(approved)
+                        .rejected(rejected)
+                        .underReview(underReview)
+                        .countDetails(summary).build();
+                log.info("tart insurance claims set dto success");
+                list.put("insurance", insurance);
                 return ResponseEntity.ok().body(responseUtil.success((Object) list, messageSource.getMessage(ResponseMessageUtil.DASHBOARD_SUMMARY_SUCCESS, null, locale)));
             }).orElseGet(() -> {
                 log.info("Dashboard summary request user not found {} ", dashboardSummaryDTO);

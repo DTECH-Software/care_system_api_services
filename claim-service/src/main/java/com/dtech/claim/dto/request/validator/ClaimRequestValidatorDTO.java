@@ -23,6 +23,7 @@ import java.util.List;
 @EqualsAndHashCode(callSuper = true)
 @Data
 @Conditional(selected = "isEmployee", values = {"false"}, required = {"claimsDependentId"}, message = "Claim dependent is required.")
+@Conditional(selected = "treatment", values = {"INDOOR","CC"}, required = {"fromDate"}, message = "Treatment from date is required.")
 @ValidateDateRange(message = "Treatment from date and to date invalid.")
 public class ClaimRequestValidatorDTO extends ChannelRequestValidatorDTO {
     @NotBlank(message = "Treatment is required.")
@@ -35,7 +36,7 @@ public class ClaimRequestValidatorDTO extends ChannelRequestValidatorDTO {
     @NotNull(message = "Claim request person type is required.")
     private Boolean isEmployee = true;
     private long claimsDependentId;
-    @NotNull(message = "Treatment from date is required.")
+//    @NotNull(message = "Treatment from date is required.")
     private Date fromDate;
     @NotNull(message = "Treatment to date is required.")
     @ValidPastDays(message = "Treatment must be past date")

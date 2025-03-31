@@ -52,7 +52,7 @@ public class DateRangeValidators implements ConstraintValidator<ValidateDateRang
                 throw new RuntimeException(e);
             }
 
-            return fieldValue1 != null && fieldValue2 != null && fieldValue1.before(fieldValue2);
+            return fieldValue1 != null && fieldValue2 != null && fieldValue1.equals(fieldValue2) || (fieldValue1).before(fieldValue2);
 
         }catch (Exception e) {
             log.error(e);

@@ -180,7 +180,7 @@ public class DeathClaimRequestServiceImpl implements DeathClaimRequestService {
                                             Date minuesDate = DateTimeUtil.getMinuesDate(param.getValue()+1);
                                             if (deathClaimRequestDTO.getDeathDate().before(minuesDate)) {
                                                 log.info("older than claim request {}", deathClaimRequestDTO.getUsername());
-                                                return ResponseEntity.ok().body(responseUtil.error(null, 1037, messageSource.getMessage(ResponseMessageUtil.OLDER_DATE_CLAIM_REQUEST, null, locale)));
+                                                return ResponseEntity.ok().body(responseUtil.error(null, 1037, messageSource.getMessage(ResponseMessageUtil.OLDER_DATE_DEATH_CLAIM_REQUEST, null, locale)));
                                             }
 
                                             Optional<ClaimsDependents> claimsDependents = claimDependentsRepository
