@@ -7,6 +7,7 @@
 
 package com.dtech.auth.dto.request.validator;
 
+import com.dtech.auth.validator.NoDuplicateRelationCategory;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
@@ -21,5 +22,6 @@ public class ClaimDependentRequestValidatorDTO extends ChannelRequestValidatorDT
     @NotNull(message = "Dependent(s) is required.")
     @NotEmpty(message = "Dependent(s) is required.")
     @Valid
+    @NoDuplicateRelationCategory
     private List<ClaimDependentDetailsRequestValidatorDTO> dependents;
 }
