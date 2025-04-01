@@ -25,6 +25,8 @@ import java.util.List;
 @Conditional(selected = "isEmployee", values = {"false"}, required = {"claimsDependentId"}, message = "Claim dependent is required.")
 @Conditional(selected = "treatment", values = {"INDOOR","CC"}, required = {"fromDate"}, message = "Treatment from date is required.")
 @ValidateDateRange(message = "Treatment from date and to date invalid.")
+@Conditional(selected = "isValidation",
+        values = {"false"}, required = {"otp"}, message = "OTP is required.")
 public class ClaimRequestValidatorDTO extends ChannelRequestValidatorDTO {
     @NotBlank(message = "Treatment is required.")
     private String treatment;
@@ -47,7 +49,7 @@ public class ClaimRequestValidatorDTO extends ChannelRequestValidatorDTO {
     @NotEmpty(message = "Patient document is required.")
     @Valid
     private List<InsuranceSupportingDocumentValidatorDTO> documents;
-    @NotEmpty(message = "OTP is required")
+//    @NotEmpty(message = "OTP is required")
     @Size(min = 6, max = 6, message = "OTP length must be exactly 6")
     private String otp;
     @NotNull(message = "Request validation type is required.")

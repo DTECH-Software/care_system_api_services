@@ -8,6 +8,7 @@
 package com.dtech.claim.dto.request.validator;
 
 
+import com.dtech.claim.validator.Conditional;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
@@ -20,6 +21,9 @@ import java.util.List;
 
 @EqualsAndHashCode(callSuper = true)
 @Data
+@Conditional(selected = "isValidation",
+        values = {"false"
+        }, required = {"otp"}, message = "OTP is required.")
 public class DeathClaimRequestValidatorDTO extends ChannelRequestValidatorDTO{
     private String remark;
     @NotNull(message = "Claim dependent is required.")
