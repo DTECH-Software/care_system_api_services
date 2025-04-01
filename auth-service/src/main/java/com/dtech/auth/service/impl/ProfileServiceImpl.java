@@ -87,8 +87,8 @@ public class ProfileServiceImpl implements ProfileService {
             return optionalUser.map((ap) -> {
                 log.info("User profile request user found {} ", ap);
                 long unreadCount = notificationHistoryRepository.countByTypeAndIsRead(NotificationsType.IN_APP_NOTIFICATION, false);
-                Pageable pageable = PageRequest.of(0, 5, Sort.by(Sort.Order.desc("lastModifiedDate")));
-                List<NotificationHistory> notificationHistories = notificationHistoryRepository.findAllByTypeOrderByLastModifiedByDesc(NotificationsType.IN_APP_NOTIFICATION,pageable);
+                Pageable pageable = PageRequest.of(0, 5, Sort.by(Sort.Order.asc("lastModifiedDate")));
+                List<NotificationHistory> notificationHistories = notificationHistoryRepository.findAllByTypeOrderByLastModifiedByAsc(NotificationsType.IN_APP_NOTIFICATION,pageable);
                 ProfileMapper profileMapper = new ProfileMapper();
                 ApplicationUserDetailsResponseDTO applicationUserDetailsResponseDTO = profileMapper.mapApplicationUser(ap,unreadCount,notificationHistories);
                 log.info("User profile request success{} ", applicationUserDetailsResponseDTO);

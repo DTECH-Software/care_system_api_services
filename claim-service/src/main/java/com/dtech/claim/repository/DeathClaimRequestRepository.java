@@ -58,7 +58,7 @@ public interface DeathClaimRequestRepository extends JpaRepository<DeathClaimReq
             "LEFT OUTER JOIN application_user ap ON dc.employee = ap.id " +
             "LEFT OUTER JOIN claims_dependents cd ON dc.dependent = cd.id " +
             "WHERE ap.id = :userId AND dc.request_status = :requestStatus " +
-            "ORDER BY dc.last_modified_date DESC LIMIT 7", nativeQuery = true)
+            "ORDER BY dc.last_modified_date ASC LIMIT 7", nativeQuery = true)
     List<LatestUpdatedResponseDTO> getLatestUpdatedRecordSummary(@Param("userId") Long userId, @Param("requestStatus") String requestStatus);
 
 }

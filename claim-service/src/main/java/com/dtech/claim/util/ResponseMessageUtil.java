@@ -52,7 +52,9 @@ public class ResponseMessageUtil {
     public final static String INSURANCE_PERIOD_NOT_FOUND = "val.insurance.period.not.found";
     public final static String TREATMENT_NOT_FOUND = "val.treatment.not.found";
     public final static String INSURANCE_CLAIM_REQUEST_SUBMIT_SUCCESS = "val.insurance.claim.request.submit.success";
+    public final static String INSURANCE_CLAIM_REQUEST_VALIDATION_SUCCESS = "val.insurance.claim.request.validation.success";
     public final static String DEATH_CLAIM_REQUEST_SUBMIT_SUCCESS = "val.death.claim.request.submit.success";
+    public final static String DEATH_CLAIM_REQUEST_VALIDATION_SUCCESS = "val.death.claim.request.validation.success";
     public final static String POLICY_TREATMENT_PERIOD_NOT_FOUND_OR_INACTIVE = "val.policy.treatment.period.not.found.or.inactive";
     public final static String COMMON_PARAM_NOT_FOUND = "val.common.param.not.found";
     public final static String OLDER_DATE_INSURANCE_CLAIM_REQUEST = "val.older.date.insurance.claim.request";

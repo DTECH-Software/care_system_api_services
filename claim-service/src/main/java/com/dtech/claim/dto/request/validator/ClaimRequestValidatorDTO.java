@@ -50,4 +50,6 @@ public class ClaimRequestValidatorDTO extends ChannelRequestValidatorDTO {
     @NotEmpty(message = "OTP is required")
     @Size(min = 6, max = 6, message = "OTP length must be exactly 6")
     private String otp;
+    @NotNull(message = "Request validation type is required.")
+    private Boolean isValidation;
 }

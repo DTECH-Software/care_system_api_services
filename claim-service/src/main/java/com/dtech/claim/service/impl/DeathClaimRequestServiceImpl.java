@@ -144,7 +144,7 @@ public class DeathClaimRequestServiceImpl implements DeathClaimRequestService {
                     }
                 });
                 log.info("Call minus insurance claim date");
-                Date minuesDate = DateTimeUtil.getDaysDifference(Objects.requireNonNull(commonParameterRepository.findByCode(CommonParam.DEATH_CLAIM_REQUEST_PERIOD.name()).orElse(null)).getValue());
+                Date minuesDate = DateTimeUtil.getMinuesDate(Objects.requireNonNull(commonParameterRepository.findByCode(CommonParam.DEATH_CLAIM_REQUEST_PERIOD.name()).orElse(null)).getValue());
                 splashData.put("insuranceClaimsDependents", claimDependent);
                 splashData.put("deathClaimsFundLimits", deathLimitDTOS);
                 splashData.put("deathMinPastDate", minuesDate);
@@ -183,115 +183,126 @@ public class DeathClaimRequestServiceImpl implements DeathClaimRequestService {
                             return deathCertification;
                         }
 
-                        if (user.getApplicationOtpSession() != null) {
-                            if (DateTimeUtil.getSeconds(user.getApplicationOtpSession().getCreatedDate(), 600).after(DateTimeUtil.getCurrentDateTime()) &&
-                                    user.getApplicationOtpSession().getOtp().equals(deathClaimRequestDTO.getOtp()) && user.getApplicationOtpSession().isValidated()) {
+                        log.info("Otp request valid {} ", user.getApplicationOtpSession());
+                        return commonParameterRepository.findByCode(CommonParam.DEATH_CLAIM_REQUEST_PERIOD.name())
+                                .map((param) -> {
+                                    log.info("get - date from death claim request {}", param);
+                                    Date minuesDate = DateTimeUtil.getMinuesDate(param.getValue() + 1);
+                                    if (deathClaimRequestDTO.getDeathDate().before(minuesDate)) {
+                                        log.info("older than claim request {}", deathClaimRequestDTO.getUsername());
+                                        return ResponseEntity.ok().body(responseUtil.error(null, 1037, messageSource.getMessage(ResponseMessageUtil.OLDER_DATE_DEATH_CLAIM_REQUEST, null, locale)));
+                                    }
 
-                                log.info("Otp request valid {} ", user.getApplicationOtpSession());
-                                return commonParameterRepository.findByCode(CommonParam.DEATH_CLAIM_REQUEST_PERIOD.name())
-                                        .map((param) -> {
-                                            log.info("get - date from death claim request {}", param);
-                                            Date minuesDate = DateTimeUtil.getMinuesDate(param.getValue() + 1);
-                                            if (deathClaimRequestDTO.getDeathDate().before(minuesDate)) {
-                                                log.info("older than claim request {}", deathClaimRequestDTO.getUsername());
-                                                return ResponseEntity.ok().body(responseUtil.error(null, 1037, messageSource.getMessage(ResponseMessageUtil.OLDER_DATE_DEATH_CLAIM_REQUEST, null, locale)));
-                                            }
+                                    Optional<ClaimsDependents> claimsDependents = claimDependentsRepository
+                                            .findByIdAndApplicationUserAndStatusAndEligibleFacilityIn(
+                                                    deathClaimRequestDTO.getClaimsDependentId(),
+                                                    user,
+                                                    Workflow.ACTIVE, List.of(Facility.DEATH, Facility.BOTH));
 
-                                            Optional<ClaimsDependents> claimsDependents = claimDependentsRepository
-                                                    .findByIdAndApplicationUserAndStatusAndEligibleFacilityIn(
-                                                            deathClaimRequestDTO.getClaimsDependentId(),
-                                                            user,
-                                                            Workflow.ACTIVE, List.of(Facility.DEATH, Facility.BOTH));
+                                    if (claimsDependents.isEmpty()) {
+                                        log.info("Claim dependent not found or not eligible for death");
+                                        return ResponseEntity.ok().body(responseUtil.error(null, 1034, messageSource.getMessage(ResponseMessageUtil.CLAIM_DEPENDENT_NOT_FOUND_OR_FACILITY_NOT_ELIGIBLE, null, locale)));
+                                    }
 
-                                            if (claimsDependents.isEmpty()) {
-                                                log.info("Claim dependent not found or not eligible for death");
-                                                return ResponseEntity.ok().body(responseUtil.error(null, 1034, messageSource.getMessage(ResponseMessageUtil.CLAIM_DEPENDENT_NOT_FOUND_OR_FACILITY_NOT_ELIGIBLE, null, locale)));
-                                            }
+                                    AtomicReference<Range> range = new AtomicReference<>();
+                                    if (claimsDependents.get().getRelationCategory().equals(RelationCategory.CHILD) ||
+                                            claimsDependents.get().getRelationCategory().equals(RelationCategory.BROTHER) ||
+                                            claimsDependents.get().getRelationCategory().equals(RelationCategory.SISTER)) {
 
-                                            AtomicReference<Range> range = new AtomicReference<>();
-                                            if (claimsDependents.get().getRelationCategory().equals(RelationCategory.CHILD) ||
-                                                    claimsDependents.get().getRelationCategory().equals(RelationCategory.BROTHER) ||
-                                                    claimsDependents.get().getRelationCategory().equals(RelationCategory.SISTER)) {
+                                        Date dob = claimsDependents.get().getDob();
+                                        log.info("get - date from death claim request {}", dob);
+                                        int age = DateTimeUtil.getAge(String.valueOf(dob));
 
-                                                Date dob = claimsDependents.get().getDob();
-                                                log.info("get - date from death claim request {}", dob);
-                                                int age = DateTimeUtil.getAge(String.valueOf(dob));
+                                        commonParameterRepository.findByCode(CommonParam.DEATH_AGE.name())
+                                                .map((dAge) -> {
 
-                                                commonParameterRepository.findByCode(CommonParam.DEATH_AGE.name())
-                                                        .map((dAge) -> {
+                                                    if (age <= dAge.getValue()) {
+                                                        log.info("Age less than death claim request {} {}", age, dAge.getValue());
+                                                        range.set(Range.LOWER);
+                                                    } else {
+                                                        log.info("Age greater than death claim request {} {}", age, dAge.getValue());
+                                                        range.set(Range.UPPER);
+                                                    }
+                                                    return null;
+                                                })
+                                                .orElseGet(() -> {
+                                                    log.info("User common param death claim age request {}", deathClaimRequestDTO.getUsername());
+                                                    return ResponseEntity.ok().body(responseUtil.error(null, 1036, messageSource.getMessage(ResponseMessageUtil.COMMON_PARAM_NOT_FOUND, null, locale)));
+                                                });
+                                    }
 
-                                                            if (age <= dAge.getValue()) {
-                                                                log.info("Age less than death claim request {} {}", age, dAge.getValue());
-                                                                range.set(Range.LOWER);
-                                                            } else {
-                                                                log.info("Age greater than death claim request {} {}", age, dAge.getValue());
-                                                                range.set(Range.UPPER);
-                                                            }
-                                                            return null;
+                                    return deathBeneficiaryRepository.findByCodeAndRangeAndStatus(DeathBeneficiary.valueOf(claimsDependents.get().getRelationCategory().name()), range.get() == null ? null : range.get(), Status.ACTIVE)
+                                            .map((deathBeneficiary) -> {
+
+                                                return deathClaimRequestRepository.findByClaimsDependentsAndEmployeeAndRequestStatusIn(claimsDependents.get(), user, List.of(Workflow.APPROVED, Workflow.UNDER_REVIEW))
+                                                        .map((claimRequest) -> {
+                                                            log.info("Death request already proceed {}", deathBeneficiary);
+                                                            return ResponseEntity.ok().body(responseUtil.error(null, 1046, messageSource.getMessage(ResponseMessageUtil.DEATH_CLAIM_ALREADY_PAID_OR_UNDER_REVIEW, null, locale)));
                                                         })
                                                         .orElseGet(() -> {
-                                                            log.info("User common param death claim age request {}", deathClaimRequestDTO.getUsername());
-                                                            return ResponseEntity.ok().body(responseUtil.error(null, 1036, messageSource.getMessage(ResponseMessageUtil.COMMON_PARAM_NOT_FOUND, null, locale)));
-                                                        });
-                                            }
+                                                            log.info("Death claims not found - new request to proceed {}", deathBeneficiary);
+                                                            return commonParameterRepository.findByCode(CommonParam.DEATH_CLAIM_REQUEST_HALF_PAYMENT_PERIOD.name())
+                                                                    .map((half) -> {
 
-                                            return deathBeneficiaryRepository.findByCodeAndRangeAndStatus(DeathBeneficiary.valueOf(claimsDependents.get().getRelationCategory().name()), range.get() == null ? null : range.get(), Status.ACTIVE)
-                                                    .map((deathBeneficiary) -> {
+                                                                        if (deathClaimRequestDTO.getIsValidation()) {
+                                                                            log.info("Death claim request validate only success{}", true);
+                                                                            return ResponseEntity.ok().body(responseUtil.success(null, messageSource.getMessage(ResponseMessageUtil.DEATH_CLAIM_REQUEST_VALIDATION_SUCCESS, null, locale)));
+                                                                        } else {
+                                                                            log.info("Death claim request insert process {}", true);
+                                                                            if (user.getApplicationOtpSession() != null) {
 
-                                                        return deathClaimRequestRepository.findByClaimsDependentsAndEmployeeAndRequestStatusIn(claimsDependents.get(), user, List.of(Workflow.APPROVED, Workflow.UNDER_REVIEW))
-                                                                .map((claimRequest) -> {
-                                                                    log.info("Death request already proceed {}", deathBeneficiary);
-                                                                    return ResponseEntity.ok().body(responseUtil.error(null, 1046, messageSource.getMessage(ResponseMessageUtil.DEATH_CLAIM_ALREADY_PAID_OR_UNDER_REVIEW, null, locale)));
-                                                                })
-                                                                .orElseGet(() -> {
-                                                                    log.info("Death claims not found - new request to proceed {}", deathBeneficiary);
-                                                                    return commonParameterRepository.findByCode(CommonParam.DEATH_CLAIM_REQUEST_HALF_PAYMENT_PERIOD.name())
-                                                                            .map((half) -> {
-                                                                                Date halfDays = DateTimeUtil.getMinuesDate(half.getValue());
-                                                                                PaymentType paymentType = PaymentType.FULL;
-                                                                                BigDecimal amount = deathBeneficiary.getClaimLimit();
-                                                                                if (deathClaimRequestDTO.getDeathDate().before(halfDays)) {
-                                                                                    paymentType = PaymentType.HALF;
-                                                                                    BigDecimal fiftyPercent = new BigDecimal(50).divide(new BigDecimal(100));
-                                                                                    amount = deathBeneficiary.getClaimLimit().multiply(fiftyPercent);
+                                                                                if (DateTimeUtil.getSeconds(user.getApplicationOtpSession().getCreatedDate(), 600).after(DateTimeUtil.getCurrentDateTime()) &&
+                                                                                        user.getApplicationOtpSession().getOtp().equals(deathClaimRequestDTO.getOtp()) && user.getApplicationOtpSession().isValidated()) {
+
+                                                                                    Date halfDays = DateTimeUtil.getMinuesDate(half.getValue());
+                                                                                    PaymentType paymentType = PaymentType.FULL;
+                                                                                    BigDecimal amount = deathBeneficiary.getClaimLimit();
+                                                                                    if (deathClaimRequestDTO.getDeathDate().before(halfDays)) {
+                                                                                        paymentType = PaymentType.HALF;
+                                                                                        BigDecimal fiftyPercent = new BigDecimal(50).divide(new BigDecimal(100));
+                                                                                        amount = deathBeneficiary.getClaimLimit().multiply(fiftyPercent);
+                                                                                    }
+
+                                                                                    List<Document> uploadSupportingDocument = deathClaimRequestDTO.getDocuments().stream().map(doc -> {
+                                                                                        log.info("Upload supporting document from death request {}", deathClaimRequestDTO);
+                                                                                        try {
+                                                                                            return uploadImage(doc.getType(), doc.getFile(), doc.getFileType(), doc.getFileName());
+                                                                                        } catch (
+                                                                                                IOException e) {
+                                                                                            log.error(e);
+                                                                                            throw new RuntimeException(e);
+                                                                                        }
+                                                                                    }).collect(Collectors.toList());
+
+                                                                                    String claimRequestId = saveDeathClaimRequest(deathClaimRequestDTO, paymentType, amount, claimsDependents.get(), user, deathBeneficiary, uploadSupportingDocument);
+                                                                                    notifyMessage(user.getPrimaryMobile(), claimRequestId);
+                                                                                    return ResponseEntity.ok().body(responseUtil.success(null, messageSource.getMessage(ResponseMessageUtil.DEATH_CLAIM_REQUEST_SUBMIT_SUCCESS, null, locale)));
+                                                                                } else {
+                                                                                    log.info("Otp request validation fail otp or invalid session {}", user.getApplicationOtpSession());
+                                                                                    return ResponseEntity.ok().body(responseUtil.error(null, 1016, messageSource.getMessage(ResponseMessageUtil.OTP_INVALID_OR_SESSION_TIME_OUT, null, locale)));
                                                                                 }
 
-                                                                                List<Document> uploadSupportingDocument = deathClaimRequestDTO.getDocuments().stream().map(doc -> {
-                                                                                    log.info("Upload supporting document from death request {}", deathClaimRequestDTO);
-                                                                                    try {
-                                                                                        return uploadImage(doc.getType(), doc.getFile(), doc.getFileType(), doc.getFileName());
-                                                                                    } catch (IOException e) {
-                                                                                        log.error(e);
-                                                                                        throw new RuntimeException(e);
-                                                                                    }
-                                                                                }).collect(Collectors.toList());
+                                                                            } else {
+                                                                                log.info("Otp request otp session not found {} ", deathClaimRequestDTO.getUsername());
+                                                                                return ResponseEntity.ok().body(responseUtil.error(null, 1015, messageSource.getMessage(ResponseMessageUtil.OTP_SESSION_NOT_FOUND, null, locale)));
+                                                                            }
+                                                                        }
 
-                                                                                String claimRequestId = saveDeathClaimRequest(deathClaimRequestDTO, paymentType, amount, claimsDependents.get(), user, deathBeneficiary, uploadSupportingDocument);
-                                                                                notifyMessage(user.getPrimaryMobile(), claimRequestId);
-                                                                                return ResponseEntity.ok().body(responseUtil.success(null, messageSource.getMessage(ResponseMessageUtil.DEATH_CLAIM_REQUEST_SUBMIT_SUCCESS, null, locale)));
-                                                                            })
-                                                                            .orElseGet(() -> {
-                                                                                log.info("User common param death claim half period request {}", deathClaimRequestDTO.getUsername());
-                                                                                return ResponseEntity.ok().body(responseUtil.error(null, 1036, messageSource.getMessage(ResponseMessageUtil.COMMON_PARAM_NOT_FOUND, null, locale)));
-                                                                            });
-                                                                });
-                                                    }).orElseGet(() -> {
-                                                        log.info("Death beneficiary not found or not eligible for death {} ", claimsDependents.get());
-                                                        return ResponseEntity.ok().body(responseUtil.error(null, 1045, messageSource.getMessage(ResponseMessageUtil.BENEFICIARY_NOT_FOUND_OR_FACILITY_NOT_ELIGIBLE, null, locale)));
-                                                    });
+                                                                    })
+                                                                    .orElseGet(() -> {
+                                                                        log.info("User common param death claim half period request {}", deathClaimRequestDTO.getUsername());
+                                                                        return ResponseEntity.ok().body(responseUtil.error(null, 1036, messageSource.getMessage(ResponseMessageUtil.COMMON_PARAM_NOT_FOUND, null, locale)));
+                                                                    });
+                                                        });
+                                            }).orElseGet(() -> {
+                                                log.info("Death beneficiary not found or not eligible for death {} ", claimsDependents.get());
+                                                return ResponseEntity.ok().body(responseUtil.error(null, 1045, messageSource.getMessage(ResponseMessageUtil.BENEFICIARY_NOT_FOUND_OR_FACILITY_NOT_ELIGIBLE, null, locale)));
+                                            });
 
-                                        }).orElseGet(() -> {
-                                            log.info("User common param death claim request {}", deathClaimRequestDTO.getUsername());
-                                            return ResponseEntity.ok().body(responseUtil.error(null, 1036, messageSource.getMessage(ResponseMessageUtil.COMMON_PARAM_NOT_FOUND, null, locale)));
-                                        });
-
-                            }
-                            log.info("Otp request validation fail otp or invalid session {}", user.getApplicationOtpSession());
-                            return ResponseEntity.ok().body(responseUtil.error(null, 1016, messageSource.getMessage(ResponseMessageUtil.OTP_INVALID_OR_SESSION_TIME_OUT, null, locale)));
-
-                        }
-                        log.info("Otp request otp session not found {} ", deathClaimRequestDTO.getUsername());
-                        return ResponseEntity.ok().body(responseUtil.error(null, 1015, messageSource.getMessage(ResponseMessageUtil.OTP_SESSION_NOT_FOUND, null, locale)));
+                                }).orElseGet(() -> {
+                                    log.info("User common param death claim request {}", deathClaimRequestDTO.getUsername());
+                                    return ResponseEntity.ok().body(responseUtil.error(null, 1036, messageSource.getMessage(ResponseMessageUtil.COMMON_PARAM_NOT_FOUND, null, locale)));
+                                });
 
                     }).orElseGet(() -> {
                         log.info("User claim request user not found {} ", deathClaimRequestDTO);

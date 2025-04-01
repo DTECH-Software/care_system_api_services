@@ -32,4 +32,6 @@ public class DeathClaimRequestValidatorDTO extends ChannelRequestValidatorDTO{
     private List<DeathSupportingDocumentValidatorDTO> documents;
     @Size(min = 6, max = 6, message = "OTP length must be exactly 6")
     private String otp;
+    @NotNull(message = "Request validation type is required.")
+    private Boolean isValidation;
 }

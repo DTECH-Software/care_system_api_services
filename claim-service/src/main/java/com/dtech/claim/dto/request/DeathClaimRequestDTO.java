@@ -23,4 +23,5 @@ public class DeathClaimRequestDTO extends ChannelRequestDTO{
     private Date deathDate;
     private List<SupportingDocumentDTO> documents;
     private String otp;
+    private Boolean isValidation;
 }

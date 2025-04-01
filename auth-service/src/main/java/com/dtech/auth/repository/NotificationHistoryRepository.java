@@ -13,5 +13,5 @@ import java.util.List;
 public interface NotificationHistoryRepository extends JpaRepository<NotificationHistory, Long> , JpaSpecificationExecutor<NotificationHistory> {
     long countByTypeAndIsRead(NotificationsType type, boolean read);
 
-    List<NotificationHistory> findAllByTypeOrderByLastModifiedByDesc(NotificationsType type, Pageable pageable);
+    List<NotificationHistory> findAllByTypeOrderByLastModifiedByAsc(NotificationsType type, Pageable pageable);
 }
