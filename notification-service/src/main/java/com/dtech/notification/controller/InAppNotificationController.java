@@ -8,7 +8,9 @@
 package com.dtech.notification.controller;
 
 import com.dtech.notification.dto.request.NotificationHistory;
+import com.dtech.notification.dto.request.NotificationReadRequestDTO;
 import com.dtech.notification.dto.request.PaginationRequest;
+import com.dtech.notification.dto.request.validator.NotificationReadRequestValidatorDTO;
 import com.dtech.notification.dto.response.ApiResponse;
 import com.dtech.notification.service.InAppNotificationService;
 import com.google.gson.Gson;
@@ -46,6 +48,13 @@ public class InAppNotificationController {
         log.info("In-app notification request controller {} ", paginationRequest);
         Type paginationRequestType = new TypeToken<PaginationRequest<NotificationHistory>>(){}.getType();
         return inAppNotificationService.inAppNotificationHistory(gson.fromJson(gson.toJson(paginationRequest), paginationRequestType), locale);
+    }
+
+    @PostMapping(path = "/read",produces = MediaType.APPLICATION_JSON_VALUE,consumes = MediaType.APPLICATION_JSON_VALUE)
+    @ApiOperation(value = "Handle in-app notification read request request ",notes = "In-app notification read request success or failed")
+    public ResponseEntity<ApiResponse<Object>> updateNotificationReadState(@RequestBody @Valid NotificationReadRequestValidatorDTO notificationReadRequestValidatorDTO, Locale locale) {
+        log.info("In-app notification read request controller {} ", notificationReadRequestValidatorDTO);
+        return inAppNotificationService.updateNotificationReadState(gson.fromJson(gson.toJson(notificationReadRequestValidatorDTO), NotificationReadRequestDTO.class), locale);
     }
 
 }

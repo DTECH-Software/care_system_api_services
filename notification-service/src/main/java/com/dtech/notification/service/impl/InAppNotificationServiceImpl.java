@@ -9,6 +9,7 @@ package com.dtech.notification.service.impl;
 
 
 import com.dtech.notification.dto.request.NotificationHistory;
+import com.dtech.notification.dto.request.NotificationReadRequestDTO;
 import com.dtech.notification.dto.request.PaginationRequest;
 import com.dtech.notification.dto.response.ApiResponse;
 import com.dtech.notification.dto.response.NotificationHistoryResponseDTO;
@@ -93,6 +94,25 @@ public class InAppNotificationServiceImpl implements InAppNotificationService {
             }).orElseGet(() -> {
                 log.info("User notification filter request user not found {} ", paginationRequest);
                 return ResponseEntity.ok().body(responseUtil.error(null, 1014, messageSource.getMessage(ResponseMessageUtil.APPLICATION_USER_NOT_FOUND, null, locale)));
+            });
+        }catch (Exception e) {
+            log.error(e);
+            throw e;
+        }
+    }
+
+    @Override
+    @Transactional
+    public ResponseEntity<ApiResponse<Object>> updateNotificationReadState(NotificationReadRequestDTO notificationReadRequestDTO, Locale locale) {
+        try {
+            log.info("In App Notification Service update read status {}",notificationReadRequestDTO);
+            return notificationHistoryRepository.findById(notificationReadRequestDTO.getId()).map((notificationHistory) -> {
+                notificationHistory.setRead(true);
+                notificationHistoryRepository.saveAndFlush(notificationHistory);
+                return ResponseEntity.ok().body(responseUtil.success(null, messageSource.getMessage(ResponseMessageUtil.NOTIFICATION_HISTORY_READ_STATE_UPDATE_SUCCESS, null, locale)));
+            }).orElseGet(() -> {
+                log.info("Notification history not found {} ", notificationReadRequestDTO);
+                return ResponseEntity.ok().body(responseUtil.error(null, 1048, messageSource.getMessage(ResponseMessageUtil.NOTIFICATION_HISTORY_NOT_FOUND, null, locale)));
             });
         }catch (Exception e) {
             log.error(e);

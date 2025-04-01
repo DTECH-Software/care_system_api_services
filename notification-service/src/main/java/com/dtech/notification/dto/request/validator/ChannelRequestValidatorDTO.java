@@ -18,7 +18,7 @@ import lombok.Data;
 
 @Data
 @Conditional(selected = "channel", values = {"MB"}, required = {"deviceDetails"}, message = "Device details is required.")
-@Conditional(selected = "message", values = {"IN_APP_NOTIFICATION_FILTER_LIST"}, required = {"username"}, message = "Username is required.")
+@Conditional(selected = "message", values = {"IN_APP_NOTIFICATION_FILTER_LIST","IN_APP_NOTIFICATION_READ_STATE_UPDATE"}, required = {"username"}, message = "Username is required.")
 public class ChannelRequestValidatorDTO {
     @NotBlank(message = "Channel is required.")
     @ValidEnum(enumClass = Channel.class, message = "Invalid channel.")
@@ -30,5 +30,5 @@ public class ChannelRequestValidatorDTO {
     private String message;
     private String username;
     @Valid
-    private ChannelMbDeviceDetailsValidatorsDTO deviceDetails;
+    private ChannelMbDeviceDetailsValidatorDTO deviceDetails;
 }

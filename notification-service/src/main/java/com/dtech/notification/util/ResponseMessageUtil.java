@@ -50,4 +50,6 @@ public class ResponseMessageUtil {
 
     /*Notification*/
     public final static String NOTIFICATION_FILTER_LIST_SUCCESS = "val.notification.filter.list.success";
+    public final static String NOTIFICATION_HISTORY_NOT_FOUND = "val.notification.history.not.found";
+    public final static String NOTIFICATION_HISTORY_READ_STATE_UPDATE_SUCCESS = "val.notification.history.read.state.update.success";
 }

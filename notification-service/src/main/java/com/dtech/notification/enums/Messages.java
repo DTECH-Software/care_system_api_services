@@ -8,5 +8,5 @@
 package com.dtech.notification.enums;
 
 public enum Messages {
-   IN_APP_NOTIFICATION_FILTER_LIST
+   IN_APP_NOTIFICATION_FILTER_LIST,IN_APP_NOTIFICATION_READ_STATE_UPDATE
 }

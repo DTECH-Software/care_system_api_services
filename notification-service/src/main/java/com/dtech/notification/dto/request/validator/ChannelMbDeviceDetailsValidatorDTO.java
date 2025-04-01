@@ -11,7 +11,7 @@ import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 
 @Data
-public class ChannelMbDeviceDetailsValidatorsDTO {
+public class ChannelMbDeviceDetailsValidatorDTO {
     @NotBlank(message = "Device id is required.")
     private String deviceId;
     @NotBlank(message = "Model is required.")
