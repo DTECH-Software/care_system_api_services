@@ -408,6 +408,7 @@ public class DeathClaimRequestServiceImpl implements DeathClaimRequestService {
             log.info("after generate request id death {}", claimRequestId);
             DeathClaimRequest deathClaimRequest = new DeathClaimRequest();
             deathClaimRequest.setDeathDate(deathClaimRequestDTO.getDeathDate());
+            deathClaimRequest.setRequestId(claimRequestId);
             deathClaimRequest.setRequestStatus(Workflow.UNDER_REVIEW);
             deathClaimRequest.setRemark(deathClaimRequestDTO.getRemark());
             deathClaimRequest.setPaymentType(paymentType);
