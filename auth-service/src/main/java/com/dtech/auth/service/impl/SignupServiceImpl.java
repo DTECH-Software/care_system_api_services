@@ -34,10 +34,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.security.NoSuchAlgorithmException;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
 import java.util.*;
-import java.util.stream.Collectors;
 
 import static com.dtech.auth.util.EnumUtil.getEnumList;
 
@@ -487,7 +484,7 @@ public class SignupServiceImpl implements SignupService {
             MessageRequestDTO messageRequestDTO = new MessageRequestDTO();
             messageRequestDTO.setValue(otp);
             messageRequestDTO.setMobileNo(signupOtpRequestDTO.getMobileNo());
-            messageRequestDTO.setType(NotificationsType.OTP.name());
+            messageRequestDTO.setType(MessageType.OTP.name());
 
             log.info("Before token request mapper {} ", messageRequestDTO);
             log.info("Before calling message service {}", messageFeignClient);

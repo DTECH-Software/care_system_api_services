@@ -1,5 +1,5 @@
 package com.dtech.auth.enums;
 
-public enum NotificationsType {
+public enum MessageType {
  OTP
 }

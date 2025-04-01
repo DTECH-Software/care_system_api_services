@@ -250,7 +250,7 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
             MessageRequestDTO messageRequestDTO = new MessageRequestDTO();
             messageRequestDTO.setValue(requestId);
             messageRequestDTO.setMobileNo(mobile);
-            messageRequestDTO.setType(NotificationsType.INSURANCE_CLAIM.name());
+            messageRequestDTO.setType(MessageType.INSURANCE_CLAIM.name());
             log.info("Before message request mapper {} ", messageRequestDTO);
             log.info("Before calling message service {}", messageFeignClient);
             messageFeignClient.sendMessage(messageRequestDTO);

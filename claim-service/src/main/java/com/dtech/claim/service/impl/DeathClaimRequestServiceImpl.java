@@ -144,7 +144,7 @@ public class DeathClaimRequestServiceImpl implements DeathClaimRequestService {
                     }
                 });
                 log.info("Call minus insurance claim date");
-                Date minuesDate = DateTimeUtil.getMinuesDate(Objects.requireNonNull(commonParameterRepository.findByCode(CommonParam.DEATH_CLAIM_REQUEST_PERIOD.name()).orElse(null)).getValue());
+                Date minuesDate = DateTimeUtil.getDaysDifference(Objects.requireNonNull(commonParameterRepository.findByCode(CommonParam.DEATH_CLAIM_REQUEST_PERIOD.name()).orElse(null)).getValue());
                 splashData.put("insuranceClaimsDependents", claimDependent);
                 splashData.put("deathClaimsFundLimits", deathLimitDTOS);
                 splashData.put("deathMinPastDate", minuesDate);
@@ -310,7 +310,7 @@ public class DeathClaimRequestServiceImpl implements DeathClaimRequestService {
             MessageRequestDTO messageRequestDTO = new MessageRequestDTO();
             messageRequestDTO.setValue(requestId);
             messageRequestDTO.setMobileNo(mobile);
-            messageRequestDTO.setType(NotificationsType.DEATH_CLAIM.name());
+            messageRequestDTO.setType(MessageType.DEATH_CLAIM.name());
             log.info("Before message request mapper {} ", messageRequestDTO);
             log.info("Before calling message service {}", messageFeignClient);
             messageFeignClient.sendMessage(messageRequestDTO);

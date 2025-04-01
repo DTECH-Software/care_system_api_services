@@ -11,9 +11,11 @@ package com.dtech.auth.mapper.EntityToDto;
 import com.dtech.auth.dto.SimpleBaseDTO;
 import com.dtech.auth.dto.response.*;
 import com.dtech.auth.enums.Gender;
+import com.dtech.auth.enums.NotificationTitle;
 import com.dtech.auth.enums.Title;
 import com.dtech.auth.model.ApplicationUser;
 import com.dtech.auth.model.ClaimsDependents;
+import com.dtech.auth.model.NotificationHistory;
 import com.dtech.auth.util.DateTimeUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
@@ -35,7 +37,7 @@ public class ProfileMapper {
     private static final ModelMapper modelMapper = new ModelMapper();
 
     @Transactional(readOnly = true)
-    public ApplicationUserDetailsResponseDTO mapApplicationUser(ApplicationUser applicationUser) {
+    public ApplicationUserDetailsResponseDTO mapApplicationUser(ApplicationUser applicationUser, long unreadCount, List<NotificationHistory> notificationHistory) {
         try {
             log.info("application user mapper");
             ApplicationUserDetailsResponseDTO applicationUserDetailsResponseDTO = modelMapper.map(applicationUser, ApplicationUserDetailsResponseDTO.class);
@@ -50,6 +52,21 @@ public class ProfileMapper {
                 applicationUserDetailsResponseDTO.setProfileImg(documentDownloadResponseDTO);
                 log.info("application user get profile img downloaded");
             }
+            List<NotificationHistoryResponseDTO> collectList = notificationHistory.stream()
+                    .map(val ->  {
+                        log.info("Call notification mapper {}  ",val.getId());
+                        NotificationHistoryResponseDTO map = modelMapper.map(val, NotificationHistoryResponseDTO.class);
+                        log.info("map {}", map.getTitle());
+                        map.setTitleDescription(NotificationTitle.valueOf(map.getTitle()).getDescription());
+                        log.info("Call days count");
+                        long daysDifference = DateTimeUtil.getDaysDifference(val.getCreatedDate());
+                        map.setAgoDays(daysDifference);
+                        return map;
+                    }).toList();
+            log.info("notification history count success map");
+            applicationUserDetailsResponseDTO.setNotification(NotificationSummaryResponseDTO.builder()
+                    .unreadCount(unreadCount)
+                    .latestNotifications(collectList).build());
             log.info("Success profile mapper {} ", applicationUserDetailsResponseDTO);
             return applicationUserDetailsResponseDTO;
         } catch (Exception e) {

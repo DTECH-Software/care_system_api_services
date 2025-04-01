@@ -14,7 +14,7 @@ import com.dtech.message.dto.response.ApiResponse;
 import com.dtech.message.dto.response.MessageResponseDTO;
 import com.dtech.message.dto.response.PolicyResponseDTO;
 import com.dtech.message.enums.Messages;
-import com.dtech.message.enums.NotificationsType;
+import com.dtech.message.enums.MessageType;
 import com.dtech.message.enums.Status;
 import com.dtech.message.model.ApplicationOtpSession;
 import com.dtech.message.model.ApplicationUser;
@@ -122,7 +122,7 @@ public class OtpServiceImpl implements OtpService {
                                     }
                                     String otp = RandomGeneratorUtil.getRandom6DigitNumber();
                                     log.info("Generate otp - onboarding verified {} ", otp);
-                                    MessageResponseDTO messageResponseDTO = sendMessageService.sendToCustomer(new MessageRequestDTO(otpRequestDTO.getPrimaryMobile(), NotificationsType.OTP.name(), otp));
+                                    MessageResponseDTO messageResponseDTO = sendMessageService.sendToCustomer(new MessageRequestDTO(otpRequestDTO.getPrimaryMobile(), MessageType.OTP.name(), otp));
                                     log.info("Signup otp request success");
                                     ApplicationOtpSession applicationOtpSession = updateOtpSession(otp, messageResponseDTO.isSuccess());
                                     updateOnboardingVerifiedMobile(otpRequestDTO, applicationOtpSession);
@@ -185,7 +185,7 @@ public class OtpServiceImpl implements OtpService {
                     log.info("Rest password send otp session send message {}", user);
                     String otp = RandomGeneratorUtil.getRandom6DigitNumber();
                     log.info("Generate otp - reset verified {} ", otp);
-                    MessageResponseDTO messageResponseDTO = sendMessageService.sendToCustomer(new MessageRequestDTO(user.getPrimaryMobile(), NotificationsType.OTP.name(), otp));
+                    MessageResponseDTO messageResponseDTO = sendMessageService.sendToCustomer(new MessageRequestDTO(user.getPrimaryMobile(), MessageType.OTP.name(), otp));
                     log.info("Reset otp request success");
                     ApplicationOtpSession applicationOtpSession = updateOtpSession(otp, messageResponseDTO.isSuccess());
                     updateApplicationUser(user, applicationOtpSession);

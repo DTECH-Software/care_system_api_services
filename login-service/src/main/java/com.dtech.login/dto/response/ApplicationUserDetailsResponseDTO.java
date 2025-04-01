@@ -24,4 +24,5 @@ public class ApplicationUserDetailsResponseDTO {
     private String passwordExpiredDate;
     private UserPersonalDetailsResponseDTO userPersonalDetails;
     private DocumentDownloadResponseDTO profileImg;
+    private NotificationSummaryResponseDTO notification;
 }

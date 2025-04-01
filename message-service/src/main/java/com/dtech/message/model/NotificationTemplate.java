@@ -8,7 +8,7 @@
 package com.dtech.message.model;
 
 
-import com.dtech.message.enums.NotificationsType;
+import com.dtech.message.enums.MessageType;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -29,7 +29,7 @@ public class NotificationTemplate extends Audit implements Serializable {
 
     @Column(name = "type",nullable = false)
     @Enumerated(EnumType.STRING)
-    private NotificationsType type;
+    private MessageType type;
 
     @Column(name = "title",nullable = false)
     private String title;

@@ -7,12 +7,12 @@
 
 package com.dtech.message.repository;
 
-import com.dtech.message.enums.NotificationsType;
+import com.dtech.message.enums.MessageType;
 import com.dtech.message.model.NotificationTemplate;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.Optional;
 
 public interface NotificationTemplateRepository extends JpaRepository<NotificationTemplate, Long> {
-    Optional<NotificationTemplate> findByType(NotificationsType title);
+    Optional<NotificationTemplate> findByType(MessageType title);
 }

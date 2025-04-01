@@ -12,6 +12,7 @@ import lombok.extern.log4j.Log4j2;
 import java.text.SimpleDateFormat;
 import java.time.*;
 import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 import java.util.Calendar;
 import java.util.Date;
 
@@ -58,6 +59,17 @@ public class DateTimeUtil {
         LocalDate givenDate = LocalDate.parse(date, formatter);
         LocalDate currentDate = LocalDate.now();
         return Period.between(givenDate, currentDate).getYears();
+    }
+
+    public static long getDaysDifference(Date inputDate) {
+        log.info("get minus date future DateTime int {}", inputDate);
+        LocalDateTime inputLocalDateTime = inputDate.toInstant()
+                .atZone(ZoneId.systemDefault())
+                .toLocalDateTime();
+        LocalDateTime currentLocalDateTime = LocalDateTime.now();
+        long daysBetween = ChronoUnit.DAYS.between(inputLocalDateTime, currentLocalDateTime);
+
+        return daysBetween;
     }
 
 }

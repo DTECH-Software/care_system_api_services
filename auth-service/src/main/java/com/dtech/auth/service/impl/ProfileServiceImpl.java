@@ -23,6 +23,9 @@ import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.MessageSource;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -62,6 +65,9 @@ public class ProfileServiceImpl implements ProfileService {
     @Autowired
     private final MarriedRepository marriedRepository;
 
+    @Autowired
+    private NotificationHistoryRepository notificationHistoryRepository;
+
     @Override
     @Transactional(readOnly = true)
     public ResponseEntity<ApiResponse<Object>> profile(ChannelRequestDTO channelRequestDTO, Locale locale) {
@@ -80,8 +86,11 @@ public class ProfileServiceImpl implements ProfileService {
 
             return optionalUser.map((ap) -> {
                 log.info("User profile request user found {} ", ap);
+                long unreadCount = notificationHistoryRepository.countByTypeAndIsRead(NotificationsType.IN_APP_NOTIFICATION, false);
+                Pageable pageable = PageRequest.of(0, 5, Sort.by(Sort.Order.desc("lastModifiedDate")));
+                List<NotificationHistory> notificationHistories = notificationHistoryRepository.findAllByTypeOrderByLastModifiedByDesc(NotificationsType.IN_APP_NOTIFICATION,pageable);
                 ProfileMapper profileMapper = new ProfileMapper();
-                ApplicationUserDetailsResponseDTO applicationUserDetailsResponseDTO = profileMapper.mapApplicationUser(ap);
+                ApplicationUserDetailsResponseDTO applicationUserDetailsResponseDTO = profileMapper.mapApplicationUser(ap,unreadCount,notificationHistories);
                 log.info("User profile request success{} ", applicationUserDetailsResponseDTO);
                 return ResponseEntity.ok().body(responseUtil.success((Object) applicationUserDetailsResponseDTO, messageSource.getMessage(ResponseMessageUtil.APPLICATION_PROFILE_SUCCESS, null, locale)));
             }).orElseGet(() -> {
