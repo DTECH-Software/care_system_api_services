@@ -32,12 +32,14 @@ public class GlobalExceptionHandler extends RuntimeException {
     public ResponseEntity<ApiResponse<Object>> handleMethodArgumentException(MethodArgumentNotValidException ex) {
         log.error("method argument exception {}",ex.getMessage());
         List<String> list = ex.getBindingResult().getAllErrors().stream().map(DefaultMessageSourceResolvable::getDefaultMessage).toList();
-        return ResponseEntity.internalServerError().body(responseUtil.error(list,1002,"Method argument validation failed"));
+        String message = String.join(", ", list);
+        return ResponseEntity.internalServerError().body(responseUtil.error(list,1002,message));
     }
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiResponse<Object>> handleGeneralException(Exception ex) {
         log.error("exception {}",ex.getMessage());
-        return ResponseEntity.internalServerError().body(responseUtil.error(Collections.singletonList(ex.getMessage()),1001,"An unexpected error occurred"));
+        return ResponseEntity.internalServerError().body(responseUtil.error(Collections.singletonList(ex.getMessage()),1001,"Something went wrong. Please try again later or contact support if the issue persists"));
     }
+
 }

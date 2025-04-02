@@ -14,7 +14,6 @@ import com.dtech.claim.dto.SimpleBaseDTO;
 import com.dtech.claim.dto.request.*;
 import com.dtech.claim.dto.response.ApiResponse;
 import com.dtech.claim.dto.response.DeathClaimRequestResponseDTO;
-import com.dtech.claim.dto.response.InsuranceClaimRequestResponseDTO;
 import com.dtech.claim.dto.search.ClaimHistory;
 import com.dtech.claim.enums.*;
 import com.dtech.claim.enums.DeathBeneficiary;
