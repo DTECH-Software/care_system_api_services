@@ -102,6 +102,7 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
 
     @Autowired
     private MessageFeignClient messageFeignClient;
+
     @Autowired
     private DeathClaimRequestRepository deathClaimRequestRepository;
 
@@ -152,7 +153,7 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
                             }
                             return insurancePolicyRepository.findByIdAndStatus(user.getUserPersonalDetails().getUserCompanyDetails().getInsurancePolicy().getId(), Status.ACTIVE).map((policy) -> {
                                 return insurancePeriodRepository.findByYearAndStatus(String.valueOf(LocalDate.now().getYear()), Status.ACTIVE).map((period) -> {
-                                    return treatmentRepository.findByCode(claimRequestDTO.getTreatment()).map((treatment) -> {
+                                    return treatmentRepository.findByTreatmentCode(claimRequestDTO.getTreatment()).map((treatment) -> {
                                         return insuranceDetailsRepository.findByInsurancePolicyAndInsurancePeriodAndTreatmentAndStatus(policy, period, treatment, Status.ACTIVE).map((insuranceDetails) -> {
 
                                             Optional<ClaimsDependents> claimsDependents = Optional.empty();
@@ -330,12 +331,12 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
 
                         if (insuranceDetails != null && insuranceDetails.getTreatment() != null) {
                             userWiseTreatment.add(new SimpleBaseDTO(insuranceDetails.getTreatment()
-                                    .getCode(), insuranceDetails.getTreatment()
-                                    .getDescription()));
+                                    .getTreatmentCode(), insuranceDetails.getTreatment()
+                                    .getTreatmentDescription()));
                         }
 
                         AvailableInsuranceLimitDTO availableInsuranceLimitDTO = AvailableInsuranceLimitDTO.builder()
-                                .treatment(tre.getCode())
+                                .treatment(tre.getTreatmentCode())
                                 .availableLimit(insuranceClaimsAccountBalance == null ? Objects.nonNull(insuranceDetails) ? insuranceDetails.getClaimLimit() : BigDecimal.valueOf(0.00) : insuranceClaimsAccountBalance.getAvailableBalance())
                                 .fundLimit(Objects.nonNull(insuranceDetails) ? insuranceDetails.getClaimLimit() : BigDecimal.valueOf(0.00))
                                 .build();

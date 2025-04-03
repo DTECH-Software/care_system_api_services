@@ -39,15 +39,15 @@ public class InsuranceClaimHistorySpecification {
                 predicates.add(criteriaBuilder.lessThanOrEqualTo(root.get("createdDate"), filterDto.getToDate()));
             }
 
-            if (filterDto.getRequestStatus() != null) {
-                predicates.add(criteriaBuilder.like(root.get("requestId"), "%" + filterDto.getRequestStatus() + "%"));
+            if (filterDto.getRequestId() != null && !filterDto.getRequestId().isEmpty()) {
+                predicates.add(criteriaBuilder.like(criteriaBuilder.lower(root.get("requestId")), "%" + filterDto.getRequestId().toLowerCase() + "%"));
             }
 
             if (filterDto.getRequestAmount() != null) {
                 predicates.add(criteriaBuilder.equal(root.get("requestAmount"), filterDto.getRequestAmount()));
             }
 
-            if (filterDto.getRequestStatus() != null) {
+            if (filterDto.getRequestStatus() != null &&  !filterDto.getRequestStatus().isEmpty()) {
                 predicates.add(criteriaBuilder.equal(root.get("requestStatus"), Workflow.valueOf(filterDto.getRequestStatus())));
             }
 

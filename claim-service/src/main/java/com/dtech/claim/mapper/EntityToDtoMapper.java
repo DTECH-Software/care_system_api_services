@@ -11,6 +11,7 @@ import com.dtech.claim.dto.response.DeathClaimRequestResponseDTO;
 import com.dtech.claim.dto.response.InsuranceClaimRequestResponseDTO;
 import com.dtech.claim.dto.response.DocumentDownloadResponseDTO;
 import com.dtech.claim.enums.PaymentType;
+import com.dtech.claim.enums.RelationCategory;
 import com.dtech.claim.enums.Workflow;
 import com.dtech.claim.model.InsuranceClaimsRequest;
 import com.dtech.claim.model.DeathClaimRequest;
@@ -28,6 +29,11 @@ public class EntityToDtoMapper {
             log.info("Call to mapClaimHistoryDetails method {} ", insuranceClaimsRequest);
             InsuranceClaimRequestResponseDTO insuranceClaimRequestResponseDto = modelMapper.map(insuranceClaimsRequest, InsuranceClaimRequestResponseDTO.class);
             insuranceClaimRequestResponseDto.setRequestStatusDescription(Workflow.valueOf(insuranceClaimRequestResponseDto.getRequestStatus()).getDescription());
+            if(insuranceClaimRequestResponseDto.getClaimsDependents() != null) {
+                log.info("Found dependent claims: {}", insuranceClaimRequestResponseDto.getClaimsDependents());
+                insuranceClaimRequestResponseDto.getClaimsDependents().setRelationCategoryDescription(RelationCategory.valueOf(insuranceClaimRequestResponseDto.getClaimsDependents().getRelationCategory().name()).getDescription());
+
+            }
             List<DocumentDownloadResponseDTO> collect = insuranceClaimsRequest.getInsuranceClaimsDetails().getDocuments().stream().map((document -> {
                 log.info("inside document mapper {} ",document);
                 return new DocumentDownloadResponseDTO(String.valueOf(document.getType()), document.getFileName(), document.getFileType(),document.getDoc());
@@ -46,6 +52,7 @@ public class EntityToDtoMapper {
             DeathClaimRequestResponseDTO deathClaimRequestResponseDTO = modelMapper.map(deathClaimRequest, DeathClaimRequestResponseDTO.class);
             deathClaimRequestResponseDTO.setRequestStatusDescription(Workflow.valueOf(deathClaimRequestResponseDTO.getRequestStatus()).getDescription());
             deathClaimRequestResponseDTO.setPaymentTypeDescription(PaymentType.valueOf(deathClaimRequestResponseDTO.getPaymentType()).getDescription());
+            deathClaimRequestResponseDTO.getClaimsDependents().setRelationCategoryDescription(RelationCategory.valueOf(deathClaimRequestResponseDTO.getClaimsDependents().getRelationCategory().name()).getDescription());
             List<DocumentDownloadResponseDTO> collect = deathClaimRequest.getDocuments().stream().map((document -> {
                 log.info("inside document mapper death history {} ",document);
                 return new DocumentDownloadResponseDTO(String.valueOf(document.getType()), document.getFileName(), document.getFileType(),document.getDoc());

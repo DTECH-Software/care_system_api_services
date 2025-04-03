@@ -63,7 +63,7 @@ public interface InsuranceClaimsRequestRepository extends JpaRepository<Insuranc
             "LEFT OUTER JOIN insurance_claims_details icd ON ic.insurance_claims_details = icd.id  " +
             "LEFT OUTER JOIN treatment tr ON icd.treatment = tr.id " +
             "WHERE ap.id = :userId AND ic.request_status = :requestStatus " +
-            "ORDER BY ic.last_modified_date ASC LIMIT 7 ", nativeQuery = true)
+            "ORDER BY ic.last_modified_date DESC LIMIT 7 ", nativeQuery = true)
     List<LatestUpdatedResponseDTO> getLatestUpdatedRecordSummary(@Param("userId") Long userId,@Param("requestStatus") String requestStatus);
 
 }

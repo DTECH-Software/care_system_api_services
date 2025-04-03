@@ -8,6 +8,7 @@
 package com.dtech.claim.dto.response;
 
 
+import com.dtech.claim.enums.RelationCategory;
 import lombok.Data;
 
 
@@ -18,4 +19,6 @@ public class ClaimsDependentsResponseDTO {
     private String firstName;
     private String lastName;
     private String nic;
+    private RelationCategory relationCategory;
+    private String relationCategoryDescription;
 }

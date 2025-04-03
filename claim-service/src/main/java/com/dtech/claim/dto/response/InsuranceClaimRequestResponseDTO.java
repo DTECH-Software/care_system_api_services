@@ -10,7 +10,7 @@ package com.dtech.claim.dto.response;
 import lombok.Data;
 
 import java.math.BigDecimal;
-import java.util.List;
+
 
 @Data
 public class InsuranceClaimRequestResponseDTO {

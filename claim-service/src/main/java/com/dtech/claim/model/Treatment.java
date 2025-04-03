@@ -27,10 +27,10 @@ public class Treatment extends AdminAudit implements Serializable {
     private Long id;
 
     @Column(name = "code",nullable = false,updatable = false,unique = true)
-    private String code;
+    private String treatmentCode;
 
     @Column(name = "description",nullable = false)
-    private String description;
+    private String treatmentDescription;
 
     @Column(name = "status",nullable = false)
     @Enumerated(EnumType.STRING)

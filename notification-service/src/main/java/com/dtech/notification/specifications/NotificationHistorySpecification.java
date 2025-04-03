@@ -34,7 +34,7 @@ public class NotificationHistorySpecification {
                 predicates.add(criteriaBuilder.lessThanOrEqualTo(root.get("createdDate"), filterDto.getToDate()));
             }
 
-            if (filterDto.getRead()) {
+            if (filterDto.getRead() != null) {
                 predicates.add(criteriaBuilder.equal(root.get("isReady"),filterDto.getRead()));
             }
 
