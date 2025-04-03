@@ -56,7 +56,7 @@ public class InsuranceClaimHistorySpecification {
             }
 
             if (filterDto.getTreatmentType() != null && !filterDto.getTreatmentType().isEmpty()) {
-                predicates.add(criteriaBuilder.equal(treatment.get("code"), filterDto.getTreatmentType()));
+                predicates.add(criteriaBuilder.equal(treatment.get("treatmentCode"), filterDto.getTreatmentType()));
             }
 
             if (filterDto.getRelationCategory() != null && !filterDto.getRelationCategory().isEmpty()) {

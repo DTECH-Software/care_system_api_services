@@ -42,7 +42,7 @@ public class DeathClaimHistorySpecification {
                 predicates.add(criteriaBuilder.equal(root.get("requestStatus"), Workflow.valueOf(filterDto.getRequestStatus())));
             }
 
-            if (filterDto.getRequestId() != null) {
+            if (filterDto.getRequestId() != null && !filterDto.getRequestId().isEmpty()) {
                 predicates.add(criteriaBuilder.like(criteriaBuilder.lower(root.get("requestId")), "%" + filterDto.getRequestId().toLowerCase() + "%"));
             }
 
