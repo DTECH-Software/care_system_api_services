@@ -8,7 +8,7 @@
 package com.dtech.claim.enums;
 
 public enum Workflow {
-    PENDING("Pending"),
+
     UNDER_REVIEW("Under Review"),
     APPROVED("Approved"),
     REJECTED("Rejected"),

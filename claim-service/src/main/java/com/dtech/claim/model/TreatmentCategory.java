@@ -1,7 +1,7 @@
 /**
  * User: Himal_J
- * Date: 3/1/2025
- * Time: 9:32 PM
+ * Date: 4/3/2025
+ * Time: 9:01 AM
  * <p>
  */
 
@@ -16,9 +16,9 @@ import java.io.Serializable;
 
 @EqualsAndHashCode(callSuper = true)
 @Entity
-@Table(name = "treatment")
+@Table(name = "treatment_category")
 @Data
-public class Treatment extends AdminAudit implements Serializable {
+public class TreatmentCategory extends AdminAudit implements Serializable {
     private static final long serialVersionUID = 1L;
 
     @Id
@@ -35,9 +35,4 @@ public class Treatment extends AdminAudit implements Serializable {
     @Column(name = "status",nullable = false)
     @Enumerated(EnumType.STRING)
     private Status status;
-
-    @ManyToOne(fetch = FetchType.LAZY,cascade = CascadeType.ALL)
-    @JoinColumn(name = "treatment_category",nullable = false,referencedColumnName = "id")
-    private TreatmentCategory treatmentCategory;
-
 }

@@ -30,7 +30,6 @@ public class InsuranceClaimHistorySpecification {
             Join<InsuranceClaimsRequest,ClaimsDependents> claimDependents = root.join("claimsDependents", JoinType.LEFT);
             Join<InsuranceClaimsDetails, Treatment> treatment =  root.join("insuranceClaimsDetails", JoinType.LEFT).join("treatment", JoinType.LEFT);
             Join<InsuranceClaimsRequest, ApplicationUser> employee = root.join("employee", JoinType.LEFT);
-            Join<InsuranceClaimsRequest, ClaimsDependents> claimsDependents = employee.join("claimsDependents",JoinType.LEFT);
 
             if (filterDto.getFromDate() != null) {
                 predicates.add(criteriaBuilder.greaterThanOrEqualTo(root.get("createdDate"), filterDto.getFromDate()));
@@ -40,8 +39,8 @@ public class InsuranceClaimHistorySpecification {
                 predicates.add(criteriaBuilder.lessThanOrEqualTo(root.get("createdDate"), filterDto.getToDate()));
             }
 
-            if (filterDto.getRequestId() != null && !filterDto.getRequestId().isEmpty()) {
-                predicates.add(criteriaBuilder.equal(root.get("requestId"), filterDto.getRequestId()));
+            if (filterDto.getRequestStatus() != null) {
+                predicates.add(criteriaBuilder.like(root.get("requestId"), "%" + filterDto.getRequestStatus() + "%"));
             }
 
             if (filterDto.getRequestAmount() != null) {
@@ -61,7 +60,7 @@ public class InsuranceClaimHistorySpecification {
             }
 
             if (filterDto.getRelationCategory() != null && !filterDto.getRelationCategory().isEmpty()) {
-                predicates.add(criteriaBuilder.equal(claimsDependents.get("relationCategory"), RelationCategory.valueOf(filterDto.getRelationCategory())));
+                predicates.add(criteriaBuilder.equal(claimDependents.get("relationCategory"), RelationCategory.valueOf(filterDto.getRelationCategory())));
             }
 
             predicates.add(criteriaBuilder.equal(employee.get("id"), userId));

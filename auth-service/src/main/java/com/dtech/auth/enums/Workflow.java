@@ -7,9 +7,10 @@
 
 package com.dtech.auth.enums;
 
-public enum Workflow {
-    PENDING("Pending"),
+public enum Workflow implements DescribableEnum{
     UNDER_REVIEW("Under Review"),
+    APPROVED("Approved"),
+    REJECTED("Rejected"),
     ACTIVE("Active");
 
     private final String description;

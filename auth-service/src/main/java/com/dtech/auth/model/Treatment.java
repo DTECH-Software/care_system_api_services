@@ -5,9 +5,9 @@
  * <p>
  */
 
-package com.dtech.claim.model;
+package com.dtech.auth.model;
 
-import com.dtech.claim.enums.Status;
+import com.dtech.auth.enums.Status;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -36,8 +36,5 @@ public class Treatment extends AdminAudit implements Serializable {
     @Enumerated(EnumType.STRING)
     private Status status;
 
-    @ManyToOne(fetch = FetchType.LAZY,cascade = CascadeType.ALL)
-    @JoinColumn(name = "treatment_category",nullable = false,referencedColumnName = "id")
-    private TreatmentCategory treatmentCategory;
 
 }

@@ -1,7 +1,8 @@
-package com.dtech.claim.repository;
+package com.dtech.auth.repository;
 
-import com.dtech.claim.enums.Status;
-import com.dtech.claim.model.Treatment;
+
+import com.dtech.auth.enums.Status;
+import com.dtech.auth.model.Treatment;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

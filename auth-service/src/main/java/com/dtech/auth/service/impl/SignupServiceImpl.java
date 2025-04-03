@@ -99,6 +99,8 @@ public class SignupServiceImpl implements SignupService {
 
     @Autowired
     private final MarriedRepository marriedRepository;
+    @Autowired
+    private TreatmentRepository treatmentRepository;
 
     @Override
     @Transactional(readOnly = true)
@@ -111,6 +113,9 @@ public class SignupServiceImpl implements SignupService {
                     .stream()
                     .map(val -> new SimpleBaseDTO(val.getCode(), val.getDescription()))
                     .toList();
+            List<SimpleBaseDTO> treatmentList = treatmentRepository.findAllByStatus(Status.ACTIVE)
+                    .stream().map(val -> new SimpleBaseDTO(val.getCode(), val.getDescription()))
+                    .toList();
             splashData.put("marriedRounds", marriedRounds);
             splashData.put("passwordPolicy", modelMapper.map(applicationPasswordPolicyRepository.findPasswordPolicy().orElse(null),PolicyResponseDTO.class));
             splashData.put("usernamePolicy", modelMapper.map(applicationUsernamePolicyRepository.findUsernamePolicy().orElse(null),PolicyResponseDTO.class));
@@ -119,6 +124,8 @@ public class SignupServiceImpl implements SignupService {
             splashData.put("title", getEnumList(Title.class));
             splashData.put("docTypes", getEnumList(DocType.class));
             splashData.put("relationCategories", getEnumList(RelationCategory.class));
+            splashData.put("status", getEnumList(Workflow.class));
+            splashData.put("treatmentTypes", treatmentList);
             log.info("Splash request success{} ", channelRequestDTO);
             return ResponseEntity.ok().body(responseUtil.success(splashData, messageSource.getMessage(ResponseMessageUtil.SPLASH_SUCCESS, null, locale)));
 

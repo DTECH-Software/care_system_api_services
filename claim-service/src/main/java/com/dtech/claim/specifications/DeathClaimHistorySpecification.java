@@ -29,7 +29,6 @@ public class DeathClaimHistorySpecification {
 
             Join<DeathClaimRequest, ClaimsDependents> claimDependents = root.join("claimsDependents", JoinType.LEFT);
             Join<DeathClaimRequest, ApplicationUser> employee = root.join("employee", JoinType.LEFT);
-            Join<InsuranceClaimsRequest, ClaimsDependents> claimsDependents = employee.join("claimsDependents",JoinType.LEFT);
 
             if (filterDto.getFromDate() != null) {
                 predicates.add(criteriaBuilder.greaterThanOrEqualTo(root.get("createdDate"), filterDto.getFromDate()));
@@ -43,12 +42,16 @@ public class DeathClaimHistorySpecification {
                 predicates.add(criteriaBuilder.equal(root.get("requestStatus"), Workflow.valueOf(filterDto.getRequestStatus())));
             }
 
+            if (filterDto.getRequestStatus() != null) {
+                predicates.add(criteriaBuilder.like(root.get("requestId"), "%" + filterDto.getRequestStatus() + "%"));
+            }
+
             if (filterDto.getClaimsDependents() != null && !filterDto.getClaimsDependents().isEmpty()) {
                 predicates.add(criteriaBuilder.equal(claimDependents.get("id"), filterDto.getClaimsDependents()));
             }
 
             if (filterDto.getRelationCategory() != null && !filterDto.getRelationCategory().isEmpty()) {
-                predicates.add(criteriaBuilder.equal(claimsDependents.get("relationCategory"), RelationCategory.valueOf(filterDto.getRelationCategory())));
+                predicates.add(criteriaBuilder.equal(claimDependents.get("relationCategory"), RelationCategory.valueOf(filterDto.getRelationCategory())));
             }
 
             predicates.add(criteriaBuilder.equal(employee.get("id"), userId));
