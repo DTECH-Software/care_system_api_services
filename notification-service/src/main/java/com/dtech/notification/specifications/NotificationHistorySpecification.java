@@ -34,12 +34,10 @@ public class NotificationHistorySpecification {
                 predicates.add(criteriaBuilder.lessThanOrEqualTo(root.get("createdDate"), filterDto.getToDate()));
             }
 
-            if (filterDto.getRead() != null) {
+            if (filterDto.getRead() != null && filterDto.getRead()) {
                 predicates.add(criteriaBuilder.equal(root.get("isReady"),filterDto.getRead()));
-            }
-
-            if (filterDto.getUnRead()) {
-                predicates.add(criteriaBuilder.equal(root.get("isReady"),filterDto.getUnRead()));
+            }else if(filterDto.getRead() != null){
+                predicates.add(criteriaBuilder.equal(root.get("isReady"),filterDto.getRead()));
             }
 
             predicates.add(criteriaBuilder.equal(employee.get("id"), userId));

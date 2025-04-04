@@ -16,5 +16,4 @@ public class NotificationHistory {
     private Date fromDate;
     private Date toDate;
     private Boolean read;
-    private Boolean unRead;
 }
