@@ -1,6 +1,7 @@
 package com.dtech.auth.repository;
 
 import com.dtech.auth.enums.NotificationsType;
+import com.dtech.auth.model.ApplicationUser;
 import com.dtech.auth.model.NotificationHistory;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -13,5 +14,5 @@ import java.util.List;
 public interface NotificationHistoryRepository extends JpaRepository<NotificationHistory, Long> , JpaSpecificationExecutor<NotificationHistory> {
     long countByTypeAndIsRead(NotificationsType type, boolean read);
 
-    List<NotificationHistory> findAllByTypeOrderByLastModifiedByDesc(NotificationsType type, Pageable pageable);
+    List<NotificationHistory> findAllByTypeAndEmployeeOrderByLastModifiedByDesc(NotificationsType type, ApplicationUser applicationUser, Pageable pageable);
 }

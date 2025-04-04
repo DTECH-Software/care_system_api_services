@@ -88,7 +88,7 @@ public class ProfileServiceImpl implements ProfileService {
                 log.info("User profile request user found {} ", ap);
                 long unreadCount = notificationHistoryRepository.countByTypeAndIsRead(NotificationsType.IN_APP_NOTIFICATION, false);
                 Pageable pageable = PageRequest.of(0, 5, Sort.by(Sort.Order.asc("lastModifiedDate")));
-                List<NotificationHistory> notificationHistories = notificationHistoryRepository.findAllByTypeOrderByLastModifiedByDesc(NotificationsType.IN_APP_NOTIFICATION,pageable);
+                List<NotificationHistory> notificationHistories = notificationHistoryRepository.findAllByTypeAndEmployeeOrderByLastModifiedByDesc(NotificationsType.IN_APP_NOTIFICATION,ap,pageable);
                 ProfileMapper profileMapper = new ProfileMapper();
                 ApplicationUserDetailsResponseDTO applicationUserDetailsResponseDTO = profileMapper.mapApplicationUser(ap,unreadCount,notificationHistories);
                 log.info("User profile request success{} ", applicationUserDetailsResponseDTO);
@@ -119,6 +119,7 @@ public class ProfileServiceImpl implements ProfileService {
                                         || detailsRequestDTO.getRelationCategory().equalsIgnoreCase(RelationCategory.HUSBAND.name())
                                         || detailsRequestDTO.getRelationCategory().equalsIgnoreCase(RelationCategory.FATHER_IN_LAW.name())
                                         || detailsRequestDTO.getRelationCategory().equalsIgnoreCase(RelationCategory.MOTHER_IN_LAW.name())
+                                        || detailsRequestDTO.getRelationCategory().equalsIgnoreCase(RelationCategory.CHILD.name())
                                 ) {
                                     log.info("User not eligible add wife or husband {} ", detailsRequestDTO.getRelationCategory());
                                     return ResponseEntity.ok().body(responseUtil.error(null, 1042, messageSource.getMessage(ResponseMessageUtil.USER_NOT_ELIGIBLE_WIFE_OR_HUSBAND_DEPENDENTS, new Object[]{clientMobile}, locale)));
