@@ -1,6 +1,7 @@
 package com.dtech.auth.validator.validators;
 
 import com.dtech.auth.dto.request.ClaimDependentDetailsRequestDTO;
+import com.dtech.auth.dto.request.validator.ClaimDependentDetailsRequestValidatorDTO;
 import com.dtech.auth.enums.RelationCategory;
 import com.dtech.auth.validator.NoDuplicateRelationCategory;
 import jakarta.validation.ConstraintValidator;
@@ -10,10 +11,15 @@ import lombok.extern.log4j.Log4j2;
 import java.util.*;
 
 @Log4j2
-public class NoDuplicateRelationCategoryValidators implements ConstraintValidator<NoDuplicateRelationCategory, List<ClaimDependentDetailsRequestDTO>> {
+public class NoDuplicateRelationCategoryValidators implements ConstraintValidator<NoDuplicateRelationCategory, List<ClaimDependentDetailsRequestValidatorDTO>> {
 
     @Override
-    public boolean isValid(List<ClaimDependentDetailsRequestDTO> dependents, ConstraintValidatorContext context) {
+    public void initialize(NoDuplicateRelationCategory constraintAnnotation) {
+        ConstraintValidator.super.initialize(constraintAnnotation);
+    }
+
+    @Override
+    public boolean isValid(List<ClaimDependentDetailsRequestValidatorDTO> dependents, ConstraintValidatorContext context) {
         log.info("Call check duplicate relation categories {}", dependents);
         if (dependents == null || dependents.isEmpty()) {
             return true;
@@ -21,7 +27,7 @@ public class NoDuplicateRelationCategoryValidators implements ConstraintValidato
 
         Map<String, String> seenRelationCategories = new HashMap<>();
 
-        for (ClaimDependentDetailsRequestDTO dependent : dependents) {
+        for (ClaimDependentDetailsRequestValidatorDTO dependent : dependents) {
             String relationCategory = dependent.getRelationCategory();
 
             if (RelationCategory.MOTHER.name().equals(relationCategory)

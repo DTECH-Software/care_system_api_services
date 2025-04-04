@@ -22,6 +22,6 @@ public class ClaimDependentRequestValidatorDTO extends ChannelRequestValidatorDT
     @NotNull(message = "Dependent(s) is required.")
     @NotEmpty(message = "Dependent(s) is required.")
     @Valid
-    @NoDuplicateRelationCategory
+    @NoDuplicateRelationCategory(message = "Duplicate relation categories are not allowed")
     private List<ClaimDependentDetailsRequestValidatorDTO> dependents;
 }
