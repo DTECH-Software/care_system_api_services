@@ -31,11 +31,15 @@ public class InsuranceClaimsDetails extends Audit implements Serializable {
     @Column(name = "id",nullable = false,updatable = false,unique = true)
     private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY, cascade = CascadeType.PERSIST)
-    @JoinColumn(name = "treatment", nullable = false)
+    @ManyToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    @JoinColumn(name = "treatment", nullable = false,referencedColumnName = "code")
     private Treatment treatment;
 
-    @Column(name = "from_treatment_date", nullable = false)
+    @ManyToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    @JoinColumn(name = "treatment_category", nullable = false,referencedColumnName = "code")
+    private TreatmentCategory treatmentCategory;
+
+    @Column(name = "from_treatment_date")
     @Temporal(TemporalType.DATE)
     private Date fromTreatmentDate;
 
@@ -43,7 +47,7 @@ public class InsuranceClaimsDetails extends Audit implements Serializable {
     @Temporal(TemporalType.DATE)
     private Date toTreatmentDate;
 
-    @Column(name = "disease", nullable = false)
+    @Column(name = "disease")
     private String disease;
 
     @ManyToMany(fetch = FetchType.LAZY, cascade = CascadeType.REFRESH)

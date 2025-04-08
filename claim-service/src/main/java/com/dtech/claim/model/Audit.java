@@ -25,12 +25,12 @@ public class Audit implements Serializable {
 
     @CreatedDate
     @Temporal(TemporalType.TIMESTAMP)
-    @Column(name = "created_date", updatable = false, nullable = false)
+    @Column(name = "created_date", updatable = false, nullable = false,columnDefinition = "TIMESTAMP DEFAULT CURRENT_TIMESTAMP")
     private Date createdDate;
 
     @LastModifiedDate
     @Temporal(TemporalType.TIMESTAMP)
-    @Column(name = "last_modified_date",nullable = false)
+    @Column(name = "last_modified_date",nullable = false,columnDefinition = "TIMESTAMP DEFAULT CURRENT_TIMESTAMP")
     private Date lastModifiedDate;
 
 //    @CreatedBy

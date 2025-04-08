@@ -36,8 +36,4 @@ public class Treatment extends AdminAudit implements Serializable {
     @Enumerated(EnumType.STRING)
     private Status status;
 
-    @ManyToOne(fetch = FetchType.LAZY,cascade = CascadeType.ALL)
-    @JoinColumn(name = "treatment_category",nullable = false,referencedColumnName = "id")
-    private TreatmentCategory treatmentCategory;
-
 }

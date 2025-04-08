@@ -23,13 +23,15 @@ import java.util.List;
 @EqualsAndHashCode(callSuper = true)
 @Data
 @Conditional(selected = "isEmployee", values = {"false"}, required = {"claimsDependentId"}, message = "Claim dependent is required.")
-@Conditional(selected = "treatment", values = {"INDOOR","CC"}, required = {"fromDate"}, message = "Treatment from date is required.")
-@ValidateDateRange(message = "Treatment from date and to date invalid.")
-@Conditional(selected = "isValidation",
-        values = {"false"}, required = {"otp"}, message = "OTP is required.")
+@Conditional(selected = "treatmentCategory", values = {"OTHER"}, required = {"fromDate"}, message = "Treatment from date is required.")
+@Conditional(selected = "treatmentCategory", values = {"OTHER"}, required = {"disease"}, message = "Disease is required.")
+@ValidateDateRange(selected = "treatmentCategory", values = {"OTHER"}, message = "Treatment from date and to date invalid.")
+@Conditional(selected = "isValidation", values = {"false"}, required = {"otp"}, message = "OTP is required.")
 public class ClaimRequestValidatorDTO extends ChannelRequestValidatorDTO {
     @NotBlank(message = "Treatment is required.")
     private String treatment;
+    @NotBlank(message = "Treatment category is required.")
+    private String treatmentCategory;
     @NotNull(message = "Request Amount is required.")
     @DecimalMin(value = "0.01", inclusive = true, message = "Request Amount must be greater than 0.")
     @Positive(message = "Request Amount must be a positive value.")
@@ -38,18 +40,15 @@ public class ClaimRequestValidatorDTO extends ChannelRequestValidatorDTO {
     @NotNull(message = "Claim request person type is required.")
     private Boolean isEmployee = true;
     private long claimsDependentId;
-//    @NotNull(message = "Treatment from date is required.")
     private Date fromDate;
     @NotNull(message = "Treatment to date is required.")
     @ValidPastDays(message = "Treatment must be past date")
     private Date toDate;
-    @NotBlank(message = "Disease is required.")
     private String disease;
     @NotNull(message = "Patient document is required.")
     @NotEmpty(message = "Patient document is required.")
     @Valid
     private List<InsuranceSupportingDocumentValidatorDTO> documents;
-//    @NotEmpty(message = "OTP is required")
     @Size(min = 6, max = 6, message = "OTP length must be exactly 6")
     private String otp;
     @NotNull(message = "Request validation type is required.")

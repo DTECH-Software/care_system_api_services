@@ -13,6 +13,8 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 
 import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.List;
 
 @EqualsAndHashCode(callSuper = true)
 @Entity
@@ -27,7 +29,7 @@ public class InsurancePeriod extends AdminAudit implements Serializable {
     @Column(name = "id",nullable = false,updatable = false,unique = true)
     private Long id;
 
-    @Column(name = "year",nullable = false)
+    @Column(name = "year",nullable = false,updatable = false,unique = true)
     private String year;
 
     @Column(name = "status",nullable = false)

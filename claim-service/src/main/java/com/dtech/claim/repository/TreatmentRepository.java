@@ -10,6 +10,6 @@ import java.util.Optional;
 
 @Repository
 public interface TreatmentRepository extends JpaRepository<Treatment, Long> {
-    Optional<Treatment> findByTreatmentCode(String code);
+    Optional<Treatment> findByTreatmentCodeAndStatus(String code,Status status);
     List<Treatment> findAllByStatus(Status status);
 }

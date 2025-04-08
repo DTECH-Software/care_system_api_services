@@ -14,6 +14,8 @@ import lombok.EqualsAndHashCode;
 
 import java.io.Serializable;
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
 
 @EqualsAndHashCode(callSuper = true)
 @Entity
@@ -31,20 +33,31 @@ public class InsuranceDetails extends AdminAudit implements Serializable {
     @Column(name = "claim_limit",nullable = false)
     private BigDecimal claimLimit;
 
+    @Column(name = "event_limit",nullable = false)
+    private BigDecimal eventLimit;
+
     @Column(name = "status",nullable = false)
     @Enumerated(EnumType.STRING)
     private Status status;
 
-    @ManyToOne(fetch = FetchType.LAZY,cascade = CascadeType.PERSIST)
-    @JoinColumn(name = "insurance_policy",nullable = false,referencedColumnName = "id")
+    @ManyToOne(fetch = FetchType.LAZY,cascade = CascadeType.ALL)
+    @JoinColumn(name = "insurance_policy",nullable = false,referencedColumnName = "code")
     private InsurancePolicy insurancePolicy;
 
-    @ManyToOne(fetch = FetchType.LAZY,cascade = CascadeType.PERSIST)
+    @ManyToOne(fetch = FetchType.LAZY,cascade = CascadeType.ALL)
+    @JoinColumn(name = "treatment",nullable = false,referencedColumnName = "code")
+    private Treatment treatment;
+
+    @ManyToOne(fetch = FetchType.LAZY,cascade = CascadeType.ALL)
+    @JoinColumn(name = "treatment_category",nullable = false,referencedColumnName = "code")
+    private TreatmentCategory treatmentCategory;
+
+    @ManyToOne(fetch = FetchType.LAZY,cascade = CascadeType.ALL)
+    @JoinColumn(name = "insurance_month_category",nullable = false,referencedColumnName = "code")
+    private InsuranceMonthCategory insuranceMonthCategory;
+
+    @ManyToOne(fetch = FetchType.LAZY,cascade = CascadeType.ALL)
     @JoinColumn(name = "insurance_period",nullable = false,referencedColumnName = "id")
     private InsurancePeriod insurancePeriod;
-
-    @ManyToOne(fetch = FetchType.LAZY,cascade = CascadeType.PERSIST)
-    @JoinColumn(name = "treatment",nullable = false,referencedColumnName = "id")
-    private Treatment treatment;
 
 }

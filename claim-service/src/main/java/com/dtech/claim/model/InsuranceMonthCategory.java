@@ -26,7 +26,7 @@ public class InsuranceMonthCategory extends AdminAudit implements Serializable {
     @Column(name = "id",nullable = false,updatable = false,unique = true)
     private Long id;
 
-    @Column(name = "code",nullable = false)
+    @Column(name = "code",nullable = false,updatable = false,unique = true)
     private String code;
 
     @Column(name = "description",nullable = false)

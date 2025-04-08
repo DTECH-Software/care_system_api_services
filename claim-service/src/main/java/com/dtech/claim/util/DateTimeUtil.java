@@ -30,6 +30,24 @@ public class DateTimeUtil {
         return localDateTime.getYear();
     }
 
+    public static int getCurrentMonth() {
+        log.info("get Current month");
+        LocalDateTime localDateTime = LocalDateTime.now();
+        return localDateTime.getMonthValue();
+    }
+
+    public static int getYear(Date date) {
+        log.info("get  Year");
+        LocalDate localDate = date.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
+        return localDate.getYear();
+    }
+
+    public static int getMonth(Date date) {
+        log.info("get  month");
+        LocalDate localDate = date.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
+        return localDate.getMonthValue();
+    }
+
     public static Date get30FutureDate() {
         log.info("get 30 future DateTime");
         LocalDateTime futureDate = LocalDateTime.now().plusDays(28);

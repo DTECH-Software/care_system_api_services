@@ -16,7 +16,8 @@ import java.lang.reflect.Field;
 import java.util.Date;
 
 @Log4j2
-public class DateRangeValidators implements ConstraintValidator<ValidateDateRange,Object> {
+public class DateRangeValidators implements ConstraintValidator<ValidateDateRange, Object> {
+
     @Override
     public void initialize(ValidateDateRange constraintAnnotation) {
         ConstraintValidator.super.initialize(constraintAnnotation);
@@ -25,38 +26,60 @@ public class DateRangeValidators implements ConstraintValidator<ValidateDateRang
     @Override
     public boolean isValid(Object object, ConstraintValidatorContext constraintValidatorContext) {
         try {
-            log.info("Date range validation started {}",object);
+            log.info("Date range validation started for object: {}", object);
 
-            Field field1 = null;
-            Field field2 = null;
-            try {
-                log.info("Date range validators get fields {}",object);
-                field1 = object.getClass().getDeclaredField("fromDate");
-                field2 = object.getClass().getDeclaredField("toDate");
-            } catch (NoSuchFieldException e) {
-                log.error(e);
-                throw new RuntimeException(e);
+            Field treatmentCategoryField = getField(object, "treatmentCategory");
+
+            if (treatmentCategoryField == null) {
+                log.error("treatmentCategory field not found in object: {}", object);
+                return false;
             }
 
-            field1.setAccessible(true);
-            field2.setAccessible(true);
+            treatmentCategoryField.setAccessible(true);
+            String treatmentCategory = (String) treatmentCategoryField.get(object);
 
-            Date fieldValue1 = null;
-            Date fieldValue2 = null;
-            try {
-                log.info("Date range validators get fields value {}",object);
-                fieldValue1 = (Date) field1.get(object);
-                fieldValue2 = (Date) field2.get(object);
-            } catch (IllegalAccessException e) {
-                log.error(e);
-                throw new RuntimeException(e);
+            log.info("treatmentCategory value: {}", treatmentCategory);
+
+            if (!"OTHER".equals(treatmentCategory)) {
+                log.info("Skipping date range validation as treatmentCategory is not 'OTHER'");
+                return true; // Valid if treatmentCategory is not "OTHER"
             }
 
-            return fieldValue1 != null && fieldValue2 != null && fieldValue1.equals(fieldValue2) || (fieldValue1).before(fieldValue2);
+            Field fromDateField = getField(object, "fromDate");
+            Field toDateField = getField(object, "toDate");
 
-        }catch (Exception e) {
-            log.error(e);
-            throw e;
+            if (fromDateField == null || toDateField == null) {
+                log.error("Required fields (fromDate or toDate) not found in object: {}", object);
+                return false;
+            }
+
+            fromDateField.setAccessible(true);
+            toDateField.setAccessible(true);
+
+            Date fromDate = (Date) fromDateField.get(object);
+            Date toDate = (Date) toDateField.get(object);
+
+            log.info("Comparing fromDate: {} and toDate: {}", fromDate, toDate);
+            if (fromDate == null || toDate == null) {
+                log.error("fromDate or toDate is null for object: {}", object);
+                return false;
+            }
+
+            return !fromDate.after(toDate);
+
+        } catch (Exception e) {
+            log.error("Error during date range validation for object: {}", object, e);
+            return false;
+        }
+    }
+
+    private Field getField(Object object, String fieldName) {
+        try {
+            return object.getClass().getDeclaredField(fieldName);
+        } catch (NoSuchFieldException e) {
+            log.error("Field {} not found in class {}", fieldName, object.getClass().getName(), e);
+            return null;
         }
     }
 }
+

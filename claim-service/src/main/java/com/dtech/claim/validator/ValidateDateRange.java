@@ -16,4 +16,6 @@ public @interface ValidateDateRange {
     String message() default "From date must be before To date";
     Class<?>[] groups() default {};
     Class<? extends Payload>[] payload() default {};
+    String selected() default "";
+    String[] values() default {};
 }

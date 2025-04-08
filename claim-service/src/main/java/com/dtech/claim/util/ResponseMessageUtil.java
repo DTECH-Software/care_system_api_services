@@ -48,6 +48,7 @@ public class ResponseMessageUtil {
     /*Claim request*/
     public final static String CLAIM_DEPENDENT_NOT_FOUND = "val.claim.dependent.not.found";
     public final static String USER_NOT_ELIGIBLE_TO_CLAIM_REQUEST = "val.user.not.eligible.to.claim.request";
+    public final static String DEPENDENT_NOT_ELIGIBLE_TO_CLAIM_REQUEST = "val.dependent.not.eligible.to.claim.request";
     public final static String INSURANCE_POLICY_NOT_FOUND = "val.insurance.policy.not.found";
     public final static String INSURANCE_PERIOD_NOT_FOUND = "val.insurance.period.not.found";
     public final static String TREATMENT_NOT_FOUND = "val.treatment.not.found";
@@ -56,6 +57,10 @@ public class ResponseMessageUtil {
     public final static String DEATH_CLAIM_REQUEST_SUBMIT_SUCCESS = "val.death.claim.request.submit.success";
     public final static String DEATH_CLAIM_REQUEST_VALIDATION_SUCCESS = "val.death.claim.request.validation.success";
     public final static String POLICY_TREATMENT_PERIOD_NOT_FOUND_OR_INACTIVE = "val.policy.treatment.period.not.found.or.inactive";
+    public final static String POLICY_TREATMENT_CATEGORY_PERIOD_NOT_FOUND_OR_INACTIVE = "val.policy.treatment.category.period.not.found.or.inactive";
+    public final static String POLICY_MONTH_CATEGORY_PERIOD_NOT_FOUND_OR_INACTIVE = "val.policy.month.category.period.not.found.or.inactive";
+    public final static String INSURANCE_DETAILS_NOT_FOUND_OR_INACTIVE = "val.insurance.details.not.found.or.inactive";
+    public final static String CLAIM_LIMIT_EXCEED_WITH_LIMIT = "val.claim.limit.exceed.with.limit";
     public final static String COMMON_PARAM_NOT_FOUND = "val.common.param.not.found";
     public final static String OLDER_DATE_INSURANCE_CLAIM_REQUEST = "val.older.date.insurance.claim.request";
     public final static String OLDER_DATE_DEATH_CLAIM_REQUEST = "val.older.date.death.claim.request";

@@ -35,9 +35,9 @@ public class NotificationHistorySpecification {
             }
 
             if (filterDto.getRead() != null && filterDto.getRead()) {
-                predicates.add(criteriaBuilder.equal(root.get("isReady"),filterDto.getRead()));
+                predicates.add(criteriaBuilder.equal(root.get("isRead"),filterDto.getRead()));
             }else if(filterDto.getRead() != null){
-                predicates.add(criteriaBuilder.equal(root.get("isReady"),filterDto.getRead()));
+                predicates.add(criteriaBuilder.equal(root.get("isRead"),filterDto.getRead()));
             }
 
             predicates.add(criteriaBuilder.equal(employee.get("id"), userId));

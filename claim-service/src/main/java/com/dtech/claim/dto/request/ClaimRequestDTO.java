@@ -18,6 +18,7 @@ import java.util.List;
 @Data
 public class ClaimRequestDTO extends ChannelRequestDTO {
     private String treatment;
+    private String treatmentCategory;
     private BigDecimal requestAmount;
     private String remark;
     private long claimsDependentId;

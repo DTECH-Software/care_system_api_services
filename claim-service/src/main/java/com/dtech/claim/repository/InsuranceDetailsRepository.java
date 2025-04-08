@@ -8,16 +8,25 @@
 package com.dtech.claim.repository;
 
 import com.dtech.claim.enums.Status;
-import com.dtech.claim.model.InsuranceDetails;
-import com.dtech.claim.model.InsurancePeriod;
-import com.dtech.claim.model.InsurancePolicy;
-import com.dtech.claim.model.Treatment;
+import com.dtech.claim.model.*;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 
 @Repository
 public interface InsuranceDetailsRepository extends JpaRepository<InsuranceDetails, Long> {
-    Optional<InsuranceDetails> findByInsurancePolicyAndInsurancePeriodAndTreatmentAndStatus(InsurancePolicy insurancePolicy, InsurancePeriod insurancePeriod, Treatment treatment, Status status);
+
+    Optional<InsuranceDetails> findByInsurancePolicyAndTreatmentAndTreatmentCategoryAndStatusAndInsurancePeriod(InsurancePolicy insurancePolicy,
+                                                                                                                                         Treatment treatment,
+                                                                                                                                         TreatmentCategory treatmentCategory,
+                                                                                                                                         Status status,
+                                                                                                                                         InsurancePeriod insurancePeriodList);
+
+    Optional<InsuranceDetails> findByInsurancePolicyAndTreatmentAndTreatmentCategoryAndStatusAndInsurancePeriodAndInsuranceMonthCategory(InsurancePolicy insurancePolicy,
+                                                                                                                                         Treatment treatment,
+                                                                                                                                         TreatmentCategory treatmentCategory,
+                                                                                                                                         Status status,
+                                                                                                                                         InsurancePeriod insurancePeriodList,InsuranceMonthCategory insuranceMonthCategory);
 }
