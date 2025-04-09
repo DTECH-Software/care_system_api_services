@@ -191,9 +191,12 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
                                             }
 
                                             BigDecimal sumOfClaims = insuranceClaimsRequestRepository.
-                                                    getSumOfClaimsByEmployeeAndStatus(user, List.of(Workflow.APPROVED, Workflow.UNDER_REVIEW));
+                                                    getSumRequestAmountByEmployeeAndTreatmentAndCategoryAndStatus(user,
+                                                            claimRequestDTO.getTreatment(),
+                                                            claimRequestDTO.getTreatmentCategory(),
+                                                            List.of(Workflow.APPROVED, Workflow.UNDER_REVIEW));
                                             log.info("Already claims {} sum of claims ", sumOfClaims);
-                                            if (claimRequestDTO.getTreatmentCategory().equals(TreatmentCategory.OTHER.name())) {
+                                            if (claimRequestDTO.getTreatmentCategory().equals(TreatmentCategory.OTHER.name()) && !(claimRequestDTO.getTreatment().equals(TreatmentType.CRIC.name()))) {
                                                 log.info("Request fund limit exceeded with ent limit");
                                                 int currentYear = DateTimeUtil.getCurrentYear();
                                                 log.info("Current year {}", currentYear);
