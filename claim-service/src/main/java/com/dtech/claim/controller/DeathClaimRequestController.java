@@ -9,9 +9,11 @@ package com.dtech.claim.controller;
 
 import com.dtech.claim.dto.request.ChannelRequestDTO;
 import com.dtech.claim.dto.request.DeathClaimRequestDTO;
+import com.dtech.claim.dto.request.DetailsViewRequestDTO;
 import com.dtech.claim.dto.request.PaginationRequest;
 import com.dtech.claim.dto.request.validator.ChannelRequestValidatorDTO;
 import com.dtech.claim.dto.request.validator.DeathClaimRequestValidatorDTO;
+import com.dtech.claim.dto.request.validator.DetailsViewRequestValidatorDTO;
 import com.dtech.claim.dto.response.ApiResponse;
 import com.dtech.claim.dto.search.ClaimHistory;
 import com.dtech.claim.service.DeathClaimRequestService;
@@ -64,6 +66,13 @@ public class DeathClaimRequestController {
         log.info("Death claim history request controller {} ", paginationRequest);
         Type paginationRequestType = new TypeToken<PaginationRequest<ClaimHistory>>(){}.getType();
         return deathClaimRequestService.deathClaimHistoryList(gson.fromJson(gson.toJson(paginationRequest), paginationRequestType), locale);
+    }
+
+    @PostMapping(path = "/find",produces = MediaType.APPLICATION_JSON_VALUE,consumes = MediaType.APPLICATION_JSON_VALUE)
+    @ApiOperation(value = "Handle death claim find by id request request ",notes = "Death claim find by id  success or failed")
+    public ResponseEntity<ApiResponse<Object>> deathDetailsFindById(@RequestBody @Valid DetailsViewRequestValidatorDTO detailsViewRequestValidatorDTO, Locale locale) {
+        log.info("Death claim find by id request controller {} ", detailsViewRequestValidatorDTO);
+        return deathClaimRequestService.deathDetailsFindById(gson.fromJson(gson.toJson(detailsViewRequestValidatorDTO), DetailsViewRequestDTO.class), locale);
     }
 
 }

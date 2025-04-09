@@ -9,9 +9,11 @@ package com.dtech.claim.controller;
 
 import com.dtech.claim.dto.request.ChannelRequestDTO;
 import com.dtech.claim.dto.request.ClaimRequestDTO;
+import com.dtech.claim.dto.request.DetailsViewRequestDTO;
 import com.dtech.claim.dto.request.PaginationRequest;
 import com.dtech.claim.dto.request.validator.ChannelRequestValidatorDTO;
 import com.dtech.claim.dto.request.validator.ClaimRequestValidatorDTO;
+import com.dtech.claim.dto.request.validator.DetailsViewRequestValidatorDTO;
 import com.dtech.claim.dto.response.ApiResponse;
 import com.dtech.claim.dto.search.ClaimHistory;
 import com.dtech.claim.service.InsuranceClaimRequestService;
@@ -64,6 +66,13 @@ public class InsuranceClaimRequestController {
         log.info("Insurance claim history request controller {} ", paginationRequest);
         Type paginationRequestType = new TypeToken<PaginationRequest<ClaimHistory>>(){}.getType();
         return insuranceClaimRequestService.insuranceClaimHistoryList(gson.fromJson(gson.toJson(paginationRequest), paginationRequestType), locale);
+    }
+
+    @PostMapping(path = "/find",produces = MediaType.APPLICATION_JSON_VALUE,consumes = MediaType.APPLICATION_JSON_VALUE)
+    @ApiOperation(value = "Handle insurance claim find by id request request ",notes = "Insurance claim find by id  success or failed")
+    public ResponseEntity<ApiResponse<Object>> insuranceDetailsFindById(@RequestBody @Valid DetailsViewRequestValidatorDTO detailsViewRequestValidatorDTO, Locale locale) {
+        log.info("Insurance claim find by id request controller {} ", detailsViewRequestValidatorDTO);
+        return insuranceClaimRequestService.insuranceDetailsFindById(gson.fromJson(gson.toJson(detailsViewRequestValidatorDTO), DetailsViewRequestDTO.class), locale);
     }
 
 }

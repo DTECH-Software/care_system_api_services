@@ -14,6 +14,7 @@ import com.dtech.claim.dto.SimpleBaseDTO;
 import com.dtech.claim.dto.request.*;
 import com.dtech.claim.dto.response.ApiResponse;
 import com.dtech.claim.dto.response.DeathClaimRequestResponseDTO;
+import com.dtech.claim.dto.response.DocumentDownloadResponseDTO;
 import com.dtech.claim.dto.search.ClaimHistory;
 import com.dtech.claim.enums.*;
 import com.dtech.claim.enums.DeathBeneficiary;
@@ -364,6 +365,31 @@ public class DeathClaimRequestServiceImpl implements DeathClaimRequestService {
             log.error(e);
             throw e;
         }
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public ResponseEntity<ApiResponse<Object>> deathDetailsFindById(DetailsViewRequestDTO detailsViewRequestDTO, Locale locale) {
+       try {
+           log.info("Death claims find by id {}", detailsViewRequestDTO.getId());
+
+           return deathClaimRequestRepository.findById(detailsViewRequestDTO.getId()).map((deathClaimRequest) -> {
+
+               List<DocumentDownloadResponseDTO> collect = deathClaimRequest.getDocuments().stream().map((document -> {
+                   log.info("inside document list claims request details attachment view - death  {} ", document);
+                   return new DocumentDownloadResponseDTO(String.valueOf(document.getType()), document.getFileName(), document.getFileType(), document.getDoc());
+               })).toList();
+               return ResponseEntity.ok().body(responseUtil.success((Object) collect,
+                       messageSource.getMessage(ResponseMessageUtil.DEATH_CLAIM_REQUEST_FIND_BY_ID_SUCCESS,
+                               null, locale)));
+           }).orElseGet(() -> {
+               log.info("Detah claims details not found by {}", detailsViewRequestDTO.getId());
+               return ResponseEntity.ok().body(responseUtil.error(null, 1054, messageSource.getMessage(ResponseMessageUtil.DEATH_CLAIMS_REQUEST_DETAILS_NOT_FOUND_BY_ID, null, locale)));
+           });
+       }catch (Exception e) {
+           log.error(e);
+           throw e;
+       }
     }
 
     @Transactional(readOnly = true)

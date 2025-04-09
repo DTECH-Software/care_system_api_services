@@ -9,6 +9,7 @@ package com.dtech.claim.service;
 
 import com.dtech.claim.dto.request.ChannelRequestDTO;
 import com.dtech.claim.dto.request.DeathClaimRequestDTO;
+import com.dtech.claim.dto.request.DetailsViewRequestDTO;
 import com.dtech.claim.dto.request.PaginationRequest;
 import com.dtech.claim.dto.response.ApiResponse;
 import com.dtech.claim.dto.search.ClaimHistory;
@@ -20,4 +21,5 @@ public interface DeathClaimRequestService {
     ResponseEntity<ApiResponse<Object>> deathClaimReferenceData(ChannelRequestDTO channelRequestDTO, Locale locale);
     ResponseEntity<ApiResponse<Object>> deathClaimRequest(DeathClaimRequestDTO deathClaimRequestDTO, Locale locale);
     ResponseEntity<ApiResponse<Object>> deathClaimHistoryList(PaginationRequest<ClaimHistory> paginationRequest, Locale locale);
+    ResponseEntity<ApiResponse<Object>> deathDetailsFindById(DetailsViewRequestDTO detailsViewRequestDTO, Locale locale);
 }

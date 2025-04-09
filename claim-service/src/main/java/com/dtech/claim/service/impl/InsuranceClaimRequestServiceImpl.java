@@ -9,6 +9,7 @@ package com.dtech.claim.service.impl;
 
 
 import com.dtech.claim.dto.*;
+import com.dtech.claim.dto.response.DocumentDownloadResponseDTO;
 import com.dtech.claim.enums.*;
 import com.dtech.claim.enums.InsuranceMonthCategory;
 import com.dtech.claim.enums.TreatmentCategory;
@@ -645,7 +646,7 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
                         String insuranceCategory = in.getTreatment().getTreatmentCode();
                         userWiseTreatmentCategory.computeIfAbsent(insuranceCategory, k -> new ArrayList<>());
                         addIfNotPresentTreatmentCategory(userWiseTreatmentCategory.get(insuranceCategory), in);
-                        setLimitMap(limits,in,user);
+                        setLimitMap(limits, in, user);
                     });
 
                 }
@@ -653,7 +654,7 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
                 splashData.put("insuranceClaimsDependents", claimsDependents);
                 splashData.put("treatment", userWiseTreatment);
                 splashData.put("treatmentCategory", userWiseTreatmentCategory);
-                splashData.put("insuranceClaimsFundLimits",limits);
+                splashData.put("insuranceClaimsFundLimits", limits);
                 splashData.put("insuranceMinPastDate", minuesDate);
                 splashData.put("maxImageForDiagnosis", diagnosis);
                 splashData.put("maxImageForTreatment", treatment);
@@ -668,9 +669,9 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
         }
     }
 
-    public  void setLimitMap(Map<String, Map<String, AvailableInsuranceLimitDTO>> limitMap, InsuranceDetails in,ApplicationUser applicationUser) {
+    public void setLimitMap(Map<String, Map<String, AvailableInsuranceLimitDTO>> limitMap, InsuranceDetails in, ApplicationUser applicationUser) {
 
-        log.info("Insurance ref {}",in);
+        log.info("Insurance ref {}", in);
 
         String category = in.getTreatmentCategory().getCode();
         String treatmentCode = in.getTreatment().getTreatmentCode();
@@ -686,10 +687,10 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
 
         BigDecimal funLimit = BigDecimal.ZERO;
 
-        if(currentYear == year) {
+        if (currentYear == year) {
             log.info("Year equals {} {}", year, currentYear);
 
-            if(in.getTreatmentCategory().getCode().equals(TreatmentCategory.OTHER.name())){
+            if (in.getTreatmentCategory().getCode().equals(TreatmentCategory.OTHER.name())) {
                 InsuranceMonthCategory insuranceMontCategory;
                 if (month >= 1 && month <= 6) {
                     log.info("First month range");
@@ -702,17 +703,17 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
                     insuranceMontCategory = InsuranceMonthCategory.THIRD;
                 }
 
-                if(in.getInsuranceMonthCategory().getCode().equals(insuranceMontCategory.name())){
-                     log.info("Inside matching month category {}",in.getInsuranceMonthCategory().getCode());
-                     funLimit = in.getEventLimit();
+                if (in.getInsuranceMonthCategory().getCode().equals(insuranceMontCategory.name())) {
+                    log.info("Inside matching month category {}", in.getInsuranceMonthCategory().getCode());
+                    funLimit = in.getEventLimit();
                 }
-            }else {
-                log.info("Event period but DENTAL or Spec {}",in.getTreatmentCategory().getCode());
-                funLimit =  in.getClaimLimit();
+            } else {
+                log.info("Event period but DENTAL or Spec {}", in.getTreatmentCategory().getCode());
+                funLimit = in.getClaimLimit();
             }
 
-        }else{
-           funLimit =  in.getClaimLimit();
+        } else {
+            funLimit = in.getClaimLimit();
 
         }
 
@@ -722,7 +723,7 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
                 category,
                 List.of(Workflow.APPROVED, Workflow.UNDER_REVIEW)
         );
-        log.info("Sum amount insurance ref data {} {}", sum,in.getClaimLimit());
+        log.info("Sum amount insurance ref data {} {}", sum, in.getClaimLimit());
         BigDecimal remaining = funLimit.subtract(sum != null ? sum : BigDecimal.ZERO);
         log.info("Remaining amount insurance ref data {}", remaining);
 
@@ -783,6 +784,32 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
             }).orElseGet(() -> {
                 log.info("User insurance claim filter request user not found {} ", paginationRequest);
                 return ResponseEntity.ok().body(responseUtil.error(null, 1014, messageSource.getMessage(ResponseMessageUtil.APPLICATION_USER_NOT_FOUND, null, locale)));
+            });
+
+        } catch (Exception e) {
+            log.error(e);
+            throw e;
+        }
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public ResponseEntity<ApiResponse<Object>> insuranceDetailsFindById(DetailsViewRequestDTO detailsViewRequestDTO, Locale locale) {
+        try {
+            log.info("Insurance claims find by id {}", detailsViewRequestDTO.getId());
+
+            return insuranceClaimsRequestRepository.findById(detailsViewRequestDTO.getId()).map((insuranceClaimsRequest) -> {
+
+                List<DocumentDownloadResponseDTO> collect = insuranceClaimsRequest.getInsuranceClaimsDetails().getDocuments().stream().map((document -> {
+                    log.info("inside document list claims request details attachment view {} ", document);
+                    return new DocumentDownloadResponseDTO(String.valueOf(document.getType()), document.getFileName(), document.getFileType(), document.getDoc());
+                })).toList();
+                return ResponseEntity.ok().body(responseUtil.success((Object) collect,
+                        messageSource.getMessage(ResponseMessageUtil.INSURANCE_CLAIM_REQUEST_FIND_BY_ID_SUCCESS,
+                                null, locale)));
+            }).orElseGet(() -> {
+                log.info("Insurance claims details not found by {}", detailsViewRequestDTO.getId());
+                return ResponseEntity.ok().body(responseUtil.error(null, 1053, messageSource.getMessage(ResponseMessageUtil.INSURANCE_CLAIMS_REQUEST_DETAILS_NOT_FOUND_BY_ID, null, locale)));
             });
 
         } catch (Exception e) {

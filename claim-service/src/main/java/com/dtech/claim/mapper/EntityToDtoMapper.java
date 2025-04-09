@@ -34,11 +34,11 @@ public class EntityToDtoMapper {
                 insuranceClaimRequestResponseDto.getClaimsDependents().setRelationCategoryDescription(RelationCategory.valueOf(insuranceClaimRequestResponseDto.getClaimsDependents().getRelationCategory().name()).getDescription());
 
             }
-            List<DocumentDownloadResponseDTO> collect = insuranceClaimsRequest.getInsuranceClaimsDetails().getDocuments().stream().map((document -> {
-                log.info("inside document mapper {} ",document);
-                return new DocumentDownloadResponseDTO(String.valueOf(document.getType()), document.getFileName(), document.getFileType(),document.getDoc());
-            })).collect(Collectors.toList());
-            insuranceClaimRequestResponseDto.getInsuranceClaimsDetails().setDocuments(collect);
+//            List<DocumentDownloadResponseDTO> collect = insuranceClaimsRequest.getInsuranceClaimsDetails().getDocuments().stream().map((document -> {
+//                log.info("inside document mapper {} ",document);
+//                return new DocumentDownloadResponseDTO(String.valueOf(document.getType()), document.getFileName(), document.getFileType(),document.getDoc());
+//            })).collect(Collectors.toList());
+   //         insuranceClaimRequestResponseDto.getInsuranceClaimsDetails().setDocuments(collect);
             return insuranceClaimRequestResponseDto;
         } catch (Exception e) {
             log.error(e);
@@ -53,11 +53,11 @@ public class EntityToDtoMapper {
             deathClaimRequestResponseDTO.setRequestStatusDescription(Workflow.valueOf(deathClaimRequestResponseDTO.getRequestStatus()).getDescription());
             deathClaimRequestResponseDTO.setPaymentTypeDescription(PaymentType.valueOf(deathClaimRequestResponseDTO.getPaymentType()).getDescription());
             deathClaimRequestResponseDTO.getClaimsDependents().setRelationCategoryDescription(RelationCategory.valueOf(deathClaimRequestResponseDTO.getClaimsDependents().getRelationCategory().name()).getDescription());
-            List<DocumentDownloadResponseDTO> collect = deathClaimRequest.getDocuments().stream().map((document -> {
-                log.info("inside document mapper death history {} ",document);
-                return new DocumentDownloadResponseDTO(String.valueOf(document.getType()), document.getFileName(), document.getFileType(),document.getDoc());
-            })).collect(Collectors.toList());
-            deathClaimRequestResponseDTO.setDocuments(collect);
+//            List<DocumentDownloadResponseDTO> collect = deathClaimRequest.getDocuments().stream().map((document -> {
+//                log.info("inside document mapper death history {} ",document);
+//                return new DocumentDownloadResponseDTO(String.valueOf(document.getType()), document.getFileName(), document.getFileType(),document.getDoc());
+//            })).collect(Collectors.toList());
+//            deathClaimRequestResponseDTO.setDocuments(collect);
             return deathClaimRequestResponseDTO;
         } catch (Exception e) {
             log.error(e);

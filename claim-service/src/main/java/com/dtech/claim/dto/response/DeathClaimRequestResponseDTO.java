@@ -25,5 +25,5 @@ public class DeathClaimRequestResponseDTO {
     private String paymentTypeDescription;
     private BigDecimal utilizeAmount;
     private ClaimsDependentsResponseDTO claimsDependents;
-    private List<DocumentDownloadResponseDTO> documents;
+  //  private List<DocumentDownloadResponseDTO> documents;
 }

@@ -20,5 +20,5 @@ public class InsuranceClaimsDetailsResponseDTO {
     private Date fromTreatmentDate;
     private Date toTreatmentDate;
     private String disease;
-    private List<DocumentDownloadResponseDTO> documents;
+ //   private List<DocumentDownloadResponseDTO> documents;
 }

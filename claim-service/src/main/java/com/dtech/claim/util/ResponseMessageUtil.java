@@ -65,6 +65,8 @@ public class ResponseMessageUtil {
     public final static String OLDER_DATE_INSURANCE_CLAIM_REQUEST = "val.older.date.insurance.claim.request";
     public final static String OLDER_DATE_DEATH_CLAIM_REQUEST = "val.older.date.death.claim.request";
     public final static String INSURANCE_CLAIM_REQUEST_HISTORY_FILTER_LIST_SUCCESS = "val.insurance.claim.request.history.filter.list.success";
+    public final static String INSURANCE_CLAIM_REQUEST_FIND_BY_ID_SUCCESS = "val.insurance.claim.request.find.by.id.success";
+    public final static String DEATH_CLAIM_REQUEST_FIND_BY_ID_SUCCESS = "val.death.claim.request.find.by.id.success";
     public final static String DEATH_CLAIM_REQUEST_HISTORY_FILTER_LIST_SUCCESS = "val.death.claim.request.history.filter.list.success";
     public final static String CLAIM_DEPENDENT_NOT_FOUND_OR_FACILITY_NOT_ELIGIBLE = "val.claim.dependent.not.eligible.or.facility.not.eligible";
     public final static String CLAIM_DEPENDENT_DEATH_REQUEST_ALREADY_PROCEED = "val.claim.dependent.death.request.already.proceed";
@@ -79,4 +81,6 @@ public class ResponseMessageUtil {
     public final static String DEATH_CLAIMS_DEATH_MAX_IMAGE_INVALID  = "val.death.claims.death.max.image.invalid";
     public final static String DEATH_CLAIMS_DEATH_MIN_IMAGE_INVALID  = "val.death.claims.death.min.image.invalid";
     public final static String DASHBOARD_SUMMARY_SUCCESS  = "val.dashboard.summary.success";
+    public final static String INSURANCE_CLAIMS_REQUEST_DETAILS_NOT_FOUND_BY_ID  = "val.insurance.claims.request.details.not.found.by.id";
+    public final static String DEATH_CLAIMS_REQUEST_DETAILS_NOT_FOUND_BY_ID  = "val.death.claims.request.details.not.found.by.id";
 }
