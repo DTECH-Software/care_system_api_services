@@ -24,9 +24,17 @@ public interface InsuranceDetailsRepository extends JpaRepository<InsuranceDetai
                                                                                                                                          Status status,
                                                                                                                                          InsurancePeriod insurancePeriodList);
 
+
     Optional<InsuranceDetails> findByInsurancePolicyAndTreatmentAndTreatmentCategoryAndStatusAndInsurancePeriodAndInsuranceMonthCategory(InsurancePolicy insurancePolicy,
                                                                                                                                          Treatment treatment,
                                                                                                                                          TreatmentCategory treatmentCategory,
                                                                                                                                          Status status,
-                                                                                                                                         InsurancePeriod insurancePeriodList,InsuranceMonthCategory insuranceMonthCategory);
+                                                                                                                                         InsurancePeriod insurancePeriodList,
+                                                                                                                                         InsuranceMonthCategory insuranceMonthCategory);
+
+    List<InsuranceDetails> findByInsurancePolicyAndStatusAndInsurancePeriod(InsurancePolicy insurancePolicy,
+                                                                                        Status status,
+                                                                                        InsurancePeriod insurancePeriodList);
+
+
 }

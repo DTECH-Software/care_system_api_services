@@ -16,6 +16,7 @@ import java.util.List;
 public class InsuranceClaimsDetailsResponseDTO {
     private Long id;
     private TreatmentResponseDTO treatment;
+    private TreatmentCategoryResponseDTO treatmentCategory;
     private Date fromTreatmentDate;
     private Date toTreatmentDate;
     private String disease;

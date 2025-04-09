@@ -8,15 +8,12 @@
 package com.dtech.claim.service.impl;
 
 
-import com.dtech.claim.dto.AvailableInsuranceLimitDTO;
-import com.dtech.claim.dto.SimpleBaseDTO;
+import com.dtech.claim.dto.*;
 import com.dtech.claim.enums.*;
 import com.dtech.claim.enums.InsuranceMonthCategory;
 import com.dtech.claim.enums.TreatmentCategory;
 import com.dtech.claim.feign.MessageFeignClient;
 import com.dtech.claim.util.MultipartFileUtil;
-import com.dtech.claim.dto.ClaimRequestIdGen;
-import com.dtech.claim.dto.PagingResult;
 import com.dtech.claim.dto.request.*;
 import com.dtech.claim.dto.response.ApiResponse;
 import com.dtech.claim.dto.response.InsuranceClaimRequestResponseDTO;
@@ -79,9 +76,6 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
     private final TreatmentRepository treatmentRepository;
 
     @Autowired
-    private final InsuranceClaimsAccountBalanceRepository insuranceClaimsAccountBalanceRepository;
-
-    @Autowired
     private final EntityManager entityManager;
 
     @Autowired
@@ -113,6 +107,7 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
 
     @Autowired
     private InsuranceMonthCategoryRepository insuranceMonthCategoryRepository;
+
 
     @Override
     @Transactional
@@ -491,7 +486,7 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
                                                 }
                                             } else {
 
-                                                log.info("Without event limit deantal or specs");
+                                                log.info("Without event limit dental or specs");
                                                 return insuranceDetailsRepository.
                                                         findByInsurancePolicyAndTreatmentAndTreatmentCategoryAndStatusAndInsurancePeriod(policy, treatment, tc, Status.ACTIVE, period).map((insuranceDetails) -> {
                                                             BigDecimal remainingBalance = insuranceDetails.getClaimLimit().subtract(sumOfClaims != null ? sumOfClaims : BigDecimal.ZERO);
@@ -632,40 +627,30 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
                 Map<String, Object> splashData = new HashMap<>();
                 List<AvailableInsuranceLimitDTO> list = null;
                 List<SimpleBaseDTO> userWiseTreatment = new ArrayList<>();
+                Map<String, List<SimpleBaseDTO>> userWiseTreatmentCategory = new HashMap<>();
+                Map<String, Map<String, AvailableInsuranceLimitDTO>> limits = new HashMap<>();
                 if (period != null) {
-                    list = treatmentList.stream().map(tre -> {
-                        InsuranceClaimsAccountBalance insuranceClaimsAccountBalance = insuranceClaimsAccountBalanceRepository
-                                .findByEmployeeAndTreatmentAndInsurancePeriod(user, tre, period)
-                                .orElse(null);
-                        log.info("Insurance claim reference data acc balance + treatment {} {} ", insuranceClaimsAccountBalance, tre);
 
-                        log.info("Insurance claim reference data acc balance is null");
-                        InsuranceDetails insuranceDetails = null;
+                    List<InsuranceDetails> insuranceDetails = insuranceDetailsRepository.
+                            findByInsurancePolicyAndStatusAndInsurancePeriod(
+                                    user.getUserPersonalDetails().getUserCompanyDetails().getInsurancePolicy(),
+                                    Status.ACTIVE, period);
 
-//                        insuranceDetailsRepository.
-//                                findByInsurancePolicyAndInsurancePeriodAndTreatmentAndStatus(user.getUserPersonalDetails().getUserCompanyDetails().getInsurancePolicy(), period, tre, Status.ACTIVE).orElse(null);
-                        log.info("Insurance claim reference data balance is {} ", insuranceDetails);
+                    insuranceDetails.forEach(in -> {
+                        log.info("Add treatment");
+                        addIfNotPresent(userWiseTreatment, in);
+                        String insuranceCategory = in.getTreatment().getTreatmentCode();
+                        userWiseTreatmentCategory.computeIfAbsent(insuranceCategory, k -> new ArrayList<>());
+                        addIfNotPresentTreatmentCategory(userWiseTreatmentCategory.get(insuranceCategory), in);
+                        setLimitMap(limits,in,user);
+                    });
 
-                        if (insuranceDetails != null && insuranceDetails.getTreatment() != null) {
-                            userWiseTreatment.add(new SimpleBaseDTO(insuranceDetails.getTreatment()
-                                    .getTreatmentCode(), insuranceDetails.getTreatment()
-                                    .getTreatmentDescription()));
-                        }
-
-                        AvailableInsuranceLimitDTO availableInsuranceLimitDTO = AvailableInsuranceLimitDTO.builder()
-                                .treatment(tre.getTreatmentCode())
-                                .availableLimit(insuranceClaimsAccountBalance == null ? Objects.nonNull(insuranceDetails) ? insuranceDetails.getClaimLimit() : BigDecimal.valueOf(0.00) : insuranceClaimsAccountBalance.getAvailableBalance())
-                                .fundLimit(Objects.nonNull(insuranceDetails) ? insuranceDetails.getClaimLimit() : BigDecimal.valueOf(0.00))
-                                .build();
-                        log.info("AvailableInsuranceLimitDTO create success {}", availableInsuranceLimitDTO);
-                        return availableInsuranceLimitDTO;
-
-                    }).toList();
                 }
-                log.info("Claims data success {}", list);
+                log.info("Claims data success ");
                 splashData.put("insuranceClaimsDependents", claimsDependents);
                 splashData.put("treatment", userWiseTreatment);
-                splashData.put("insuranceClaimsFundLimits", list);
+                splashData.put("treatmentCategory", userWiseTreatmentCategory);
+                splashData.put("insuranceClaimsFundLimits",limits);
                 splashData.put("insuranceMinPastDate", minuesDate);
                 splashData.put("maxImageForDiagnosis", diagnosis);
                 splashData.put("maxImageForTreatment", treatment);
@@ -677,6 +662,92 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
         } catch (Exception e) {
             log.error(e);
             throw e;
+        }
+    }
+
+    public  void setLimitMap(Map<String, Map<String, AvailableInsuranceLimitDTO>> limitMap, InsuranceDetails in,ApplicationUser applicationUser) {
+
+        log.info("Insurance ref {}",in);
+
+        String category = in.getTreatmentCategory().getCode();
+        String treatmentCode = in.getTreatment().getTreatmentCode();
+
+        int currentYear = DateTimeUtil.getCurrentYear();
+        log.info("Current year {}", currentYear);
+        int year = DateTimeUtil.getYear(applicationUser.getUserPersonalDetails().getUserCompanyDetails().getPermanentDate());
+        log.info("Year {}", year);
+        int currentMonth = DateTimeUtil.getCurrentMonth();
+        log.info("Current month {}", currentMonth);
+        int month = DateTimeUtil.getMonth(applicationUser.getUserPersonalDetails().getUserCompanyDetails().getPermanentDate());
+        log.info("User month per {}", month);
+
+        BigDecimal funLimit = BigDecimal.ZERO;
+
+        if(currentYear == year) {
+            log.info("Year equals {} {}", year, currentYear);
+
+            if(in.getTreatmentCategory().getCode().equals(TreatmentCategory.OTHER.name())){
+                InsuranceMonthCategory insuranceMontCategory;
+                if (month >= 1 && month <= 6) {
+                    log.info("First month range");
+                    insuranceMontCategory = InsuranceMonthCategory.FIRST;
+                } else if (month >= 7 && month <= 9) {
+                    log.info("Second month range");
+                    insuranceMontCategory = InsuranceMonthCategory.SECOND;
+                } else {
+                    log.info("Third month range");
+                    insuranceMontCategory = InsuranceMonthCategory.THIRD;
+                }
+
+                if(in.getInsuranceMonthCategory().getCode().equals(insuranceMontCategory.name())){
+                     log.info("Inside matching month category {}",in.getInsuranceMonthCategory().getCode());
+                     funLimit = in.getEventLimit();
+                }
+            }else {
+                log.info("Event period but DENTAL or Spec {}",in.getTreatmentCategory().getCode());
+                funLimit =  in.getClaimLimit();
+            }
+
+        }else{
+           funLimit =  in.getClaimLimit();
+
+        }
+
+        BigDecimal sum = insuranceClaimsRequestRepository.getSumRequestAmountByEmployeeAndTreatmentAndCategoryAndStatus(
+                applicationUser,
+                treatmentCode,
+                category,
+                List.of(Workflow.APPROVED, Workflow.UNDER_REVIEW)
+        );
+        log.info("Sum amount insurance ref data {} {}", sum,in.getClaimLimit());
+        BigDecimal remaining = funLimit.subtract(sum != null ? sum : BigDecimal.ZERO);
+        log.info("Remaining amount insurance ref data {}", remaining);
+
+        limitMap
+                .computeIfAbsent(treatmentCode, k -> new HashMap<>())
+                .merge(category, new AvailableInsuranceLimitDTO(remaining, funLimit),
+                        (existing, newDetails) -> new AvailableInsuranceLimitDTO(
+                                newDetails.getAvailableLimit(),
+                                newDetails.getFundLimit()
+                        ));
+    }
+
+
+    private void addIfNotPresent(List<SimpleBaseDTO> tCategoryList, InsuranceDetails insuranceDetails) {
+        boolean alreadyPresent = tCategoryList.stream()
+                .anyMatch(dto -> dto.getCode().equals(insuranceDetails.getTreatment().getTreatmentCode()));
+        if (!alreadyPresent) {
+            tCategoryList.add(new SimpleBaseDTO(insuranceDetails.getTreatment().getTreatmentCode(),
+                    insuranceDetails.getTreatment().getTreatmentDescription()));
+        }
+    }
+
+    private void addIfNotPresentTreatmentCategory(List<SimpleBaseDTO> tCategoryList, InsuranceDetails insuranceDetails) {
+        boolean alreadyPresent = tCategoryList.stream()
+                .anyMatch(dto -> dto.getCode().equals(insuranceDetails.getTreatmentCategory().getCode()));
+        if (!alreadyPresent) {
+            tCategoryList.add(new SimpleBaseDTO(insuranceDetails.getTreatmentCategory().getCode(),
+                    insuranceDetails.getTreatmentCategory().getDescription()));
         }
     }
 
