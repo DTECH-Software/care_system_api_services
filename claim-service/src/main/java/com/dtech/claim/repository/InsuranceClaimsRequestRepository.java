@@ -25,14 +25,6 @@ import java.util.List;
 public interface InsuranceClaimsRequestRepository extends JpaRepository<InsuranceClaimsRequest, Long>, JpaSpecificationExecutor<InsuranceClaimsRequest> {
     Page<InsuranceClaimsRequest> findAll(Specification<InsuranceClaimsRequest> spec, Pageable pageable);
 
-    @Query(value = "SELECT SUM(cr.requestAmount) FROM InsuranceClaimsRequest cr " +
-            "LEFT OUTER JOIN ApplicationUser ap ON cr.employee.id = ap.id " +
-            "LEFT OUTER JOIN InsuranceClaimsDetails cd ON cr.insuranceClaimsDetails.id = cd.id " +
-            "LEFT OUTER JOIN Treatment tr ON cd.treatment.treatmentCode = tr.treatmentCode " +
-            "LEFT OUTER JOIN TreatmentCategory tc ON cd.treatmentCategory.code = tc.code " +
-            "WHERE ap = :employee AND cr.requestStatus IN :status ")
-    BigDecimal getSumOfClaimsByEmployeeAndStatus(@Param("employee")ApplicationUser employee, @Param("status")List<Workflow> status);
-
     @Query("SELECT SUM(ic.requestAmount) FROM InsuranceClaimsRequest ic " +
             "LEFT OUTER JOIN InsuranceClaimsDetails icd ON ic.insuranceClaimsDetails.id = icd.id " +
             "WHERE ic.employee = :employee " +
@@ -68,7 +60,7 @@ public interface InsuranceClaimsRequestRepository extends JpaRepository<Insuranc
             "(:#{#dashboardSummaryDTO.claimDependentId} IS NULL OR cd.id = :#{#dashboardSummaryDTO.claimDependentId})" +
             ") " +
             "AND ( " +
-            "(:#{#dashboardSummaryDTO.treatmentType} IS NULL OR tr.treatment_code = :#{#dashboardSummaryDTO.treatmentType})" +
+            "(:#{#dashboardSummaryDTO.treatmentType} IS NULL OR tr.code = :#{#dashboardSummaryDTO.treatmentType})" +
             ") ",
             nativeQuery = true)
     CountTypeResponseDTO findSummary(DashboardSummaryDTO dashboardSummaryDTO,
@@ -77,7 +69,7 @@ public interface InsuranceClaimsRequestRepository extends JpaRepository<Insuranc
     @Query(value = "SELECT " +
             "ic.id AS id, " +
             "ic.request_id AS requestId, " +
-            "tr.treatment_description AS treatment, " +
+            "tr.description AS treatment, " +
             "ic.remark AS remark, " +
             "icd.disease AS diagnosis, " +
             "ic.request_amount AS amount, " +
