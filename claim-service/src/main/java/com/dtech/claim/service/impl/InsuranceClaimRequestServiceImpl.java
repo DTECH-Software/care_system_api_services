@@ -109,6 +109,8 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
     @Autowired
     private InsuranceMonthCategoryRepository insuranceMonthCategoryRepository;
 
+    private boolean isAlreadyAssignedIndoor = false;
+    private boolean isAlreadyAssignedOutdoor = false;
 
     @Override
     @Transactional
@@ -233,7 +235,7 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
                                                                         log.info("First");
                                                                         if (currentMonth <= 6) {
                                                                             log.info("Processing first with event limit {} {}", currentMonth, month);
-                                                                            BigDecimal remainingBalance = insuranceDetails.getEventLimit().subtract(sumOfClaims != null ? sumOfClaims : BigDecimal.ZERO);
+                                                                            BigDecimal remainingBalance = insuranceDetails.getEventLimit().subtract(sumOfClaims != null ? sumOfClaims : BigDecimal.valueOf(0.00));
                                                                             log.info("Remaining balance {}", remainingBalance);
                                                                             if (claimRequestDTO.getRequestAmount().compareTo(remainingBalance) > 0) {
                                                                                 log.info("Request fund limit exceeded with ent limit {} {} {} {}", claimRequestDTO.getRequestAmount(), insuranceDetails.getEventLimit(), remainingBalance, sumOfClaims);
@@ -265,7 +267,7 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
                                                                             }
                                                                         } else {
                                                                             log.info("Without first event limit {} {} ", currentMonth, month);
-                                                                            BigDecimal remainingBalance = insuranceDetails.getClaimLimit().subtract(sumOfClaims != null ? sumOfClaims : BigDecimal.ZERO);
+                                                                            BigDecimal remainingBalance = insuranceDetails.getClaimLimit().subtract(sumOfClaims != null ? sumOfClaims : BigDecimal.valueOf(0.00));
                                                                             log.info("Remaining balance {}", remainingBalance);
                                                                             if (claimRequestDTO.getRequestAmount().compareTo(remainingBalance) > 0) {
                                                                                 log.info("Request fund limit exceeded without event limit {} {} {} {}", claimRequestDTO.getRequestAmount(), insuranceDetails.getEventLimit(), remainingBalance, sumOfClaims);
@@ -300,7 +302,7 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
                                                                         log.info("Second");
                                                                         if (currentMonth <= 9) {
                                                                             log.info("Processing  second with ent limit {} {}", currentMonth, month);
-                                                                            BigDecimal remainingBalance = insuranceDetails.getEventLimit().subtract(sumOfClaims != null ? sumOfClaims : BigDecimal.ZERO);
+                                                                            BigDecimal remainingBalance = insuranceDetails.getEventLimit().subtract(sumOfClaims != null ? sumOfClaims : BigDecimal.valueOf(0.00));
                                                                             log.info("Remaining balance {}", remainingBalance);
                                                                             if (claimRequestDTO.getRequestAmount().compareTo(remainingBalance) > 0) {
                                                                                 log.info("Request fund limit exceeded with ent limit {} {} {} {}", claimRequestDTO.getRequestAmount(), insuranceDetails.getEventLimit(), remainingBalance, sumOfClaims);
@@ -333,7 +335,7 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
 
                                                                         } else {
                                                                             log.info("Without second ent limit {} {} ", currentMonth, month);
-                                                                            BigDecimal remainingBalance = insuranceDetails.getClaimLimit().subtract(sumOfClaims != null ? sumOfClaims : BigDecimal.ZERO);
+                                                                            BigDecimal remainingBalance = insuranceDetails.getClaimLimit().subtract(sumOfClaims != null ? sumOfClaims : BigDecimal.valueOf(0.00));
                                                                             log.info("Remaining balance {}", remainingBalance);
                                                                             if (claimRequestDTO.getRequestAmount().compareTo(remainingBalance) > 0) {
                                                                                 log.info("Request fund limit exceeded without event limit {} {} {} {}", claimRequestDTO.getRequestAmount(), insuranceDetails.getEventLimit(), remainingBalance, sumOfClaims);
@@ -368,7 +370,7 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
                                                                         log.info("Third");
                                                                         if (currentMonth <= 12) {
                                                                             log.info("Processing  third with ent limit {} {}", currentMonth, month);
-                                                                            BigDecimal remainingBalance = insuranceDetails.getEventLimit().subtract(sumOfClaims != null ? sumOfClaims : BigDecimal.ZERO);
+                                                                            BigDecimal remainingBalance = insuranceDetails.getEventLimit().subtract(sumOfClaims != null ? sumOfClaims : BigDecimal.valueOf(0.00));
                                                                             log.info("Remaining balance {}", remainingBalance);
                                                                             if (claimRequestDTO.getRequestAmount().compareTo(remainingBalance) > 0) {
                                                                                 log.info("Request fund limit exceeded with ent limit {} {} {} {}", claimRequestDTO.getRequestAmount(), insuranceDetails.getEventLimit(), remainingBalance, sumOfClaims);
@@ -400,7 +402,7 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
                                                                             }
                                                                         } else {
                                                                             log.info("Without third ent limit {} {} ", currentMonth, month);
-                                                                            BigDecimal remainingBalance = insuranceDetails.getClaimLimit().subtract(sumOfClaims != null ? sumOfClaims : BigDecimal.ZERO);
+                                                                            BigDecimal remainingBalance = insuranceDetails.getClaimLimit().subtract(sumOfClaims != null ? sumOfClaims : BigDecimal.valueOf(0.00));
                                                                             log.info("Remaining balance {}", remainingBalance);
                                                                             if (claimRequestDTO.getRequestAmount().compareTo(remainingBalance) > 0) {
                                                                                 log.info("Request fund limit exceeded without event limit {} {} {} {}", claimRequestDTO.getRequestAmount(), insuranceDetails.getEventLimit(), remainingBalance, sumOfClaims);
@@ -447,7 +449,7 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
                                                         log.info("Without event limit {} ", insuranceMonthCategory);
                                                         return insuranceDetailsRepository.
                                                                 findByInsurancePolicyAndTreatmentAndTreatmentCategoryAndStatusAndInsurancePeriodAndInsuranceMonthCategory(policy, treatment, tc, Status.ACTIVE, period, insuranceMonthCategory).map((insuranceDetails) -> {
-                                                                    BigDecimal remainingBalance = insuranceDetails.getClaimLimit().subtract(sumOfClaims != null ? sumOfClaims : BigDecimal.ZERO);
+                                                                    BigDecimal remainingBalance = insuranceDetails.getClaimLimit().subtract(sumOfClaims != null ? sumOfClaims : BigDecimal.valueOf(0.00));
                                                                     log.info("Remaining balance {}", remainingBalance);
                                                                     if (claimRequestDTO.getRequestAmount().compareTo(remainingBalance) > 0) {
                                                                         log.info("Request fund limit exceeded without event limit {} {} {} {}", claimRequestDTO.getRequestAmount(), insuranceDetails.getEventLimit(), remainingBalance, sumOfClaims);
@@ -493,7 +495,7 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
                                                 log.info("Without event limit dental or specs");
                                                 return insuranceDetailsRepository.
                                                         findByInsurancePolicyAndTreatmentAndTreatmentCategoryAndStatusAndInsurancePeriod(policy, treatment, tc, Status.ACTIVE, period).map((insuranceDetails) -> {
-                                                            BigDecimal remainingBalance = insuranceDetails.getClaimLimit().subtract(sumOfClaims != null ? sumOfClaims : BigDecimal.ZERO);
+                                                            BigDecimal remainingBalance = insuranceDetails.getClaimLimit().subtract(sumOfClaims != null ? sumOfClaims : BigDecimal.valueOf(0.00));
                                                             log.info("Remaining balance {}", remainingBalance);
                                                             if (claimRequestDTO.getRequestAmount().compareTo(remainingBalance) > 0) {
                                                                 log.info("Request fund limit exceeded without event limit {} {} {} {}", claimRequestDTO.getRequestAmount(), insuranceDetails.getEventLimit(), remainingBalance, sumOfClaims);
@@ -685,12 +687,13 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
         int month = DateTimeUtil.getMonth(applicationUser.getUserPersonalDetails().getUserCompanyDetails().getPermanentDate());
         log.info("User month per {}", month);
 
-        BigDecimal funLimit = BigDecimal.ZERO;
+        BigDecimal funLimit = BigDecimal.valueOf(0.00);
 
         if (currentYear == year) {
             log.info("Year equals {} {}", year, currentYear);
 
-            if (in.getTreatmentCategory().getCode().equals(TreatmentCategory.OTHER.name())) {
+            if (in.getTreatmentCategory().getCode().equals(TreatmentCategory.OTHER.name()) &&
+                    !(in.getTreatment().getTreatmentCode().equals(TreatmentType.CRIC.name()))) {
                 InsuranceMonthCategory insuranceMontCategory;
                 if (month >= 1 && month <= 6) {
                     log.info("First month range");
@@ -702,38 +705,102 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
                     log.info("Third month range");
                     insuranceMontCategory = InsuranceMonthCategory.THIRD;
                 }
+                log.info("Inside period event limit month category {} {}",insuranceMontCategory,isAlreadyAssignedIndoor);
 
-                if (in.getInsuranceMonthCategory().getCode().equals(insuranceMontCategory.name())) {
-                    log.info("Inside matching month category {}", in.getInsuranceMonthCategory().getCode());
-                    funLimit = in.getEventLimit();
-                }
+
+                    if (in.getInsuranceMonthCategory().getCode().equals(insuranceMontCategory.name())) {
+                        log.info("Inside matching month category  indoor{}", in.getInsuranceMonthCategory().getCode());
+                        funLimit = in.getEventLimit();
+                        this.isAlreadyAssignedIndoor = true;
+                        BigDecimal sum = insuranceClaimsRequestRepository.getSumRequestAmountByEmployeeAndTreatmentAndCategoryAndStatus(
+                                applicationUser,
+                                treatmentCode,
+                                category,
+                                List.of(Workflow.APPROVED, Workflow.UNDER_REVIEW)
+                        );
+                        log.info("Sum amount insurance ref data {} {}", sum, in.getClaimLimit());
+                        BigDecimal remaining = funLimit.subtract(sum != null ? sum : BigDecimal.valueOf(0.00));
+                        log.info("Remaining amount insurance ref data {}", remaining);
+
+                        limitMap
+                                .computeIfAbsent(treatmentCode, k -> new HashMap<>())
+                                .merge(category, new AvailableInsuranceLimitDTO(remaining, funLimit),
+                                        (existing, newDetails) -> new AvailableInsuranceLimitDTO(
+                                                newDetails.getAvailableLimit(),
+                                                newDetails.getFundLimit()
+                                        ));
+                    }
+
+                    if (in.getInsuranceMonthCategory().getCode().equals(insuranceMontCategory.name())) {
+                        log.info("Inside matching month category  outdoor {}", in.getInsuranceMonthCategory().getCode());
+                        log.info("out door {} ",in.getEventLimit());
+                        funLimit = in.getEventLimit();
+                        this.isAlreadyAssignedOutdoor = true;
+                        BigDecimal sum = insuranceClaimsRequestRepository.getSumRequestAmountByEmployeeAndTreatmentAndCategoryAndStatus(
+                                applicationUser,
+                                treatmentCode,
+                                category,
+                                List.of(Workflow.APPROVED, Workflow.UNDER_REVIEW)
+                        );
+                        log.info("Sum amount insurance ref data {} {}", sum, in.getClaimLimit());
+                        BigDecimal remaining = funLimit.subtract(sum != null ? sum : BigDecimal.valueOf(0.00));
+                        log.info("Remaining amount insurance ref data {}", remaining);
+
+                        limitMap
+                                .computeIfAbsent(treatmentCode, k -> new HashMap<>())
+                                .merge(category, new AvailableInsuranceLimitDTO(remaining, funLimit),
+                                        (existing, newDetails) -> new AvailableInsuranceLimitDTO(
+                                                newDetails.getAvailableLimit(),
+                                                newDetails.getFundLimit()
+                                        ));
+                    }
+
+
             } else {
-                log.info("Event period but DENTAL or Spec {}", in.getTreatmentCategory().getCode());
+                log.info("Event period but dental or Spec {}", in.getTreatmentCategory().getCode());
                 funLimit = in.getClaimLimit();
+                BigDecimal sum = insuranceClaimsRequestRepository.getSumRequestAmountByEmployeeAndTreatmentAndCategoryAndStatus(
+                        applicationUser,
+                        treatmentCode,
+                        category,
+                        List.of(Workflow.APPROVED, Workflow.UNDER_REVIEW)
+                );
+                log.info("Sum amount insurance ref data {} {}", sum, in.getClaimLimit());
+                BigDecimal remaining = funLimit.subtract(sum != null ? sum : BigDecimal.valueOf(0.00));
+                log.info("Remaining amount insurance ref data {}", remaining);
+
+                limitMap
+                        .computeIfAbsent(treatmentCode, k -> new HashMap<>())
+                        .merge(category, new AvailableInsuranceLimitDTO(remaining, funLimit),
+                                (existing, newDetails) -> new AvailableInsuranceLimitDTO(
+                                        newDetails.getAvailableLimit(),
+                                        newDetails.getFundLimit()
+                                ));
             }
 
         } else {
             funLimit = in.getClaimLimit();
+            BigDecimal sum = insuranceClaimsRequestRepository.getSumRequestAmountByEmployeeAndTreatmentAndCategoryAndStatus(
+                    applicationUser,
+                    treatmentCode,
+                    category,
+                    List.of(Workflow.APPROVED, Workflow.UNDER_REVIEW)
+            );
+            log.info("Sum amount insurance ref data {} {}", sum, in.getClaimLimit());
+            BigDecimal remaining = funLimit.subtract(sum != null ? sum : BigDecimal.valueOf(0.00));
+            log.info("Remaining amount insurance ref data {}", remaining);
+
+            limitMap
+                    .computeIfAbsent(treatmentCode, k -> new HashMap<>())
+                    .merge(category, new AvailableInsuranceLimitDTO(remaining, funLimit),
+                            (existing, newDetails) -> new AvailableInsuranceLimitDTO(
+                                    newDetails.getAvailableLimit(),
+                                    newDetails.getFundLimit()
+                            ));
 
         }
 
-        BigDecimal sum = insuranceClaimsRequestRepository.getSumRequestAmountByEmployeeAndTreatmentAndCategoryAndStatus(
-                applicationUser,
-                treatmentCode,
-                category,
-                List.of(Workflow.APPROVED, Workflow.UNDER_REVIEW)
-        );
-        log.info("Sum amount insurance ref data {} {}", sum, in.getClaimLimit());
-        BigDecimal remaining = funLimit.subtract(sum != null ? sum : BigDecimal.ZERO);
-        log.info("Remaining amount insurance ref data {}", remaining);
 
-        limitMap
-                .computeIfAbsent(treatmentCode, k -> new HashMap<>())
-                .merge(category, new AvailableInsuranceLimitDTO(remaining, funLimit),
-                        (existing, newDetails) -> new AvailableInsuranceLimitDTO(
-                                newDetails.getAvailableLimit(),
-                                newDetails.getFundLimit()
-                        ));
     }
 
 

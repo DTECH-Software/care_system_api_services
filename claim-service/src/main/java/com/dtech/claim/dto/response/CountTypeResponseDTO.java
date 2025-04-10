@@ -7,19 +7,35 @@
 
 package com.dtech.claim.dto.response;
 
-import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 
 @Data
-@AllArgsConstructor
-@NoArgsConstructor
 public class CountTypeResponseDTO {
-    private long full;
-    private long approved;
-    private long rejected;
-    private long underReview;
+    private Long fullCount;
+    private Long approvedCount;
+    private Long rejectedCount;
+    private Long underReviewCount;
     private BigDecimal sumOfUtilizeAmount;
+    private BigDecimal remainingAmount;
+
+    public CountTypeResponseDTO(Long fullCount, Long approvedCount, Long rejectedCount, Long underReviewCount, BigDecimal sumOfUtilizeAmount, BigDecimal remainingAmount) {
+        System.out.println("CountTypeResponseDTO constructor called!");
+        this.fullCount = fullCount;
+        this.approvedCount = approvedCount;
+        this.rejectedCount = rejectedCount;
+        this.underReviewCount = underReviewCount;
+        this.sumOfUtilizeAmount = sumOfUtilizeAmount;
+        this.remainingAmount = remainingAmount;
+    }
+    public CountTypeResponseDTO(Long fullCount, Long approvedCount, Long rejectedCount, Long underReviewCount, BigDecimal sumOfUtilizeAmount) {
+        System.out.println("CountTypeResponseDTO constructor called!");
+        this.fullCount = fullCount;
+        this.approvedCount = approvedCount;
+        this.rejectedCount = rejectedCount;
+        this.underReviewCount = underReviewCount;
+        this.sumOfUtilizeAmount = sumOfUtilizeAmount;
+    }
+
 }

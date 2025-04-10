@@ -10,7 +10,7 @@ package com.dtech.claim.enums;
 public enum TreatmentType {
 
     INDOOR("Indoor"),
-    OUTPATIENT("Outpatient"),
+    OUTDOOR("Outpatient"),
     CRIC("Critical care"),
     DEATH("Death fund");
 

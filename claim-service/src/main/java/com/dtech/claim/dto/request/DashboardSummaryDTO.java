@@ -19,4 +19,5 @@ public class DashboardSummaryDTO extends ChannelRequestDTO{
     private String claimDependentId;
     private String relationCategory;
     private String treatmentType;
+    private String insuranceMonthCategory;
 }
