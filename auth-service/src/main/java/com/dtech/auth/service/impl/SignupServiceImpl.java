@@ -99,8 +99,12 @@ public class SignupServiceImpl implements SignupService {
 
     @Autowired
     private final MarriedRepository marriedRepository;
+
     @Autowired
     private TreatmentRepository treatmentRepository;
+
+    @Autowired
+    private TreatmentCategoryRepository treatmentCategoryRepository;
 
     @Override
     @Transactional(readOnly = true)
@@ -109,13 +113,20 @@ public class SignupServiceImpl implements SignupService {
         try {
             log.info("Splash Request {} ", channelRequestDTO);
             Map<String, Object> splashData = new HashMap<>();
+
             List<SimpleBaseDTO> marriedRounds = marriedRepository.findAllByStatus(Status.ACTIVE)
                     .stream()
                     .map(val -> new SimpleBaseDTO(val.getCode(), val.getDescription()))
                     .toList();
+
             List<SimpleBaseDTO> treatmentList = treatmentRepository.findAllByStatus(Status.ACTIVE)
                     .stream().map(val -> new SimpleBaseDTO(val.getCode(), val.getDescription()))
                     .toList();
+
+            List<SimpleBaseDTO> treatmentCategoryList = treatmentCategoryRepository.findAllByStatus(Status.ACTIVE)
+                    .stream().map(val -> new SimpleBaseDTO(val.getCode(), val.getDescription()))
+                    .toList();
+
             splashData.put("marriedRounds", marriedRounds);
             splashData.put("passwordPolicy", modelMapper.map(applicationPasswordPolicyRepository.findPasswordPolicy().orElse(null),PolicyResponseDTO.class));
             splashData.put("usernamePolicy", modelMapper.map(applicationUsernamePolicyRepository.findUsernamePolicy().orElse(null),PolicyResponseDTO.class));
@@ -126,6 +137,7 @@ public class SignupServiceImpl implements SignupService {
             splashData.put("relationCategories", getEnumList(RelationCategory.class));
             splashData.put("status", getEnumList(Workflow.class));
             splashData.put("treatmentTypes", treatmentList);
+            splashData.put("treatmentTypesCategories", treatmentCategoryList);
             log.info("Splash request success{} ", channelRequestDTO);
             return ResponseEntity.ok().body(responseUtil.success(splashData, messageSource.getMessage(ResponseMessageUtil.SPLASH_SUCCESS, null, locale)));
 
