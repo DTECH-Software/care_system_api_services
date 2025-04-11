@@ -468,8 +468,6 @@ public class DeathClaimRequestServiceImpl implements DeathClaimRequestService {
             throw e;
         }
     }
-
-
 }
 
 

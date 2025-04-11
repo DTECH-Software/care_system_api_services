@@ -28,7 +28,7 @@ public class DateRangeValidators implements ConstraintValidator<ValidateDateRang
         try {
             log.info("Date range validation started for object: {}", object);
 
-            Field treatmentCategoryField = getField(object, "treatmentCategory");
+            Field treatmentCategoryField = getField(object, "treatment");
 
             if (treatmentCategoryField == null) {
                 log.error("treatmentCategory field not found in object: {}", object);
@@ -40,7 +40,7 @@ public class DateRangeValidators implements ConstraintValidator<ValidateDateRang
 
             log.info("treatmentCategory value: {}", treatmentCategory);
 
-            if (!"OTHER".equals(treatmentCategory)) {
+            if ("OUTDOOR".equals(treatmentCategory)) {
                 log.info("Skipping date range validation as treatmentCategory is not 'OTHER'");
                 return true; // Valid if treatmentCategory is not "OTHER"
             }

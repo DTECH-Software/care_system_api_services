@@ -23,9 +23,9 @@ import java.util.List;
 @EqualsAndHashCode(callSuper = true)
 @Data
 @Conditional(selected = "isEmployee", values = {"false"}, required = {"claimsDependentId"}, message = "Claim dependent is required.")
-@Conditional(selected = "treatmentCategory", values = {"OTHER"}, required = {"fromDate"}, message = "Treatment from date is required.")
+@Conditional(selected = "treatment", values = {"INDOOR","CRIC"}, required = {"fromDate"}, message = "Treatment from date is required.")
 @Conditional(selected = "treatmentCategory", values = {"OTHER"}, required = {"disease"}, message = "Disease is required.")
-@ValidateDateRange(selected = "treatmentCategory", values = {"OTHER"}, message = "Treatment from date and to date invalid.")
+@ValidateDateRange(selected = "treatment", values = {"INDOOR","CRIC"}, message = "Treatment from date and to date invalid.")
 @Conditional(selected = "isValidation", values = {"false"}, required = {"otp"}, message = "OTP is required.")
 public class ClaimRequestValidatorDTO extends ChannelRequestValidatorDTO {
     @NotBlank(message = "Treatment is required.")
