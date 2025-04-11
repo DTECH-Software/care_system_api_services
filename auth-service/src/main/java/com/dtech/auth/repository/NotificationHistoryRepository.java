@@ -12,7 +12,7 @@ import java.util.List;
 
 @Repository
 public interface NotificationHistoryRepository extends JpaRepository<NotificationHistory, Long> , JpaSpecificationExecutor<NotificationHistory> {
-    long countByTypeAndIsRead(NotificationsType type, boolean read);
+    long countByTypeAndEmployeeAndIsRead(NotificationsType type,ApplicationUser applicationUser, boolean read);
 
     List<NotificationHistory> findAllByTypeAndEmployeeOrderByLastModifiedByDesc(NotificationsType type, ApplicationUser applicationUser, Pageable pageable);
 }
