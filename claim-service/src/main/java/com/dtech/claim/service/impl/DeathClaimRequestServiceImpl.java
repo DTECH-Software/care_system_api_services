@@ -379,11 +379,11 @@ public class DeathClaimRequestServiceImpl implements DeathClaimRequestService {
                    log.info("inside document list claims request details attachment view - death  {} ", document);
                    return new DocumentDownloadResponseDTO(String.valueOf(document.getType()), document.getFileName(), document.getFileType(), document.getDoc());
                })).toList();
-               return ResponseEntity.ok().body(responseUtil.success((Object) collect,
+               return ResponseEntity.ok().body(responseUtil.success((Object) Map.of("documents",collect),
                        messageSource.getMessage(ResponseMessageUtil.DEATH_CLAIM_REQUEST_FIND_BY_ID_SUCCESS,
                                null, locale)));
            }).orElseGet(() -> {
-               log.info("Detah claims details not found by {}", detailsViewRequestDTO.getId());
+               log.info("Death claims details not found by {}", detailsViewRequestDTO.getId());
                return ResponseEntity.ok().body(responseUtil.error(null, 1054, messageSource.getMessage(ResponseMessageUtil.DEATH_CLAIMS_REQUEST_DETAILS_NOT_FOUND_BY_ID, null, locale)));
            });
        }catch (Exception e) {

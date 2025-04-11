@@ -863,7 +863,7 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
                     log.info("inside document list claims request details attachment view {} ", document);
                     return new DocumentDownloadResponseDTO(String.valueOf(document.getType()), document.getFileName(), document.getFileType(), document.getDoc());
                 })).toList();
-                return ResponseEntity.ok().body(responseUtil.success((Object) collect,
+                return ResponseEntity.ok().body(responseUtil.success((Object) Map.of("documents",collect),
                         messageSource.getMessage(ResponseMessageUtil.INSURANCE_CLAIM_REQUEST_FIND_BY_ID_SUCCESS,
                                 null, locale)));
             }).orElseGet(() -> {
