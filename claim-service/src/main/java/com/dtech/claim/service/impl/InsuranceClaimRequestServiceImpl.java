@@ -7,7 +7,6 @@
 
 package com.dtech.claim.service.impl;
 
-
 import com.dtech.claim.dto.*;
 import com.dtech.claim.dto.response.DocumentDownloadResponseDTO;
 import com.dtech.claim.enums.*;
@@ -95,22 +94,19 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
     private final DocumentFeignClient documentFeignClient;
 
     @Autowired
-    private ModelMapper modelMapper;
+    private final ModelMapper modelMapper;
 
     @Autowired
-    private MessageFeignClient messageFeignClient;
+    private final MessageFeignClient messageFeignClient;
 
     @Autowired
-    private DeathClaimRequestRepository deathClaimRequestRepository;
+    private final DeathClaimRequestRepository deathClaimRequestRepository;
 
     @Autowired
-    private TreatmentCategoryRepository treatmentCategoryRepository;
+    private final TreatmentCategoryRepository treatmentCategoryRepository;
 
     @Autowired
-    private InsuranceMonthCategoryRepository insuranceMonthCategoryRepository;
-
-    private boolean isAlreadyAssignedIndoor = false;
-    private boolean isAlreadyAssignedOutdoor = false;
+    private final InsuranceMonthCategoryRepository insuranceMonthCategoryRepository;
 
     @Override
     @Transactional
@@ -705,13 +701,11 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
                     log.info("Third month range");
                     insuranceMontCategory = InsuranceMonthCategory.THIRD;
                 }
-                log.info("Inside period event limit month category {} {}",insuranceMontCategory,isAlreadyAssignedIndoor);
-
+                log.info("Inside period event limit month category {} ",insuranceMontCategory);
 
                     if (in.getInsuranceMonthCategory().getCode().equals(insuranceMontCategory.name())) {
                         log.info("Inside matching month category  indoor{}", in.getInsuranceMonthCategory().getCode());
                         funLimit = in.getEventLimit();
-                        this.isAlreadyAssignedIndoor = true;
                         BigDecimal sum = insuranceClaimsRequestRepository.getSumRequestAmountByEmployeeAndTreatmentAndCategoryAndStatus(
                                 applicationUser,
                                 treatmentCode,
@@ -731,29 +725,28 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
                                         ));
                     }
 
-                    if (in.getInsuranceMonthCategory().getCode().equals(insuranceMontCategory.name())) {
-                        log.info("Inside matching month category  outdoor {}", in.getInsuranceMonthCategory().getCode());
-                        log.info("out door {} ",in.getEventLimit());
-                        funLimit = in.getEventLimit();
-                        this.isAlreadyAssignedOutdoor = true;
-                        BigDecimal sum = insuranceClaimsRequestRepository.getSumRequestAmountByEmployeeAndTreatmentAndCategoryAndStatus(
-                                applicationUser,
-                                treatmentCode,
-                                category,
-                                List.of(Workflow.APPROVED, Workflow.UNDER_REVIEW)
-                        );
-                        log.info("Sum amount insurance ref data {} {}", sum, in.getClaimLimit());
-                        BigDecimal remaining = funLimit.subtract(sum != null ? sum : BigDecimal.valueOf(0.00));
-                        log.info("Remaining amount insurance ref data {}", remaining);
-
-                        limitMap
-                                .computeIfAbsent(treatmentCode, k -> new HashMap<>())
-                                .merge(category, new AvailableInsuranceLimitDTO(remaining, funLimit),
-                                        (existing, newDetails) -> new AvailableInsuranceLimitDTO(
-                                                newDetails.getAvailableLimit(),
-                                                newDetails.getFundLimit()
-                                        ));
-                    }
+//                    if (in.getInsuranceMonthCategory().getCode().equals(insuranceMontCategory.name())) {
+//                        log.info("Inside matching month category  outdoor {}", in.getInsuranceMonthCategory().getCode());
+//                        log.info("out door {} ",in.getEventLimit());
+//                        funLimit = in.getEventLimit();
+//                        BigDecimal sum = insuranceClaimsRequestRepository.getSumRequestAmountByEmployeeAndTreatmentAndCategoryAndStatus(
+//                                applicationUser,
+//                                treatmentCode,
+//                                category,
+//                                List.of(Workflow.APPROVED, Workflow.UNDER_REVIEW)
+//                        );
+//                        log.info("Sum amount insurance ref data {} {}", sum, in.getClaimLimit());
+//                        BigDecimal remaining = funLimit.subtract(sum != null ? sum : BigDecimal.valueOf(0.00));
+//                        log.info("Remaining amount insurance ref data {}", remaining);
+//
+//                        limitMap
+//                                .computeIfAbsent(treatmentCode, k -> new HashMap<>())
+//                                .merge(category, new AvailableInsuranceLimitDTO(remaining, funLimit),
+//                                        (existing, newDetails) -> new AvailableInsuranceLimitDTO(
+//                                                newDetails.getAvailableLimit(),
+//                                                newDetails.getFundLimit()
+//                                        ));
+//                    }
 
 
             } else {
@@ -802,7 +795,6 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
 
 
     }
-
 
     private void addIfNotPresent(List<SimpleBaseDTO> tCategoryList, InsuranceDetails insuranceDetails) {
         boolean alreadyPresent = tCategoryList.stream()
@@ -973,5 +965,4 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
             throw e;
         }
     }
-
 }
