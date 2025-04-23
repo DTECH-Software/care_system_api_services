@@ -160,7 +160,7 @@ public class OtpServiceImpl implements OtpService {
 
                 return optionalUser.map(user -> applicationPasswordPolicyRepository.findPasswordPolicy().map((policy) -> {
 
-                    if (user.getOtpAttemptCount() > policy.getOtpExceedCount()) {
+                    if (user.getOtpAttemptCount() >= policy.getOtpExceedCount()) {
                         log.info("Reset password OTP request attempt exceed {} , {}", user.getOtpAttemptCount(), policy.getOtpExceedCount());
                         long minutes = DateTimeUtil.getMinutes(DateTimeUtil.getYyyyMMddHHMmSsTimeFormatter(DateTimeUtil.getSeconds(user.getOtpAttemptResetTime(), 2700)));
                         return ResponseEntity.ok().body(responseUtil.error(null, 1010, messageSource.getMessage(ResponseMessageUtil.APPLICATION_USER_OTP_EXCEED, new Object[]{minutes}, locale)));

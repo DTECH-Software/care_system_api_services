@@ -422,10 +422,10 @@ public class DeathClaimRequestServiceImpl implements DeathClaimRequestService {
                                            com.dtech.claim.model.DeathBeneficiary deathBeneficiary, List<Document> uploadSupportingDocument) {
         try {
             log.info("Save death claim request death{}", deathClaimRequestDTO);
-            ClaimRequestIdGen claimRequestIdGen = ClaimRequestIdGen.builder()
-                    .year(String.valueOf(LocalDate.now().getYear()))
+            ClaimRequestIdGen claimRequestIdGen = ClaimRequestIdGen
+                    .builder().year(String.valueOf(LocalDate.now().getYear()))
                     .company(applicationUser.getUserPersonalDetails().getUserCompanyDetails().getCompanyTypes().getCode())
-                    .staffCategory(applicationUser.getUserPersonalDetails().getUserCompanyDetails().getStaffTypes().getCode())
+                    .staffCategory(applicationUser.getUserPersonalDetails().getUserCompanyDetails().getStaffCategories().getCode())
                     .build();
             RequestIdGenUtil requestIdGenUtil = new RequestIdGenUtil(false);
             log.info("Generate request id death {}", claimRequestIdGen);

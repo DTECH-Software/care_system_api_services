@@ -579,6 +579,7 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
         }
     }
 
+
     @Transactional(readOnly = true)
     protected ResponseEntity<ApiResponse<Object>> validateDocumentCount(List<SupportingDocumentDTO> documents, String documentType,
                                                                         String commonParamCode, String maxMessage, String minMessage, Locale locale) {
@@ -944,7 +945,11 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
 
             InsuranceClaimsDetails insuranceClaimsDetails = saveClaimRequestDetails(claimRequestDTO, treatment, treatmentCategory);
 
-            ClaimRequestIdGen claimRequestIdGen = ClaimRequestIdGen.builder().year(String.valueOf(insurancePeriod.getYear())).company(applicationUser.getUserPersonalDetails().getUserCompanyDetails().getCompanyTypes().getCode()).staffCategory(applicationUser.getUserPersonalDetails().getUserCompanyDetails().getStaffTypes().getCode()).build();
+            ClaimRequestIdGen claimRequestIdGen = ClaimRequestIdGen
+                    .builder().year(String.valueOf(LocalDate.now().getYear()))
+                    .company(applicationUser.getUserPersonalDetails().getUserCompanyDetails().getCompanyTypes().getCode())
+                    .staffCategory(applicationUser.getUserPersonalDetails().getUserCompanyDetails().getStaffCategories().getCode())
+                    .build();
             RequestIdGenUtil requestIdGenUtil = new RequestIdGenUtil(true);
             log.info("Generate request id {}", claimRequestIdGen);
             String claimRequestId = (String) requestIdGenUtil.generate(entityManager.unwrap(SharedSessionContractImplementor.class), claimRequestIdGen);
