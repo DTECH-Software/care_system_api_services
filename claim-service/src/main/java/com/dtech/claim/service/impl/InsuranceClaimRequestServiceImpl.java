@@ -249,7 +249,7 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
                                                                                             user.getApplicationOtpSession().getOtp().equals(claimRequestDTO.getOtp()) && user.getApplicationOtpSession().isValidated()) {
                                                                                         log.info("Otp request valid {} ", user.getApplicationOtpSession());
                                                                                         updateApplicationUserOtpData(user, user.getApplicationOtpSession());
-                                                                                        String claimRequestId = saveClaimRequest(claimRequestDTO, period, user, claimsDependents, treatment, tc);
+                                                                                        String claimRequestId = saveClaimRequest(claimRequestDTO, user, claimsDependents, treatment, tc);
                                                                                         notifyMessage(user.getPrimaryMobile(), claimRequestId);
                                                                                         return ResponseEntity.ok().body(responseUtil.success(null, messageSource.getMessage(ResponseMessageUtil.INSURANCE_CLAIM_REQUEST_SUBMIT_SUCCESS, null, locale)));
                                                                                     } else {
@@ -281,7 +281,7 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
                                                                                             user.getApplicationOtpSession().getOtp().equals(claimRequestDTO.getOtp()) && user.getApplicationOtpSession().isValidated()) {
                                                                                         log.info("Otp request valid {} ", user.getApplicationOtpSession());
                                                                                         updateApplicationUserOtpData(user, user.getApplicationOtpSession());
-                                                                                        String claimRequestId = saveClaimRequest(claimRequestDTO, period, user, claimsDependents, treatment, tc);
+                                                                                        String claimRequestId = saveClaimRequest(claimRequestDTO, user, claimsDependents, treatment, tc);
                                                                                         notifyMessage(user.getPrimaryMobile(), claimRequestId);
                                                                                         return ResponseEntity.ok().body(responseUtil.success(null, messageSource.getMessage(ResponseMessageUtil.INSURANCE_CLAIM_REQUEST_SUBMIT_SUCCESS, null, locale)));
                                                                                     } else {
@@ -316,7 +316,7 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
                                                                                             user.getApplicationOtpSession().getOtp().equals(claimRequestDTO.getOtp()) && user.getApplicationOtpSession().isValidated()) {
                                                                                         log.info("Otp request valid {} ", user.getApplicationOtpSession());
                                                                                         updateApplicationUserOtpData(user, user.getApplicationOtpSession());
-                                                                                        String claimRequestId = saveClaimRequest(claimRequestDTO, period, user, claimsDependents, treatment, tc);
+                                                                                        String claimRequestId = saveClaimRequest(claimRequestDTO, user, claimsDependents, treatment, tc);
                                                                                         notifyMessage(user.getPrimaryMobile(), claimRequestId);
                                                                                         return ResponseEntity.ok().body(responseUtil.success(null, messageSource.getMessage(ResponseMessageUtil.INSURANCE_CLAIM_REQUEST_SUBMIT_SUCCESS, null, locale)));
                                                                                     } else {
@@ -349,7 +349,7 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
                                                                                             user.getApplicationOtpSession().getOtp().equals(claimRequestDTO.getOtp()) && user.getApplicationOtpSession().isValidated()) {
                                                                                         log.info("Otp request valid {} ", user.getApplicationOtpSession());
                                                                                         updateApplicationUserOtpData(user, user.getApplicationOtpSession());
-                                                                                        String claimRequestId = saveClaimRequest(claimRequestDTO, period, user, claimsDependents, treatment, tc);
+                                                                                        String claimRequestId = saveClaimRequest(claimRequestDTO, user, claimsDependents, treatment, tc);
                                                                                         notifyMessage(user.getPrimaryMobile(), claimRequestId);
                                                                                         return ResponseEntity.ok().body(responseUtil.success(null, messageSource.getMessage(ResponseMessageUtil.INSURANCE_CLAIM_REQUEST_SUBMIT_SUCCESS, null, locale)));
                                                                                     } else {
@@ -384,7 +384,7 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
                                                                                             user.getApplicationOtpSession().getOtp().equals(claimRequestDTO.getOtp()) && user.getApplicationOtpSession().isValidated()) {
                                                                                         log.info("Otp request valid {} ", user.getApplicationOtpSession());
                                                                                         updateApplicationUserOtpData(user, user.getApplicationOtpSession());
-                                                                                        String claimRequestId = saveClaimRequest(claimRequestDTO, period, user, claimsDependents, treatment, tc);
+                                                                                        String claimRequestId = saveClaimRequest(claimRequestDTO, user, claimsDependents, treatment, tc);
                                                                                         notifyMessage(user.getPrimaryMobile(), claimRequestId);
                                                                                         return ResponseEntity.ok().body(responseUtil.success(null, messageSource.getMessage(ResponseMessageUtil.INSURANCE_CLAIM_REQUEST_SUBMIT_SUCCESS, null, locale)));
                                                                                     } else {
@@ -417,7 +417,7 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
                                                                                             user.getApplicationOtpSession().getOtp().equals(claimRequestDTO.getOtp()) && user.getApplicationOtpSession().isValidated()) {
                                                                                         log.info("Otp request valid {} ", user.getApplicationOtpSession());
                                                                                         updateApplicationUserOtpData(user, user.getApplicationOtpSession());
-                                                                                        String claimRequestId = saveClaimRequest(claimRequestDTO, period, user, claimsDependents, treatment, tc);
+                                                                                        String claimRequestId = saveClaimRequest(claimRequestDTO, user, claimsDependents, treatment, tc);
                                                                                         notifyMessage(user.getPrimaryMobile(), claimRequestId);
                                                                                         return ResponseEntity.ok().body(responseUtil.success(null, messageSource.getMessage(ResponseMessageUtil.INSURANCE_CLAIM_REQUEST_SUBMIT_SUCCESS, null, locale)));
                                                                                     } else {
@@ -464,7 +464,7 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
                                                                                     user.getApplicationOtpSession().getOtp().equals(claimRequestDTO.getOtp()) && user.getApplicationOtpSession().isValidated()) {
                                                                                 log.info("Otp request valid {} ", user.getApplicationOtpSession());
                                                                                 updateApplicationUserOtpData(user, user.getApplicationOtpSession());
-                                                                                String claimRequestId = saveClaimRequest(claimRequestDTO, period, user, claimsDependents, treatment, tc);
+                                                                                String claimRequestId = saveClaimRequest(claimRequestDTO, user, claimsDependents, treatment, tc);
                                                                                 notifyMessage(user.getPrimaryMobile(), claimRequestId);
                                                                                 return ResponseEntity.ok().body(responseUtil.success(null, messageSource.getMessage(ResponseMessageUtil.INSURANCE_CLAIM_REQUEST_SUBMIT_SUCCESS, null, locale)));
                                                                             } else {
@@ -510,7 +510,7 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
                                                                             user.getApplicationOtpSession().getOtp().equals(claimRequestDTO.getOtp()) && user.getApplicationOtpSession().isValidated()) {
                                                                         log.info("Otp request valid {} ", user.getApplicationOtpSession());
                                                                         updateApplicationUserOtpData(user, user.getApplicationOtpSession());
-                                                                        String claimRequestId = saveClaimRequest(claimRequestDTO, period, user, claimsDependents, treatment, tc);
+                                                                        String claimRequestId = saveClaimRequest(claimRequestDTO, user, claimsDependents, treatment, tc);
                                                                         notifyMessage(user.getPrimaryMobile(), claimRequestId);
                                                                         return ResponseEntity.ok().body(responseUtil.success(null, messageSource.getMessage(ResponseMessageUtil.INSURANCE_CLAIM_REQUEST_SUBMIT_SUCCESS, null, locale)));
                                                                     } else {
@@ -938,7 +938,7 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
     }
 
     @Transactional
-    protected String saveClaimRequest(ClaimRequestDTO claimRequestDTO, InsurancePeriod insurancePeriod, ApplicationUser applicationUser,
+    protected String saveClaimRequest(ClaimRequestDTO claimRequestDTO, ApplicationUser applicationUser,
                                       Optional<ClaimsDependents> claimsDependents, Treatment treatment, com.dtech.claim.model.TreatmentCategory treatmentCategory) {
         try {
             log.info("Claim request save started {}", claimRequestDTO);
