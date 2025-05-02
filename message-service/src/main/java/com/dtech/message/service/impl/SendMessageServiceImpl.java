@@ -99,7 +99,7 @@ public class SendMessageServiceImpl implements SendMessageService {
                     }).orElseGet(() -> {
                         log.info("Template {} not found", messageRequestDTO.getType());
                        return MessageResponseDTO.builder()
-                                .success(true)
+                                .success(false)
                                 .message(messageSource.getMessage("val.notification.template.not.found", null, null)).build();
                     });
 

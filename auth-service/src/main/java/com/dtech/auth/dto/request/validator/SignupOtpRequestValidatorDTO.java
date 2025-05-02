@@ -21,6 +21,6 @@ public class SignupOtpRequestValidatorDTO extends ChannelRequestValidatorDTO{
     @Pattern(regexp = "^[0-9]{9}[Vv]?$|^[0-9]{12}$", message = "Invalid NIC number. It must be 9 digits optionally followed by 'V' or 'v', or exactly 12 digits.")
     private String nic;
     @NotBlank(message = "Mobile number is required.")
-    @Pattern(regexp = "^(071|070|077|075|078|072|076)[0-9]{7}$", message = "Invalid mobile number. It must start with 071, 070, 077, 075, 078, 072, or 076, and be followed by 7 digits.")
+    @Pattern(regexp = "^(071|070|074|077|075|078|072|076)[0-9]{7}$", message = "Invalid mobile number. It must start with 071,074, 070, 077, 075, 078, 072, or 076, and be followed by 7 digits.")
     private String mobileNo;
 }

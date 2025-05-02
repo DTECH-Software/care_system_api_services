@@ -9,7 +9,7 @@ import lombok.EqualsAndHashCode;
 @Data
 public class OtpRequestValidatorDTO extends ChannelRequestValidatorDTO{
     @NotEmpty(message = "Mobile number is required.")
-    @Pattern(regexp = "^(071|070|077|075|078|072|076)[0-9]{7}$", message = "Invalid mobile number. It must start with 071, 070, 077, 075, 078, 072, or 076, and be followed by 7 digits.")
+    @Pattern(regexp = "^(071|070|074|077|075|078|072|076)[0-9]{7}$", message = "Invalid mobile number. It must start with 071,074, 070, 077, 075, 078, 072, or 076, and be followed by 7 digits.")
     private String primaryMobile;
 
 }
