@@ -100,11 +100,6 @@ public class LoginServiceImpl implements LoginService {
             }
             return optionalUser.map(user -> {
 
-                if(user.isReset() || user.getLoginStatus() == Status.INACTIVE) {
-                    log.info("user is reset state or inactive {}",user.getUsername());
-                    return ResponseEntity.ok().body(responseUtil.error(null, 1004, messageSource.getMessage(ResponseMessageUtil.LOGIN_STATUS_INACTIVE_OR_EXPECTED_RESET, null, locale)));
-                }
-
                 String hashPasswordRequest = "";
                 try {
                     hashPasswordRequest = PasswordUtil.passwordEncoder(user.getUserKey(), password);
@@ -113,6 +108,11 @@ public class LoginServiceImpl implements LoginService {
                 }
                 log.info("password decoder:-{}", hashPasswordRequest);
                 if (user.getPassword().equals(hashPasswordRequest)) {
+
+                    if(user.isReset() || user.getLoginStatus() == Status.INACTIVE) {
+                        log.info("user is reset state or inactive {}",user.getUsername());
+                        return ResponseEntity.ok().body(responseUtil.error(null, 1004, messageSource.getMessage(ResponseMessageUtil.LOGIN_STATUS_INACTIVE_OR_EXPECTED_RESET, null, locale)));
+                    }
 
                     Optional<Integer> passwordPolicyAttemptCount = getPasswordPolicyAttemptCount();
                     if (user.getPasswordExpiredDate().before(DateTimeUtil.getCurrentDateTime())) {

@@ -92,6 +92,12 @@ public class SendMessageServiceImpl implements SendMessageService {
                         HttpEntity<ITextMessageRequestDTO> entity = new HttpEntity<>(iTextMessageRequestDTO, headers);
                         log.info("Before send message {}", messageRequestDTO);
                         ResponseEntity<String> response = restTemplate.exchange(messageURI, HttpMethod.POST, entity, String.class);
+                        if (response.getBody() == null || response.getBody().isEmpty()) {
+                            log.error("Received empty response body from the API");
+                            return MessageResponseDTO.builder()
+                                    .success(false)
+                                    .message("No response body from the API").build();
+                        }
                         log.info("After send message {}", response.toString());
                         MessageResponseDTO responseState = getResponseState(response);
                         responseState.setMessage(messageSource.getMessage("val.otp.send.success", null, null));
