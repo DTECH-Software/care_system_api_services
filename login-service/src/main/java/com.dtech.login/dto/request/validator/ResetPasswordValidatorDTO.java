@@ -8,7 +8,7 @@
 package com.dtech.login.dto.request.validator;
 
 import com.dtech.login.validator.PasswordEquals;
-import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
@@ -16,8 +16,8 @@ import lombok.EqualsAndHashCode;
 @Data
 @PasswordEquals(message = "New password and confirm password mismatch.Please try again")
 public class ResetPasswordValidatorDTO extends ChannelRequestValidatorDTO{
-    @NotEmpty(message = "New password cannot be empty")
+    @NotBlank(message = "New password cannot be empty")
     private String password;
-    @NotEmpty(message = "Confirm password cannot be empty")
+    @NotBlank(message = "Confirm password cannot be empty")
     private String confirmPassword;
 }

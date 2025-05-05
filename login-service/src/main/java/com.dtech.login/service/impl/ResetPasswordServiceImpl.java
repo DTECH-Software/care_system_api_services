@@ -153,6 +153,7 @@ public class ResetPasswordServiceImpl implements ResetPasswordService {
                     log.info("processing reset password hash {}", password);
                     hashPassword = PasswordUtil.passwordEncoder(user.getUserKey(), password);
                 } catch (NoSuchAlgorithmException e) {
+                    log.error(e);
                     throw new RuntimeException(e);
                 }
                 String message = validAlignCurrentPasswordPolicy(password, user, hashPassword);
