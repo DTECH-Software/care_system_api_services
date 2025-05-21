@@ -8,6 +8,11 @@
         <option value="$PROJECT_DIR$/cloud-service/pom.xml" />
         <option value="$PROJECT_DIR$/registry-service/pom.xml" />
         <option value="$PROJECT_DIR$/login-service/pom.xml" />
+        <option value="$PROJECT_DIR$/auth-service/pom.xml" />
+        <option value="$PROJECT_DIR$/claim-service/pom.xml" />
+        <option value="$PROJECT_DIR$/document-service/pom.xml" />
+        <option value="$PROJECT_DIR$/message-service/pom.xml" />
+        <option value="$PROJECT_DIR$/notification-service/pom.xml" />
       </list>
     </option>
   </component>

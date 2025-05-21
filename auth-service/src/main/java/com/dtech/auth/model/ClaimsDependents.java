@@ -81,6 +81,9 @@ public class ClaimsDependents extends Audit implements Serializable {
     @JoinColumn(name = "married",referencedColumnName = "id")
     private Married married;
 
+    @Column(name = "live_status",nullable = false,columnDefinition = "BOOLEAN DEFAULT TRUE")
+    private Boolean liveStatus;
+
     @ManyToMany(fetch = FetchType.EAGER,cascade = CascadeType.REFRESH)
     @JoinTable(
             name = "claims_dependents_document",

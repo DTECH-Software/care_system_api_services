@@ -13,7 +13,7 @@ public class ResponseMessageUtil {
     public final static String AUTHENTICATION_SUCCESS = "val.authentication.success";
     public final static String PASSWORD_EXPIRED_AT_LOGIN_TIME = "val.password.expired.at.login.time";
     public final static String PASSWORD_ATTEMPT_EXCEED = "val.password.attempt.exceed";
-    public final static String LOGIN_STATUS_INACTIVE_OR_EXPECTED_RESET = "val.login.status.inactive.or.expected.reset";
+        public final static String LOGIN_STATUS_INACTIVE_OR_EXPECTED_RESET = "val.login.status.inactive.or.expected.reset";
 
     /*Password reset*/
     public final static String PASSWORD_RESET_SUCCESS = "val.password.reset.success";

@@ -116,18 +116,18 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
 
             return applicationUserRepository.findByUsernameAndUserPersonalDetails_UserStatus(claimRequestDTO.getUsername().trim(), Status.ACTIVE).map((user) -> {
 
-                ResponseEntity<ApiResponse<Object>> diagnosisValidationResult = validateDocumentCount(
-                        claimRequestDTO.getDocuments(),
-                        InsuranceClaimDocTypes.DIAGNOSIS_CARD.name(),
-                        CommonParam.DIAGNOSIS_CARD_MAX_IMAGE.name(),
-                        ResponseMessageUtil.INSURANCE_CLAIMS_DIAGNOSIS_MAX_IMAGE_INVALID,
-                        ResponseMessageUtil.INSURANCE_CLAIMS_DIAGNOSIS_MIN_IMAGE_INVALID,
-                        locale
-                );
-                if (diagnosisValidationResult != null) {
-                    log.info("Invalid document count: {}", diagnosisValidationResult);
-                    return diagnosisValidationResult;
-                }
+//                ResponseEntity<ApiResponse<Object>> diagnosisValidationResult = validateDocumentCount(
+//                        claimRequestDTO.getDocuments(),
+//                        InsuranceClaimDocTypes.DIAGNOSIS_CARD.name(),
+//                        CommonParam.DIAGNOSIS_CARD_MAX_IMAGE.name(),
+//                        ResponseMessageUtil.INSURANCE_CLAIMS_DIAGNOSIS_MAX_IMAGE_INVALID,
+//                        ResponseMessageUtil.INSURANCE_CLAIMS_DIAGNOSIS_MIN_IMAGE_INVALID,
+//                        locale
+//                );
+//                if (diagnosisValidationResult != null) {
+//                    log.info("Invalid document count: {}", diagnosisValidationResult);
+//                    return diagnosisValidationResult;
+//                }
 
                 ResponseEntity<ApiResponse<Object>> treatmentValidationResult = validateDocumentCount(
                         claimRequestDTO.getDocuments(),
@@ -137,6 +137,7 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
                         ResponseMessageUtil.INSURANCE_CLAIMS_TREATMENT_MIN_IMAGE_INVALID,
                         locale
                 );
+
                 if (treatmentValidationResult != null) {
                     log.info("Invalid document count: {}", treatmentValidationResult);
                     return treatmentValidationResult;
@@ -611,15 +612,15 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
                 InsurancePeriod period = insurancePeriodRepository.findByYearAndStatus(String.valueOf(LocalDate.now().getYear()), Status.ACTIVE).orElse(null);
                 List<Treatment> treatmentList = treatmentRepository.findAllByStatus(Status.ACTIVE);
                 log.info("Insurance claim reference data get dependence {} ", treatmentList);
-                List<SimpleBaseDTO> claimsDependents = claimDependentsRepository
-                        .findByApplicationUserAndStatusAndEligibleFacilityIn(user, Workflow.ACTIVE, List.of(Facility.INSURANCE, Facility.BOTH))
+                List<DependentBaseDTO> claimsDependents = claimDependentsRepository
+                        .findByApplicationUserAndStatusAndEligibleFacilityInAndLiveStatus(user, Workflow.ACTIVE, List.of(Facility.INSURANCE, Facility.BOTH),true)
                         .stream()
                         .filter(dep -> {
                             boolean ex = deathClaimRequestRepository.existsByClaimsDependentsAndEmployeeAndRequestStatusIn(dep, user, List.of(Workflow.APPROVED));
                             return !ex;
                         })
-                        .map(dep -> new SimpleBaseDTO(
-                                String.valueOf(dep.getId()), dep.getFirstName() + " " + dep.getLastName()
+                        .map(dep -> new DependentBaseDTO(
+                                String.valueOf(dep.getId()), dep.getFirstName() + " " + dep.getLastName() ,dep.getRelationCategory().getDescription()
                         ))
                         .toList();
                 log.info("Call minus insurance claim date");
@@ -628,7 +629,6 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
                 int treatment = Objects.requireNonNull(commonParameterRepository.findByCode(CommonParam.TREATMENT_BILL_MAX_IMAGE.name()).orElse(null)).getValue();
                 log.info("Get minus insurance claim date {} ", minuesDate);
                 Map<String, Object> splashData = new HashMap<>();
-                List<AvailableInsuranceLimitDTO> list = null;
                 List<SimpleBaseDTO> userWiseTreatment = new ArrayList<>();
                 Map<String, List<SimpleBaseDTO>> userWiseTreatmentCategory = new HashMap<>();
                 Map<String, Map<String, AvailableInsuranceLimitDTO>> limits = new HashMap<>();
@@ -711,7 +711,7 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
                                 applicationUser,
                                 treatmentCode,
                                 category,
-                                List.of(Workflow.APPROVED, Workflow.UNDER_REVIEW)
+                                List.of(Workflow.APPROVED)
                         );
                         log.info("Sum amount insurance ref data {} {}", sum, in.getClaimLimit());
                         BigDecimal remaining = funLimit.subtract(sum != null ? sum : BigDecimal.valueOf(0.00));
@@ -757,7 +757,7 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
                         applicationUser,
                         treatmentCode,
                         category,
-                        List.of(Workflow.APPROVED, Workflow.UNDER_REVIEW)
+                        List.of(Workflow.APPROVED)
                 );
                 log.info("Sum amount insurance ref data {} {}", sum, in.getClaimLimit());
                 BigDecimal remaining = funLimit.subtract(sum != null ? sum : BigDecimal.valueOf(0.00));
@@ -778,7 +778,7 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
                     applicationUser,
                     treatmentCode,
                     category,
-                    List.of(Workflow.APPROVED, Workflow.UNDER_REVIEW)
+                    List.of(Workflow.APPROVED)
             );
             log.info("Sum amount insurance ref data {} {}", sum, in.getClaimLimit());
             BigDecimal remaining = funLimit.subtract(sum != null ? sum : BigDecimal.valueOf(0.00));

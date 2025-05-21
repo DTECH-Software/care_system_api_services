@@ -430,6 +430,7 @@ public class ProfileServiceImpl implements ProfileService {
                 }
 
                 claimsDependents.setEligibleFacility(isEligibleForBoth ? Facility.BOTH : Facility.DEATH);
+                claimsDependents.setLiveStatus(true);
 
                claimsDependents.setApplicationUser(applicationUser);
                 if (claimDependentDetailsRequestDTO.getMarried() != null && married != null) {

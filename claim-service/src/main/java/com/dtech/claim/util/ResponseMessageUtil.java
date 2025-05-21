@@ -64,6 +64,10 @@ public class ResponseMessageUtil {
     public final static String COMMON_PARAM_NOT_FOUND = "val.common.param.not.found";
     public final static String OLDER_DATE_INSURANCE_CLAIM_REQUEST = "val.older.date.insurance.claim.request";
     public final static String OLDER_DATE_DEATH_CLAIM_REQUEST = "val.older.date.death.claim.request";
+    public final static String CHILD_AGE_DEATH_CLAIM_REQUEST_INVALID = "val.child.age.date.death.claim.request";
+    public final static String EMPLOYEE_OLDER_AGE_DATE_DEATH_CLAIM_REQUEST = "val.older.age.dependent.not.eligible.death.request";
+
+    public static final String PERMANENT_DATE_TOO_OLD_MESSAGE = "val.permanent.date.too.old.request";
     public final static String INSURANCE_CLAIM_REQUEST_HISTORY_FILTER_LIST_SUCCESS = "val.insurance.claim.request.history.filter.list.success";
     public final static String INSURANCE_CLAIM_REQUEST_FIND_BY_ID_SUCCESS = "val.insurance.claim.request.find.by.id.success";
     public final static String DEATH_CLAIM_REQUEST_FIND_BY_ID_SUCCESS = "val.death.claim.request.find.by.id.success";

@@ -7,10 +7,7 @@
 
 package com.dtech.claim.service.impl;
 
-import com.dtech.claim.dto.ClaimRequestIdGen;
-import com.dtech.claim.dto.DeathLimitDTO;
-import com.dtech.claim.dto.PagingResult;
-import com.dtech.claim.dto.SimpleBaseDTO;
+import com.dtech.claim.dto.*;
 import com.dtech.claim.dto.request.*;
 import com.dtech.claim.dto.response.ApiResponse;
 import com.dtech.claim.dto.response.DeathClaimRequestResponseDTO;
@@ -95,59 +92,88 @@ public class DeathClaimRequestServiceImpl implements DeathClaimRequestService {
             return applicationUserRepository.findByUsernameAndUserPersonalDetails_UserStatus(channelRequestDTO.getUsername().trim(), Status.ACTIVE).map((user) -> {
                 Map<String, Object> splashData = new HashMap<>();
 
-                List<ClaimsDependents> claimsDependents = claimDependentsRepository.
-                        findByApplicationUserAndStatusAndEligibleFacilityIn(user, Workflow.ACTIVE, List.of(Facility.DEATH, Facility.BOTH))
+                List<ClaimsDependents> claimsDependents = new ArrayList<>(claimDependentsRepository.
+                        findByApplicationUserAndStatusAndEligibleFacilityInAndLiveStatus(user, Workflow.ACTIVE, List.of(Facility.DEATH, Facility.BOTH), true)
                         .stream().filter(dep -> {
                             boolean exists = deathClaimRequestRepository.existsByClaimsDependentsAndEmployeeAndRequestStatusIn(dep, user, List.of(Workflow.APPROVED, Workflow.UNDER_REVIEW));
                             return !exists;
-                        }).toList();
+                        }).toList());
+
+                int empAge = DateTimeUtil.getAge(String.valueOf(user.getUserPersonalDetails().getDob()));
+
+                CommonParameter ddfAgeForDependent = commonParameterRepository.findByCode(CommonParam.EMPLOYEE_MAX_AGE_FOR_REQUEST_DDF.name()).orElse(null);
+
+                if(empAge > (Objects.nonNull(ddfAgeForDependent) ? ddfAgeForDependent.getValue() : 0)){
+                    log.info("Age {} is greater than age ", empAge);
+                    claimsDependents.clear();
+                }
 
                 CommonParameter deathAge = commonParameterRepository.findByCode(CommonParam.DEATH_AGE.name()).orElse(null);
+                CommonParameter childAgeMin = commonParameterRepository.findByCode(CommonParam.DDF_REQUEST_CHILDREN_MIN_AGE.name()).orElse(null);
+
+                CommonParameter minDateAfterPer = commonParameterRepository.findByCode(CommonParam.DDF_REQUEST_PER_MIN_PERIOD.name()).orElse(null);
+
+                Date minDate = DateTimeUtil.getMinuesDate(minDateAfterPer != null ? minDateAfterPer.getValue() : 0);
 
                 ArrayList<DeathLimitDTO> deathLimitDTOS = new ArrayList<>();
-                ArrayList<SimpleBaseDTO> claimDependent = new ArrayList<>();
+                ArrayList<DependentBaseDTO> claimDependent = new ArrayList<>();
 
                 claimsDependents.forEach((dep) -> {
-                    claimDependent.add(new SimpleBaseDTO(String.valueOf(dep.getId()), dep.getFirstName() + " " + dep.getLastName()));
 
-                    if (dep.getRelationCategory().equals(RelationCategory.CHILD) ||
-                            dep.getRelationCategory().equals(RelationCategory.SISTER) ||
-                            dep.getRelationCategory().equals(RelationCategory.BROTHER)) {
-                        log.info("Relation claim reference data {} ", dep.getRelationCategory());
-                        int age = DateTimeUtil.getAge(String.valueOf(dep.getDob()));
-                        Range range = Range.LOWER;
+                    if (dep.getRelationCategory().equals(RelationCategory.CHILD) ){
+                       int childAge =  DateTimeUtil.getAgeForMonth(String.valueOf(dep.getDob()));
 
-                        if (age > (deathAge != null ? deathAge.getValue() : 1)) {
-                            log.info("Upper range claim reference data {} ", age);
-                            range = Range.UPPER;
+                       if(childAge > (Objects.nonNull(childAgeMin)?childAgeMin.getValue():0)){ // 1 > 30
+                           log.info("Age {} is greater than age child ", childAge);
+                           claimDependent.add(new DependentBaseDTO(String.valueOf(dep.getId()), dep.getFirstName() + " " + dep.getLastName(),dep.getRelationCategory().getDescription()));
+
+                       }
+
+                    }else{
+                        claimDependent.add(new DependentBaseDTO(String.valueOf(dep.getId()), dep.getFirstName() + " " + dep.getLastName(),dep.getRelationCategory().getDescription()));
+
+                        if (dep.getRelationCategory().equals(RelationCategory.CHILD) ||
+                                dep.getRelationCategory().equals(RelationCategory.SISTER) ||
+                                dep.getRelationCategory().equals(RelationCategory.BROTHER)) {
+                            log.info("Relation claim reference data {} ", dep.getRelationCategory());
+                            int age = DateTimeUtil.getAge(String.valueOf(dep.getDob()));
+                            Range range = Range.LOWER;
+
+                            if (age > (deathAge != null ? deathAge.getValue() : 1)) {
+                                log.info("Upper range claim reference data {} ", age);
+                                range = Range.UPPER;
+                            }
+                            com.dtech.claim.model.DeathBeneficiary deathBeneficiary = deathBeneficiaryRepository.
+                                    findByCodeAndRangeAndStatus(DeathBeneficiary.valueOf(dep.getRelationCategory().name()),
+                                            range, Status.ACTIVE).orElse(null);
+
+                            deathLimitDTOS.add(DeathLimitDTO.builder()
+                                    .dependentId(String.valueOf(dep.getId()))
+                                    .deathLimit(deathBeneficiary != null ? deathBeneficiary.getClaimLimit() : null)
+                                    .ageRange(deathBeneficiary != null ? deathBeneficiary.getRange().name() : null)
+                                    .build());
+
+                        } else {
+
+                            com.dtech.claim.model.DeathBeneficiary deathBeneficiary = deathBeneficiaryRepository.
+                                    findByCodeAndStatus(DeathBeneficiary.valueOf(dep.getRelationCategory().name()), Status.ACTIVE).orElse(null);
+
+                            deathLimitDTOS.add(DeathLimitDTO.builder()
+                                    .dependentId(String.valueOf(dep.getId()))
+                                    .deathLimit(deathBeneficiary != null ? deathBeneficiary.getClaimLimit() : null)
+                                    .ageRange(deathBeneficiary != null ? deathBeneficiary.getRange() != null ? deathBeneficiary.getRange().name() : null : null)
+                                    .build());
                         }
-                        com.dtech.claim.model.DeathBeneficiary deathBeneficiary = deathBeneficiaryRepository.
-                                findByCodeAndRangeAndStatus(DeathBeneficiary.valueOf(dep.getRelationCategory().name()),
-                                        range, Status.ACTIVE).orElse(null);
-
-                        deathLimitDTOS.add(DeathLimitDTO.builder()
-                                .dependentId(String.valueOf(dep.getId()))
-                                .deathLimit(deathBeneficiary != null ? deathBeneficiary.getClaimLimit() : null)
-                                .ageRange(deathBeneficiary != null ? deathBeneficiary.getRange().name() : null)
-                                .build());
-
-                    } else {
-
-                        com.dtech.claim.model.DeathBeneficiary deathBeneficiary = deathBeneficiaryRepository.
-                                findByCodeAndStatus(DeathBeneficiary.valueOf(dep.getRelationCategory().name()), Status.ACTIVE).orElse(null);
-
-                        deathLimitDTOS.add(DeathLimitDTO.builder()
-                                .dependentId(String.valueOf(dep.getId()))
-                                .deathLimit(deathBeneficiary != null ? deathBeneficiary.getClaimLimit() : null)
-                                .ageRange(deathBeneficiary != null ? deathBeneficiary.getRange() != null ? deathBeneficiary.getRange().name() : null : null)
-                                .build());
                     }
+
+
                 });
                 log.info("Call minus insurance claim date");
                 Date minuesDate = DateTimeUtil.getMinuesDate(Objects.requireNonNull(commonParameterRepository.findByCode(CommonParam.DEATH_CLAIM_REQUEST_PERIOD.name()).orElse(null)).getValue());
                 splashData.put("insuranceClaimsDependents", claimDependent);
                 splashData.put("deathClaimsFundLimits", deathLimitDTOS);
                 splashData.put("deathMinPastDate", minuesDate);
+                splashData.put("isRequestEnable", minDate.after(user.getUserPersonalDetails().getUserCompanyDetails().getPermanentDate()));
                 return ResponseEntity.ok().body(responseUtil.success((Object) splashData, messageSource.getMessage(ResponseMessageUtil.DEATH_CLAIMS_REFERENCE_DETAILS_SUCCESS, null, locale)));
 
             }).orElseGet(() -> {
@@ -168,6 +194,24 @@ public class DeathClaimRequestServiceImpl implements DeathClaimRequestService {
             log.info("Death Claim Request: " + deathClaimRequestDTO);
             return applicationUserRepository.findByUsernameAndUserPersonalDetails_UserStatus(deathClaimRequestDTO.getUsername().trim(), Status.ACTIVE)
                     .map((user) -> {
+
+                        CommonParameter minDateAfterPer = commonParameterRepository.findByCode(CommonParam.DDF_REQUEST_PER_MIN_PERIOD.name()).orElse(null);
+
+                        Date minDate = DateTimeUtil.getMinuesDate(minDateAfterPer != null ? minDateAfterPer.getValue() : 0);
+
+                        if(minDate.before(user.getUserPersonalDetails().getUserCompanyDetails().getPermanentDate())) {
+                            log.info("This timer period cant process ,PermanentDate case {} ", minDate);
+                            return ResponseEntity.ok().body(responseUtil.error(null, 1056, messageSource.getMessage(ResponseMessageUtil.PERMANENT_DATE_TOO_OLD_MESSAGE, null, locale)));
+                        }
+
+                        int empAge = DateTimeUtil.getAge(String.valueOf(user.getUserPersonalDetails().getDob()));
+
+                        CommonParameter ddfAgeForDependent = commonParameterRepository.findByCode(CommonParam.EMPLOYEE_MAX_AGE_FOR_REQUEST_DDF.name()).orElse(null);
+
+                        if(empAge > (Objects.nonNull(ddfAgeForDependent) ? ddfAgeForDependent.getValue() : 0)){
+                            log.info("Age {} is greater than age ", empAge);
+                            return ResponseEntity.ok().body(responseUtil.error(null, 1055, messageSource.getMessage(ResponseMessageUtil.EMPLOYEE_OLDER_AGE_DATE_DEATH_CLAIM_REQUEST, null, locale)));
+                        }
 
                         ResponseEntity<ApiResponse<Object>> deathCertification = validateDocumentCount(
                                 deathClaimRequestDTO.getDocuments(),
@@ -202,6 +246,17 @@ public class DeathClaimRequestServiceImpl implements DeathClaimRequestService {
                                     if (claimsDependents.isEmpty()) {
                                         log.info("Claim dependent not found or not eligible for death");
                                         return ResponseEntity.ok().body(responseUtil.error(null, 1034, messageSource.getMessage(ResponseMessageUtil.CLAIM_DEPENDENT_NOT_FOUND_OR_FACILITY_NOT_ELIGIBLE, null, locale)));
+                                    }else if(claimsDependents.get().getRelationCategory().equals(RelationCategory.CHILD)){
+                                        log.info("Child relation claim request {}", deathClaimRequestDTO.getClaimsDependentId());
+                                        CommonParameter childAgeMin = commonParameterRepository.findByCode(CommonParam.DDF_REQUEST_CHILDREN_MIN_AGE.name()).orElse(null);
+
+                                        int childAge = DateTimeUtil.getAgeForMonth(String.valueOf(claimsDependents.get().getDob()));
+
+                                        if(childAge < (Objects.nonNull(childAgeMin) ? childAgeMin.getValue() :0 )){
+                                            log.info("Child month age invalid {}", childAgeMin);
+                                            return ResponseEntity.ok().body(responseUtil.error(null, 1056, messageSource.getMessage(ResponseMessageUtil.CHILD_AGE_DEATH_CLAIM_REQUEST_INVALID, new Object[]{childAgeMin != null ? childAgeMin.getValue():0}, locale)));
+                                        }
+
                                     }
 
                                     AtomicReference<Range> range = new AtomicReference<>();

@@ -75,6 +75,9 @@ public class ClaimsDependents extends Audit implements Serializable {
     @JoinColumn(name = "application_user",nullable = false)
     private ApplicationUser applicationUser;
 
+    @Column(name = "live_status",nullable = false,columnDefinition = "BOOLEAN DEFAULT TRUE")
+    private Boolean liveStatus;
+
     @ManyToMany
     @JoinTable(
             name = "claims_dependents_document",

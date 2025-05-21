@@ -11,7 +11,7 @@ public enum TreatmentType {
 
     INDOOR("Indoor"),
     OUTDOOR("Outpatient"),
-    CRIC("Critical care"),
+    CRIC("Critical illness"),
     DEATH("Death fund");
 
     private final String description;

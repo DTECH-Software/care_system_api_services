@@ -26,6 +26,7 @@ public class EntityToDtoMapper {
     private static final ModelMapper modelMapper = new ModelMapper();
     public static InsuranceClaimRequestResponseDTO mapInsuranceClaimHistoryDetails(InsuranceClaimsRequest insuranceClaimsRequest) {
         try {
+
             log.info("Call to mapClaimHistoryDetails method {} ", insuranceClaimsRequest);
             InsuranceClaimRequestResponseDTO insuranceClaimRequestResponseDto = modelMapper.map(insuranceClaimsRequest, InsuranceClaimRequestResponseDTO.class);
             insuranceClaimRequestResponseDto.setRequestStatusDescription(Workflow.valueOf(insuranceClaimRequestResponseDto.getRequestStatus()).getDescription());

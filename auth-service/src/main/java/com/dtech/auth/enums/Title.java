@@ -3,8 +3,7 @@ package com.dtech.auth.enums;
 public enum Title implements DescribableEnum {
     MR("Mr"),
     MRS("Mrs"),
-    MISS("Miss"),
-    MS("Ms");
+    MISS("Miss");
 
     private final String description;
 

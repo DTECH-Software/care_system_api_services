@@ -21,5 +21,5 @@ import java.util.Optional;
 public interface ClaimDependentsRepository extends JpaRepository<ClaimsDependents,Long> {
  Optional<ClaimsDependents> findByIdAndApplicationUserAndStatus(Long id, ApplicationUser applicationUser, Workflow status);
  Optional<ClaimsDependents> findByIdAndApplicationUserAndStatusAndEligibleFacilityIn(Long id, ApplicationUser applicationUser, Workflow status, List<Facility> facility);
- List<ClaimsDependents> findByApplicationUserAndStatusAndEligibleFacilityIn(ApplicationUser applicationUser, Workflow status, List<Facility> facility);
+ List<ClaimsDependents> findByApplicationUserAndStatusAndEligibleFacilityInAndLiveStatus(ApplicationUser applicationUser, Workflow status, List<Facility> facility,Boolean live);
 }

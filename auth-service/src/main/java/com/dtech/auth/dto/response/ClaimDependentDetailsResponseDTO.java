@@ -33,6 +33,9 @@ public class ClaimDependentDetailsResponseDTO {
     private String status;
     private String statusDescription;
     private SimpleBaseDTO married;
+    private Boolean liveStatus;
     private String eligibleFacility;
+    private int age;
+    private Date createdDate;
     private List<DocumentDownloadResponseDTO> documents;
 }

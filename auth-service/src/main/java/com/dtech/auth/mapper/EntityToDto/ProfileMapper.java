@@ -102,6 +102,10 @@ public class ProfileMapper {
                     claimDependentDetailsResponseDTO.setMarried(new SimpleBaseDTO(ifNotOrEmpty(String.valueOf(dependents.getMarried().getCode()))
                             ,ifNotOrEmpty(String.valueOf(dependents.getMarried().getDescription()))));
                 }
+                claimDependentDetailsResponseDTO.setAge(DateTimeUtil.getAge(
+                        String.valueOf(dependents.getDob())));
+                claimDependentDetailsResponseDTO.setCreatedDate(dependents.getCreatedDate());
+                claimDependentDetailsResponseDTO.setLiveStatus(dependents.getLiveStatus());
                 claimDependentDetailsResponseDTO.setEligibleFacility(ifNotOrEmpty(String.valueOf(dependents.getEligibleFacility())));
                 log.info("claim dependent details call get image method");
                 List<DocumentDownloadResponseDTO> collect = dependents.getDocuments().stream().map((document -> {

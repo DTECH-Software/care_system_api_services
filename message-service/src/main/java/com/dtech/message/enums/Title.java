@@ -3,8 +3,7 @@ package com.dtech.message.enums;
 public enum Title {
     MR("Mr"),
     MRS("Mrs"),
-    MISS("Miss"),
-    MS("Ms");
+    MISS("Miss");
 
     private final String description;
 

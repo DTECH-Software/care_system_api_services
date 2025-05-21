@@ -88,4 +88,12 @@ public class DateTimeUtil {
         return Period.between(givenDate, currentDate).getYears();
     }
 
+    public static int getAgeForMonth(String date) {
+        log.info("get age month");
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+        LocalDate givenDate = LocalDate.parse(date, formatter);
+        LocalDate currentDate = LocalDate.now();
+        return Period.between(givenDate, currentDate).getMonths();
+    }
+
 }
