@@ -121,12 +121,11 @@ public class DeathClaimRequestServiceImpl implements DeathClaimRequestService {
                 claimsDependents.forEach((dep) -> {
 
                     if (dep.getRelationCategory().equals(RelationCategory.CHILD) ){
-                       int childAge =  DateTimeUtil.getAgeForMonth(String.valueOf(dep.getDob()));
-
-                       if(childAge > (Objects.nonNull(childAgeMin)?childAgeMin.getValue():0)){ // 1 > 30
-                           log.info("Age {} is greater than age child ", childAge);
+                       int childAge =  DateTimeUtil.getAgeInDays(String.valueOf(dep.getDob()));
+                        log.info("Child age {}", childAge);
+                       if(childAge > (Objects.nonNull(childAgeMin)?childAgeMin.getValue():0)){
+                           log.info("Age {} is greater than age child ", childAgeMin.getValue());
                            claimDependent.add(new DependentBaseDTO(String.valueOf(dep.getId()), dep.getFirstName() + " " + dep.getLastName(),dep.getRelationCategory().getDescription()));
-
                        }
 
                     }else{
@@ -201,7 +200,7 @@ public class DeathClaimRequestServiceImpl implements DeathClaimRequestService {
 
                         if(minDate.before(user.getUserPersonalDetails().getUserCompanyDetails().getPermanentDate())) {
                             log.info("This timer period cant process ,PermanentDate case {} ", minDate);
-                            return ResponseEntity.ok().body(responseUtil.error(null, 1056, messageSource.getMessage(ResponseMessageUtil.PERMANENT_DATE_TOO_OLD_MESSAGE, null, locale)));
+                            return ResponseEntity.ok().body(responseUtil.error(null, 1056, messageSource.getMessage(ResponseMessageUtil.PERMANENT_DATE_TOO_OLD_MESSAGE, new Object[]{Objects.nonNull(minDateAfterPer)?minDateAfterPer.getValue():0}, locale)));
                         }
 
                         int empAge = DateTimeUtil.getAge(String.valueOf(user.getUserPersonalDetails().getDob()));
@@ -250,7 +249,7 @@ public class DeathClaimRequestServiceImpl implements DeathClaimRequestService {
                                         log.info("Child relation claim request {}", deathClaimRequestDTO.getClaimsDependentId());
                                         CommonParameter childAgeMin = commonParameterRepository.findByCode(CommonParam.DDF_REQUEST_CHILDREN_MIN_AGE.name()).orElse(null);
 
-                                        int childAge = DateTimeUtil.getAgeForMonth(String.valueOf(claimsDependents.get().getDob()));
+                                        int childAge = DateTimeUtil.getAgeInDays(String.valueOf(claimsDependents.get().getDob()));
 
                                         if(childAge < (Objects.nonNull(childAgeMin) ? childAgeMin.getValue() :0 )){
                                             log.info("Child month age invalid {}", childAgeMin);

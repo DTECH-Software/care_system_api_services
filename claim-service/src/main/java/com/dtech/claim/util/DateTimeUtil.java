@@ -12,6 +12,7 @@ import lombok.extern.log4j.Log4j2;
 import java.text.SimpleDateFormat;
 import java.time.*;
 import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 import java.util.Calendar;
 import java.util.Date;
 
@@ -81,19 +82,20 @@ public class DateTimeUtil {
     }
 
     public static int getAge(String date) {
-        log.info("get age");
+        log.info("get age {} ", date);
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
         LocalDate givenDate = LocalDate.parse(date, formatter);
         LocalDate currentDate = LocalDate.now();
         return Period.between(givenDate, currentDate).getYears();
     }
 
-    public static int getAgeForMonth(String date) {
-        log.info("get age month");
+    public static int getAgeInDays(String date) {
+        log.info("get age in days {} ",date);
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
         LocalDate givenDate = LocalDate.parse(date, formatter);
         LocalDate currentDate = LocalDate.now();
-        return Period.between(givenDate, currentDate).getMonths();
+        return (int) ChronoUnit.DAYS.between(givenDate, currentDate);
     }
+
 
 }
