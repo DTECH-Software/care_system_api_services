@@ -54,7 +54,7 @@ public interface InsuranceClaimsRequestRepository extends JpaRepository<Insuranc
             "LEFT JOIN insurance_policy p ON uc.insurance_policy = p.id " +
             "LEFT JOIN claims_dependents cd ON ic.dependent = cd.id " +
             "LEFT JOIN insurance_claims_details icd ON ic.insurance_claims_details = icd.id " +
-            "LEFT JOIN treatment tr ON icd.treatment = tr.id " +
+            "LEFT JOIN treatment tr ON icd.treatment = tr.code " +
             "WHERE ap.id = :userId " +
             "AND YEAR(ic.created_date) = :#{#dashboardSummaryDTO.year} " +
             "AND (:#{#dashboardSummaryDTO.month} IS NULL OR MONTH(ic.created_date) = :#{#dashboardSummaryDTO.month}) " +
@@ -81,7 +81,7 @@ public interface InsuranceClaimsRequestRepository extends JpaRepository<Insuranc
             "LEFT OUTER JOIN application_user ap ON ic.employee = ap.id " +
             "LEFT OUTER JOIN claims_dependents cd ON ic.dependent = cd.id " +
             "LEFT OUTER JOIN insurance_claims_details icd ON ic.insurance_claims_details = icd.id  " +
-            "LEFT OUTER JOIN treatment tr ON icd.treatment = tr.id " +
+            "LEFT OUTER JOIN treatment tr ON icd.treatment = tr.code " +
             "WHERE ap.id = :userId AND ic.request_status = :requestStatus " +
             "ORDER BY ic.last_modified_date DESC LIMIT 7 ", nativeQuery = true)
     List<LatestUpdatedResponseDTO> getLatestUpdatedRecordSummary(@Param("userId") Long userId, @Param("requestStatus") String requestStatus);
