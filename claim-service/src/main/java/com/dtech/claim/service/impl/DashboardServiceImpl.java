@@ -49,13 +49,13 @@ public class DashboardServiceImpl implements DashboardService {
     private final ResponseUtil responseUtil;
 
     @Autowired
-    private InsuranceClaimsRequestRepository insuranceClaimsRequestRepository;
+    private final InsuranceClaimsRequestRepository insuranceClaimsRequestRepository;
 
     @Autowired
-    private DeathClaimRequestRepository deathClaimRequestRepository;
+    private final DeathClaimRequestRepository deathClaimRequestRepository;
 
     @Autowired
-    private InsurancePeriodRepository insurancePeriodRepository;
+    private final InsurancePeriodRepository insurancePeriodRepository;
 
     @Override
     @Transactional(readOnly = true)
