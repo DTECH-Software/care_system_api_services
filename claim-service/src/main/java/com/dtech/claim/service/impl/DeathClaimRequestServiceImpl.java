@@ -120,7 +120,8 @@ public class DeathClaimRequestServiceImpl implements DeathClaimRequestService {
 
                 claimsDependents.forEach((dep) -> {
 
-                    if (dep.getRelationCategory().equals(RelationCategory.CHILD) ){
+                    if (dep.getRelationCategory().equals(RelationCategory.CHILD) || dep.getRelationCategory().equals(RelationCategory.SISTER)
+                    || dep.getRelationCategory().equals(RelationCategory.BROTHER)){
                        int childAge =  DateTimeUtil.getAgeInDays(String.valueOf(dep.getDob()));
                         log.info("Child age {}", childAge);
                        if(childAge > (Objects.nonNull(childAgeMin)?childAgeMin.getValue():0)){
