@@ -40,7 +40,7 @@ public class ClaimDependentDetailsRequestValidatorDTO {
     @NotBlank(message = "Last name is required.")
     private String lastName;
     @NotNull(message = "DOB is required.")
-    @ValidAge(message = "Age must be below 65.")
+   // @ValidAge(message = "Age must be below 65.")
     @ValidPastDays(message = "DOB must be past date")
     private Date dob;
     @NotBlank(message = "Gender is required.")
