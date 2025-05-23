@@ -29,15 +29,15 @@ public class UserCompanyDetails extends Audit implements Serializable {
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY,cascade = CascadeType.ALL)
-    @JoinColumn(name = "company_type",nullable = false,referencedColumnName = "id")
+    @JoinColumn(name = "company_type",nullable = false,referencedColumnName = "code")
     private CompanyTypes companyTypes;
 
     @ManyToOne(fetch = FetchType.LAZY,cascade = CascadeType.ALL)
-    @JoinColumn(name = "staff_category",nullable = false,referencedColumnName = "id")
+    @JoinColumn(name = "staff_category",nullable = false,referencedColumnName = "code")
     private StaffCategories staffCategories;
 
     @ManyToOne(fetch = FetchType.LAZY,cascade = CascadeType.ALL)
-    @JoinColumn(name = "staff_type",nullable = false,referencedColumnName = "id")
+    @JoinColumn(name = "staff_type",nullable = false,referencedColumnName = "code")
     private StaffTypes staffTypes;
 
     @Column(name = "designation",nullable = false)
@@ -56,7 +56,7 @@ public class UserCompanyDetails extends Audit implements Serializable {
     private UserPersonalDetails userCompanyDetails;
 
     @ManyToOne(fetch = FetchType.LAZY,cascade = CascadeType.PERSIST)
-    @JoinColumn(name = "insurance_policy",nullable = false,referencedColumnName = "id")
+    @JoinColumn(name = "insurance_policy",nullable = false,referencedColumnName = "code")
     private InsurancePolicy insurancePolicy;
 
 }

@@ -103,7 +103,7 @@ public class DeathClaimRequestServiceImpl implements DeathClaimRequestService {
 
                 CommonParameter ddfAgeForDependent = commonParameterRepository.findByCode(CommonParam.EMPLOYEE_MAX_AGE_FOR_REQUEST_DDF.name()).orElse(null);
 
-                if(empAge > (Objects.nonNull(ddfAgeForDependent) ? ddfAgeForDependent.getValue() : 0)){
+                if (empAge > (Objects.nonNull(ddfAgeForDependent) ? ddfAgeForDependent.getValue() : 0)) {
                     log.info("Age {} is greater than age ", empAge);
                     claimsDependents.clear();
                 }
@@ -121,20 +121,14 @@ public class DeathClaimRequestServiceImpl implements DeathClaimRequestService {
                 claimsDependents.forEach((dep) -> {
 
                     if (dep.getRelationCategory().equals(RelationCategory.CHILD) || dep.getRelationCategory().equals(RelationCategory.SISTER)
-                    || dep.getRelationCategory().equals(RelationCategory.BROTHER)){
-                       int childAge =  DateTimeUtil.getAgeInDays(String.valueOf(dep.getDob()));
+                            || dep.getRelationCategory().equals(RelationCategory.BROTHER)) {
+                        int childAge = DateTimeUtil.getAgeInDays(String.valueOf(dep.getDob()));
                         log.info("Child age {}", childAge);
-                       if(childAge > (Objects.nonNull(childAgeMin)?childAgeMin.getValue():0)){
-                           log.info("Age {} is greater than age child ", childAgeMin.getValue());
-                           claimDependent.add(new DependentBaseDTO(String.valueOf(dep.getId()), dep.getFirstName() + " " + dep.getLastName(),dep.getRelationCategory().getDescription()));
-                       }
+                        if (childAge > (Objects.nonNull(childAgeMin) ? childAgeMin.getValue() : 0)) {
+                            log.info("Age {} is greater than age child ", childAgeMin.getValue());
+                            claimDependent.add(new DependentBaseDTO(String.valueOf(dep.getId()), dep.getFirstName() + " " + dep.getLastName(), dep.getRelationCategory().getDescription()));
+                            log.info("Relation category {}", dep.getRelationCategory());
 
-                    }else{
-                        claimDependent.add(new DependentBaseDTO(String.valueOf(dep.getId()), dep.getFirstName() + " " + dep.getLastName(),dep.getRelationCategory().getDescription()));
-
-                        if (dep.getRelationCategory().equals(RelationCategory.CHILD) ||
-                                dep.getRelationCategory().equals(RelationCategory.SISTER) ||
-                                dep.getRelationCategory().equals(RelationCategory.BROTHER)) {
                             log.info("Relation claim reference data {} ", dep.getRelationCategory());
                             int age = DateTimeUtil.getAge(String.valueOf(dep.getDob()));
                             Range range = Range.LOWER;
@@ -153,17 +147,19 @@ public class DeathClaimRequestServiceImpl implements DeathClaimRequestService {
                                     .ageRange(deathBeneficiary != null ? deathBeneficiary.getRange().name() : null)
                                     .build());
 
-                        } else {
-
-                            com.dtech.claim.model.DeathBeneficiary deathBeneficiary = deathBeneficiaryRepository.
-                                    findByCodeAndStatus(DeathBeneficiary.valueOf(dep.getRelationCategory().name()), Status.ACTIVE).orElse(null);
-
-                            deathLimitDTOS.add(DeathLimitDTO.builder()
-                                    .dependentId(String.valueOf(dep.getId()))
-                                    .deathLimit(deathBeneficiary != null ? deathBeneficiary.getClaimLimit() : null)
-                                    .ageRange(deathBeneficiary != null ? deathBeneficiary.getRange() != null ? deathBeneficiary.getRange().name() : null : null)
-                                    .build());
                         }
+
+                    } else {
+                        claimDependent.add(new DependentBaseDTO(String.valueOf(dep.getId()), dep.getFirstName() + " " + dep.getLastName(), dep.getRelationCategory().getDescription()));
+                        com.dtech.claim.model.DeathBeneficiary deathBeneficiary = deathBeneficiaryRepository.
+                                findByCodeAndStatus(DeathBeneficiary.valueOf(dep.getRelationCategory().name()), Status.ACTIVE).orElse(null);
+
+                        deathLimitDTOS.add(DeathLimitDTO.builder()
+                                .dependentId(String.valueOf(dep.getId()))
+                                .deathLimit(deathBeneficiary != null ? deathBeneficiary.getClaimLimit() : null)
+                                .ageRange(deathBeneficiary != null ? deathBeneficiary.getRange() != null ? deathBeneficiary.getRange().name() : null : null)
+                                .build());
+
                     }
 
 
@@ -199,16 +195,16 @@ public class DeathClaimRequestServiceImpl implements DeathClaimRequestService {
 
                         Date minDate = DateTimeUtil.getMinuesDate(minDateAfterPer != null ? minDateAfterPer.getValue() : 0);
 
-                        if(minDate.before(user.getUserPersonalDetails().getUserCompanyDetails().getPermanentDate())) {
+                        if (minDate.before(user.getUserPersonalDetails().getUserCompanyDetails().getPermanentDate())) {
                             log.info("This timer period cant process ,PermanentDate case {} ", minDate);
-                            return ResponseEntity.ok().body(responseUtil.error(null, 1056, messageSource.getMessage(ResponseMessageUtil.PERMANENT_DATE_TOO_OLD_MESSAGE, new Object[]{Objects.nonNull(minDateAfterPer)?minDateAfterPer.getValue():0}, locale)));
+                            return ResponseEntity.ok().body(responseUtil.error(null, 1056, messageSource.getMessage(ResponseMessageUtil.PERMANENT_DATE_TOO_OLD_MESSAGE, new Object[]{Objects.nonNull(minDateAfterPer) ? minDateAfterPer.getValue() : 0}, locale)));
                         }
 
                         int empAge = DateTimeUtil.getAge(String.valueOf(user.getUserPersonalDetails().getDob()));
 
                         CommonParameter ddfAgeForDependent = commonParameterRepository.findByCode(CommonParam.EMPLOYEE_MAX_AGE_FOR_REQUEST_DDF.name()).orElse(null);
 
-                        if(empAge > (Objects.nonNull(ddfAgeForDependent) ? ddfAgeForDependent.getValue() : 0)){
+                        if (empAge > (Objects.nonNull(ddfAgeForDependent) ? ddfAgeForDependent.getValue() : 0)) {
                             log.info("Age {} is greater than age ", empAge);
                             return ResponseEntity.ok().body(responseUtil.error(null, 1055, messageSource.getMessage(ResponseMessageUtil.EMPLOYEE_OLDER_AGE_DATE_DEATH_CLAIM_REQUEST, null, locale)));
                         }
@@ -246,15 +242,15 @@ public class DeathClaimRequestServiceImpl implements DeathClaimRequestService {
                                     if (claimsDependents.isEmpty()) {
                                         log.info("Claim dependent not found or not eligible for death");
                                         return ResponseEntity.ok().body(responseUtil.error(null, 1034, messageSource.getMessage(ResponseMessageUtil.CLAIM_DEPENDENT_NOT_FOUND_OR_FACILITY_NOT_ELIGIBLE, null, locale)));
-                                    }else if(claimsDependents.get().getRelationCategory().equals(RelationCategory.CHILD)){
+                                    } else if (claimsDependents.get().getRelationCategory().equals(RelationCategory.CHILD)) {
                                         log.info("Child relation claim request {}", deathClaimRequestDTO.getClaimsDependentId());
                                         CommonParameter childAgeMin = commonParameterRepository.findByCode(CommonParam.DDF_REQUEST_CHILDREN_MIN_AGE.name()).orElse(null);
 
                                         int childAge = DateTimeUtil.getAgeInDays(String.valueOf(claimsDependents.get().getDob()));
 
-                                        if(childAge < (Objects.nonNull(childAgeMin) ? childAgeMin.getValue() :0 )){
+                                        if (childAge < (Objects.nonNull(childAgeMin) ? childAgeMin.getValue() : 0)) {
                                             log.info("Child month age invalid {}", childAgeMin);
-                                            return ResponseEntity.ok().body(responseUtil.error(null, 1056, messageSource.getMessage(ResponseMessageUtil.CHILD_AGE_DEATH_CLAIM_REQUEST_INVALID, new Object[]{childAgeMin != null ? childAgeMin.getValue():0}, locale)));
+                                            return ResponseEntity.ok().body(responseUtil.error(null, 1056, messageSource.getMessage(ResponseMessageUtil.CHILD_AGE_DEATH_CLAIM_REQUEST_INVALID, new Object[]{childAgeMin != null ? childAgeMin.getValue() : 0}, locale)));
                                         }
 
                                     }
@@ -425,26 +421,26 @@ public class DeathClaimRequestServiceImpl implements DeathClaimRequestService {
     @Override
     @Transactional(readOnly = true)
     public ResponseEntity<ApiResponse<Object>> deathDetailsFindById(DetailsViewRequestDTO detailsViewRequestDTO, Locale locale) {
-       try {
-           log.info("Death claims find by id {}", detailsViewRequestDTO.getId());
+        try {
+            log.info("Death claims find by id {}", detailsViewRequestDTO.getId());
 
-           return deathClaimRequestRepository.findById(detailsViewRequestDTO.getId()).map((deathClaimRequest) -> {
+            return deathClaimRequestRepository.findById(detailsViewRequestDTO.getId()).map((deathClaimRequest) -> {
 
-               List<DocumentDownloadResponseDTO> collect = deathClaimRequest.getDocuments().stream().map((document -> {
-                   log.info("inside document list claims request details attachment view - death  {} ", document);
-                   return new DocumentDownloadResponseDTO(String.valueOf(document.getType()), document.getFileName(), document.getFileType(), document.getDoc());
-               })).toList();
-               return ResponseEntity.ok().body(responseUtil.success((Object) Map.of("documents",collect),
-                       messageSource.getMessage(ResponseMessageUtil.DEATH_CLAIM_REQUEST_FIND_BY_ID_SUCCESS,
-                               null, locale)));
-           }).orElseGet(() -> {
-               log.info("Death claims details not found by {}", detailsViewRequestDTO.getId());
-               return ResponseEntity.ok().body(responseUtil.error(null, 1054, messageSource.getMessage(ResponseMessageUtil.DEATH_CLAIMS_REQUEST_DETAILS_NOT_FOUND_BY_ID, null, locale)));
-           });
-       }catch (Exception e) {
-           log.error(e);
-           throw e;
-       }
+                List<DocumentDownloadResponseDTO> collect = deathClaimRequest.getDocuments().stream().map((document -> {
+                    log.info("inside document list claims request details attachment view - death  {} ", document);
+                    return new DocumentDownloadResponseDTO(String.valueOf(document.getType()), document.getFileName(), document.getFileType(), document.getDoc());
+                })).toList();
+                return ResponseEntity.ok().body(responseUtil.success((Object) Map.of("documents", collect),
+                        messageSource.getMessage(ResponseMessageUtil.DEATH_CLAIM_REQUEST_FIND_BY_ID_SUCCESS,
+                                null, locale)));
+            }).orElseGet(() -> {
+                log.info("Death claims details not found by {}", detailsViewRequestDTO.getId());
+                return ResponseEntity.ok().body(responseUtil.error(null, 1054, messageSource.getMessage(ResponseMessageUtil.DEATH_CLAIMS_REQUEST_DETAILS_NOT_FOUND_BY_ID, null, locale)));
+            });
+        } catch (Exception e) {
+            log.error(e);
+            throw e;
+        }
     }
 
     @Transactional(readOnly = true)
