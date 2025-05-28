@@ -70,19 +70,19 @@ public class DeathClaimRequestServiceImpl implements DeathClaimRequestService {
     private final ClaimDependentsRepository claimDependentsRepository;
 
     @Autowired
-    private DeathClaimRequestRepository deathClaimRequestRepository;
+    private final DeathClaimRequestRepository deathClaimRequestRepository;
 
     @Autowired
     private final DocumentFeignClient documentFeignClient;
 
     @Autowired
-    private ModelMapper modelMapper;
+    private final ModelMapper modelMapper;
 
     @Autowired
     private final EntityManager entityManager;
 
     @Autowired
-    private MessageFeignClient messageFeignClient;
+    private final MessageFeignClient messageFeignClient;
 
     @Override
     @Transactional(readOnly = true)
@@ -456,7 +456,7 @@ public class DeathClaimRequestServiceImpl implements DeathClaimRequestService {
                 return ResponseEntity.ok().body(responseUtil.error(null, 1043, messageSource.getMessage(maxMessage, new Object[]{maxImages}, locale)));
             } else if (count == 0) {
                 log.info("Claim request min {} invalid", documentType);
-                return ResponseEntity.ok().body(responseUtil.error(null, 1044, messageSource.getMessage(minMessage, null, locale)));
+                return ResponseEntity.ok().body(responseUtil.error(null, 1044, messageSource.getMessage(minMessage,  new Object[]{minMessage}, locale)));
             }
             return null;
         } catch (Exception e) {
