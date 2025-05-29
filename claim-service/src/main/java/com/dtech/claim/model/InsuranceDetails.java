@@ -29,9 +29,6 @@ public class InsuranceDetails extends AdminAudit implements Serializable {
     @Column(name = "id",nullable = false,updatable = false,unique = true)
     private Long id;
 
-    @Column(name = "claim_limit",nullable = false)
-    private BigDecimal claimLimit;
-
     @Column(name = "event_limit",nullable = false)
     private BigDecimal eventLimit;
 
@@ -40,12 +37,8 @@ public class InsuranceDetails extends AdminAudit implements Serializable {
     private Status status;
 
     @ManyToOne(fetch = FetchType.LAZY,cascade = CascadeType.ALL)
-    @JoinColumn(name = "insurance_policy",nullable = false,referencedColumnName = "code")
-    private InsurancePolicy insurancePolicy;
-
-    @ManyToOne(fetch = FetchType.LAZY,cascade = CascadeType.ALL)
-    @JoinColumn(name = "treatment",nullable = false,referencedColumnName = "code")
-    private Treatment treatment;
+    @JoinColumn(name = "insurance_details_limit",nullable = false,referencedColumnName = "id")
+    private InsuranceDetailsLimit insuranceDetailsLimit;
 
     @ManyToOne(fetch = FetchType.LAZY,cascade = CascadeType.ALL)
     @JoinColumn(name = "treatment_category",nullable = false,referencedColumnName = "code")
@@ -54,9 +47,5 @@ public class InsuranceDetails extends AdminAudit implements Serializable {
     @ManyToOne(fetch = FetchType.LAZY,cascade = CascadeType.ALL)
     @JoinColumn(name = "insurance_month_category",nullable = false,referencedColumnName = "code")
     private InsuranceMonthCategory insuranceMonthCategory;
-
-    @ManyToOne(fetch = FetchType.LAZY,cascade = CascadeType.ALL)
-    @JoinColumn(name = "insurance_period",nullable = false,referencedColumnName = "id")
-    private InsurancePeriod insurancePeriod;
 
 }

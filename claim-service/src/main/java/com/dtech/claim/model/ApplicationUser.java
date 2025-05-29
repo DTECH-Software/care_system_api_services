@@ -10,7 +10,6 @@ package com.dtech.claim.model;
 
 import com.dtech.claim.enums.Channel;
 import com.dtech.claim.enums.Status;
-import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.EqualsAndHashCode;

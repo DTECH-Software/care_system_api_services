@@ -54,4 +54,8 @@ public class InsuranceClaimsRequest extends Audit implements Serializable {
     @JoinColumn(name = "insurance_claims_details",updatable = false)
     private InsuranceClaimsDetails insuranceClaimsDetails;
 
+    @ManyToOne(fetch = FetchType.LAZY,cascade = CascadeType.ALL)
+    @JoinColumn(name = "approval_work_flow_id",referencedColumnName = "id")
+    private ApprovalWorkFlow approvalWorkFlow;
+
 }

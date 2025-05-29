@@ -28,6 +28,7 @@ public class UserPersonalDetailsResponseDTO {
     private String genderDescription;
     private String title;
     private String titleDescription;
+    private boolean maritalStatus;
     private UserAddressResponseDTO userAddress;
     private UserCompanyDetailsResponseDTO userCompanyDetails;
 }
