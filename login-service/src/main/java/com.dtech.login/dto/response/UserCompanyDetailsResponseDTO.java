@@ -9,6 +9,7 @@ package com.dtech.login.dto.response;
 
 
 import com.dtech.login.dto.SimpleBaseDTO;
+import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.Data;
 
 import java.util.Date;
@@ -18,6 +19,7 @@ public class UserCompanyDetailsResponseDTO {
     private SimpleBaseDTO companyTypes;
     private SimpleBaseDTO staffCategories;
     private SimpleBaseDTO staffTypes;
+    @JsonFormat(pattern = "yyyy-MM-dd", timezone = "Asia/Colombo")
     private Date permanentDate;
     private Date terminateDate;
     private String designation;

@@ -30,4 +30,6 @@ public class ApplicationUserDetailsResponseDTO {
     private UserPersonalDetailsResponseDTO userPersonalDetails;
     private DocumentDownloadResponseDTO profileImg;
     private NotificationSummaryResponseDTO notification;
+    @JsonFormat(pattern = "yyyy-MM-dd", timezone = "Asia/Colombo")
+    private Date createdDate;
 }

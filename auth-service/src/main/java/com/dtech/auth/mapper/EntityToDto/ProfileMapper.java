@@ -44,8 +44,10 @@ public class ProfileMapper {
             log.info("application user get age");
             applicationUserDetailsResponseDTO.getUserPersonalDetails().setAge(DateTimeUtil.getAge(
                     String.valueOf(applicationUser.getUserPersonalDetails().getDob())));
+
             applicationUserDetailsResponseDTO.getUserPersonalDetails().setGenderDescription(Gender.valueOf(applicationUserDetailsResponseDTO.getUserPersonalDetails().getGender()).getDescription());
             applicationUserDetailsResponseDTO.getUserPersonalDetails().setTitleDescription(Title.valueOf(applicationUserDetailsResponseDTO.getUserPersonalDetails().getTitle()).getDescription());
+            applicationUserDetailsResponseDTO.setCreatedDate(applicationUser.getCreatedDate());
             if (applicationUser.getProfileImg() != null) {
                 log.info("application user get profile img");
                 DocumentDownloadResponseDTO documentDownloadResponseDTO = modelMapper.map(applicationUser.getProfileImg(), DocumentDownloadResponseDTO.class);

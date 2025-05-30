@@ -7,7 +7,10 @@
 
 package com.dtech.login.dto.response;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.Data;
+
+import java.util.Date;
 
 
 @Data
@@ -25,4 +28,6 @@ public class ApplicationUserDetailsResponseDTO {
     private UserPersonalDetailsResponseDTO userPersonalDetails;
     private DocumentDownloadResponseDTO profileImg;
     private NotificationSummaryResponseDTO notification;
+    @JsonFormat(pattern = "yyyy-MM-dd", timezone = "Asia/Colombo")
+    private Date createdDate;
 }

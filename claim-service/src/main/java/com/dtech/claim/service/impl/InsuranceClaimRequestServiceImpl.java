@@ -152,8 +152,8 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
                 if (user.getUserPersonalDetails().getUserCompanyDetails().getInsurancePolicy() == null) {
                     log.info("User not eligible to claim request {}", claimRequestDTO.getUsername());
                     return ResponseEntity.ok().body(responseUtil.error(null, 1029, messageSource.getMessage(ResponseMessageUtil.USER_NOT_ELIGIBLE_TO_CLAIM_REQUEST, null, locale)));
-                } else if (!claimRequestDTO.getIsEmployee() && claimRequestDTO.getTreatmentCategory().equals(TreatmentCategory.DENTAL.name())
-                        || claimRequestDTO.getTreatmentCategory().equals(TreatmentCategory.SPECTACLE.name())) {
+                } else if ((!claimRequestDTO.getIsEmployee()) && (claimRequestDTO.getTreatmentCategory().equals(TreatmentCategory.DENTAL.name())
+                        || claimRequestDTO.getTreatmentCategory().equals(TreatmentCategory.SPECTACLE.name()))) {
                     log.info("This spec and dental facility cant eligibility dependent");
                     return ResponseEntity.ok().body(responseUtil.error(null, 1049, messageSource.getMessage(ResponseMessageUtil.DEPENDENT_NOT_ELIGIBLE_TO_CLAIM_REQUEST, null, locale)));
                 }
@@ -257,7 +257,7 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
                                                                                         log.info("Otp request valid {} ", user.getApplicationOtpSession());
                                                                                         ApprovalWorkFlow approvalWorkFlow = updateApprovalData();
                                                                                         updateApplicationUserOtpData(user, user.getApplicationOtpSession());
-                                                                                        String claimRequestId = saveClaimRequest(claimRequestDTO, user, claimsDependents, treatment, tc,approvalWorkFlow);
+                                                                                        String claimRequestId = saveClaimRequest(claimRequestDTO, user, claimsDependents, treatment, tc, approvalWorkFlow);
                                                                                         notifyMessage(user.getPrimaryMobile(), claimRequestId);
                                                                                         return ResponseEntity.ok().body(responseUtil.success(null, messageSource.getMessage(ResponseMessageUtil.INSURANCE_CLAIM_REQUEST_SUBMIT_SUCCESS, null, locale)));
                                                                                     } else {
@@ -290,7 +290,7 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
                                                                                         log.info("Otp request valid {} ", user.getApplicationOtpSession());
                                                                                         ApprovalWorkFlow approvalWorkFlow = updateApprovalData();
                                                                                         updateApplicationUserOtpData(user, user.getApplicationOtpSession());
-                                                                                        String claimRequestId = saveClaimRequest(claimRequestDTO, user, claimsDependents, treatment, tc,approvalWorkFlow);
+                                                                                        String claimRequestId = saveClaimRequest(claimRequestDTO, user, claimsDependents, treatment, tc, approvalWorkFlow);
                                                                                         notifyMessage(user.getPrimaryMobile(), claimRequestId);
                                                                                         return ResponseEntity.ok().body(responseUtil.success(null, messageSource.getMessage(ResponseMessageUtil.INSURANCE_CLAIM_REQUEST_SUBMIT_SUCCESS, null, locale)));
                                                                                     } else {
@@ -326,7 +326,7 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
                                                                                         log.info("Otp request valid {} ", user.getApplicationOtpSession());
                                                                                         ApprovalWorkFlow approvalWorkFlow = updateApprovalData();
                                                                                         updateApplicationUserOtpData(user, user.getApplicationOtpSession());
-                                                                                        String claimRequestId = saveClaimRequest(claimRequestDTO, user, claimsDependents, treatment, tc,approvalWorkFlow);
+                                                                                        String claimRequestId = saveClaimRequest(claimRequestDTO, user, claimsDependents, treatment, tc, approvalWorkFlow);
                                                                                         notifyMessage(user.getPrimaryMobile(), claimRequestId);
                                                                                         return ResponseEntity.ok().body(responseUtil.success(null, messageSource.getMessage(ResponseMessageUtil.INSURANCE_CLAIM_REQUEST_SUBMIT_SUCCESS, null, locale)));
                                                                                     } else {
@@ -360,7 +360,7 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
                                                                                         log.info("Otp request valid {} ", user.getApplicationOtpSession());
                                                                                         ApprovalWorkFlow approvalWorkFlow = updateApprovalData();
                                                                                         updateApplicationUserOtpData(user, user.getApplicationOtpSession());
-                                                                                        String claimRequestId = saveClaimRequest(claimRequestDTO, user, claimsDependents, treatment, tc,approvalWorkFlow);
+                                                                                        String claimRequestId = saveClaimRequest(claimRequestDTO, user, claimsDependents, treatment, tc, approvalWorkFlow);
                                                                                         notifyMessage(user.getPrimaryMobile(), claimRequestId);
                                                                                         return ResponseEntity.ok().body(responseUtil.success(null, messageSource.getMessage(ResponseMessageUtil.INSURANCE_CLAIM_REQUEST_SUBMIT_SUCCESS, null, locale)));
                                                                                     } else {
@@ -396,7 +396,7 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
                                                                                         log.info("Otp request valid {} ", user.getApplicationOtpSession());
                                                                                         ApprovalWorkFlow approvalWorkFlow = updateApprovalData();
                                                                                         updateApplicationUserOtpData(user, user.getApplicationOtpSession());
-                                                                                        String claimRequestId = saveClaimRequest(claimRequestDTO, user, claimsDependents, treatment, tc,approvalWorkFlow);
+                                                                                        String claimRequestId = saveClaimRequest(claimRequestDTO, user, claimsDependents, treatment, tc, approvalWorkFlow);
                                                                                         notifyMessage(user.getPrimaryMobile(), claimRequestId);
                                                                                         return ResponseEntity.ok().body(responseUtil.success(null, messageSource.getMessage(ResponseMessageUtil.INSURANCE_CLAIM_REQUEST_SUBMIT_SUCCESS, null, locale)));
                                                                                     } else {
@@ -430,7 +430,7 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
                                                                                         log.info("Otp request valid {} ", user.getApplicationOtpSession());
                                                                                         ApprovalWorkFlow approvalWorkFlow = updateApprovalData();
                                                                                         updateApplicationUserOtpData(user, user.getApplicationOtpSession());
-                                                                                        String claimRequestId = saveClaimRequest(claimRequestDTO, user, claimsDependents, treatment, tc,approvalWorkFlow);
+                                                                                        String claimRequestId = saveClaimRequest(claimRequestDTO, user, claimsDependents, treatment, tc, approvalWorkFlow);
                                                                                         notifyMessage(user.getPrimaryMobile(), claimRequestId);
                                                                                         return ResponseEntity.ok().body(responseUtil.success(null, messageSource.getMessage(ResponseMessageUtil.INSURANCE_CLAIM_REQUEST_SUBMIT_SUCCESS, null, locale)));
                                                                                     } else {
@@ -458,7 +458,7 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
                                                         log.info("Without event limit {} ", insuranceMonthCategory);
                                                         return insuranceDetailsRepository.
                                                                 findByInsurancePolicyAndTreatmentAndTreatmentCategoryAndStatusAndInsurancePeriodAndInsuranceMonthCategory(policy.getCode(), treatment.getTreatmentCode(), tc.getCode(), Status.ACTIVE, period.getId(), insuranceMonthCategory.getCode()).map((insuranceDetails) -> {
-                                                                    BigDecimal remainingBalance =  insuranceDetails.getInsuranceDetailsLimit().getClaimLimit().subtract(sumOfClaims != null ? sumOfClaims : BigDecimal.valueOf(0.00));
+                                                                    BigDecimal remainingBalance = insuranceDetails.getInsuranceDetailsLimit().getClaimLimit().subtract(sumOfClaims != null ? sumOfClaims : BigDecimal.valueOf(0.00));
                                                                     log.info("Remaining balance {}", remainingBalance);
                                                                     if (claimRequestDTO.getRequestAmount().compareTo(remainingBalance) > 0) {
                                                                         log.info("Request fund limit exceeded without event limit {} {} {} {}", claimRequestDTO.getRequestAmount(), insuranceDetails.getEventLimit(), remainingBalance, sumOfClaims);
@@ -478,7 +478,7 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
                                                                                 log.info("Otp request valid {} ", user.getApplicationOtpSession());
                                                                                 ApprovalWorkFlow approvalWorkFlow = updateApprovalData();
                                                                                 updateApplicationUserOtpData(user, user.getApplicationOtpSession());
-                                                                                String claimRequestId = saveClaimRequest(claimRequestDTO, user, claimsDependents, treatment, tc,approvalWorkFlow);
+                                                                                String claimRequestId = saveClaimRequest(claimRequestDTO, user, claimsDependents, treatment, tc, approvalWorkFlow);
                                                                                 notifyMessage(user.getPrimaryMobile(), claimRequestId);
                                                                                 return ResponseEntity.ok().body(responseUtil.success(null, messageSource.getMessage(ResponseMessageUtil.INSURANCE_CLAIM_REQUEST_SUBMIT_SUCCESS, null, locale)));
                                                                             } else {
@@ -525,7 +525,7 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
                                                                         log.info("Otp request valid {} ", user.getApplicationOtpSession());
                                                                         ApprovalWorkFlow approvalWorkFlow = updateApprovalData();
                                                                         updateApplicationUserOtpData(user, user.getApplicationOtpSession());
-                                                                        String claimRequestId = saveClaimRequest(claimRequestDTO, user, claimsDependents, treatment, tc,approvalWorkFlow);
+                                                                        String claimRequestId = saveClaimRequest(claimRequestDTO, user, claimsDependents, treatment, tc, approvalWorkFlow);
                                                                         notifyMessage(user.getPrimaryMobile(), claimRequestId);
                                                                         return ResponseEntity.ok().body(responseUtil.success(null, messageSource.getMessage(ResponseMessageUtil.INSURANCE_CLAIM_REQUEST_SUBMIT_SUCCESS, null, locale)));
                                                                     } else {
@@ -626,14 +626,14 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
                 List<Treatment> treatmentList = treatmentRepository.findAllByStatus(Status.ACTIVE);
                 log.info("Insurance claim reference data get dependence {} ", treatmentList);
                 List<DependentBaseDTO> claimsDependents = claimDependentsRepository
-                        .findByApplicationUserAndStatusAndEligibleFacilityInAndLiveStatus(user, Workflow.ACTIVE, List.of(Facility.INSURANCE, Facility.BOTH),true)
+                        .findByApplicationUserAndStatusAndEligibleFacilityInAndLiveStatus(user, Workflow.ACTIVE, List.of(Facility.INSURANCE, Facility.BOTH), true)
                         .stream()
                         .filter(dep -> {
                             boolean ex = deathClaimRequestRepository.existsByClaimsDependentsAndEmployeeAndRequestStatusIn(dep, user, List.of(Workflow.APPROVED));
                             return !ex;
                         })
                         .map(dep -> new DependentBaseDTO(
-                                String.valueOf(dep.getId()), dep.getFirstName() + " " + dep.getLastName() ,dep.getRelationCategory().getDescription()
+                                String.valueOf(dep.getId()), dep.getFirstName() + " " + dep.getLastName(), dep.getRelationCategory().getDescription()
                         ))
                         .toList();
                 log.info("Call minus insurance claim date");
@@ -654,7 +654,7 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
 
                     insuranceDetailsLimits.forEach(in -> {
                         log.info("Add treatment");
-                        addIfNotPresent(userWiseTreatment,in);
+                        addIfNotPresent(userWiseTreatment, in);
                         String insuranceCategory = in.getTreatment().getTreatmentCode();
                         userWiseTreatmentCategory.computeIfAbsent(insuranceCategory, k -> new ArrayList<>());
                         addIfNotPresentTreatmentCategory(userWiseTreatmentCategory.get(insuranceCategory), in.getInsuranceDetails());
@@ -681,11 +681,12 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
         }
     }
 
+    @Transactional(readOnly = true)
     public void setLimitMap(Map<String, Map<String, AvailableInsuranceLimitDTO>> limitMap, InsuranceDetailsLimit in, ApplicationUser applicationUser) {
 
         log.info("Insurance ref {}", in);
 
-        for(InsuranceDetails insuranceDetails : in.getInsuranceDetails()){
+        for (InsuranceDetails insuranceDetails : in.getInsuranceDetails()) {
 
             String category = insuranceDetails.getTreatmentCategory().getCode();
             String treatmentCode = in.getTreatment().getTreatmentCode();
@@ -703,6 +704,7 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
 
             if (currentYear == year) {
                 log.info("Year equals {} {}", year, currentYear);
+                log.info("Treatment insurance month category {} ", insuranceDetails.getInsuranceMonthCategory());
 
                 if (insuranceDetails.getTreatmentCategory().getCode().equals(TreatmentCategory.OTHER.name()) &&
                         !(in.getTreatment().getTreatmentCode().equals(TreatmentType.CRIC.name()))) {
@@ -717,14 +719,15 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
                         log.info("Third month range");
                         insuranceMontCategory = InsuranceMonthCategory.THIRD;
                     }
-                    log.info("Inside period event limit month category {} ",insuranceMontCategory);
+                    log.info("Inside period event limit month category {} ", insuranceMontCategory);
 
                     if (insuranceDetails.getInsuranceMonthCategory().getCode().equals(insuranceMontCategory.name())) {
                         log.info("Inside matching month category  indoor{}", insuranceDetails.getInsuranceMonthCategory().getCode());
                         funLimit = insuranceDetails.getEventLimit();
-                        BigDecimal sum = insuranceClaimsRequestRepository.getSumRequestAmountByEmployeeAndTreatmentAndStatus(
+                        BigDecimal sum = insuranceClaimsRequestRepository.getSumRequestAmountByEmployeeAndTreatmentAndTreatmentCategoryAndStatus(
                                 applicationUser,
                                 treatmentCode,
+                                category,
                                 List.of(Workflow.APPROVED)
                         );
                         log.info("Sum amount insurance ref data {} {}", sum, in.getClaimLimit());
@@ -742,10 +745,12 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
 
                 } else {
                     log.info("Event period but dental or Spec {}", insuranceDetails.getTreatmentCategory().getCode());
-                    funLimit = in.getClaimLimit();
-                    BigDecimal sum = insuranceClaimsRequestRepository.getSumRequestAmountByEmployeeAndTreatmentAndStatus(
+
+                    funLimit = insuranceDetails.getEventLimit();
+                    BigDecimal sum = insuranceClaimsRequestRepository.getSumRequestAmountByEmployeeAndTreatmentAndTreatmentCategoryAndStatus(
                             applicationUser,
                             treatmentCode,
+                            category,
                             List.of(Workflow.APPROVED)
                     );
                     log.info("Sum amount insurance ref data {} {}", sum, in.getClaimLimit());
@@ -762,23 +767,50 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
                 }
 
             } else {
-                funLimit = in.getClaimLimit();
-                BigDecimal sum = insuranceClaimsRequestRepository.getSumRequestAmountByEmployeeAndTreatmentAndStatus(
-                        applicationUser,
-                        treatmentCode,
-                        List.of(Workflow.APPROVED)
-                );
-                log.info("Sum amount insurance ref data {} {}", sum, in.getClaimLimit());
-                BigDecimal remaining = funLimit.subtract(sum != null ? sum : BigDecimal.valueOf(0.00));
-                log.info("Remaining amount insurance ref data {}", remaining);
 
-                limitMap
-                        .computeIfAbsent(treatmentCode, k -> new HashMap<>())
-                        .merge(category, new AvailableInsuranceLimitDTO(remaining, funLimit),
-                                (existing, newDetails) -> new AvailableInsuranceLimitDTO(
-                                        newDetails.getAvailableLimit(),
-                                        newDetails.getFundLimit()
-                                ));
+                log.info("Without year {}", year);
+                if (insuranceDetails.getTreatmentCategory().getCode().equals(TreatmentCategory.OTHER.name())) {
+
+                    funLimit = insuranceDetails.getInsuranceDetailsLimit().getClaimLimit();
+                    BigDecimal sum = insuranceClaimsRequestRepository.getSumRequestAmountByEmployeeAndTreatmentAndTreatmentCategoryAndStatus(
+                            applicationUser,
+                            treatmentCode,
+                            category,
+                            List.of(Workflow.APPROVED)
+                    );
+                    log.info("Sum amount insurance ref data {} {}", sum, in.getClaimLimit());
+                    BigDecimal remaining = funLimit.subtract(sum != null ? sum : BigDecimal.valueOf(0.00));
+                    log.info("Remaining amount insurance ref data {}", remaining);
+
+                    limitMap
+                            .computeIfAbsent(treatmentCode, k -> new HashMap<>())
+                            .merge(category, new AvailableInsuranceLimitDTO(remaining, funLimit),
+                                    (existing, newDetails) -> new AvailableInsuranceLimitDTO(
+                                            newDetails.getAvailableLimit(),
+                                            newDetails.getFundLimit()
+                                    ));
+
+                }else{
+                    log.info("Without Event period but dental or Spec {}", insuranceDetails.getTreatmentCategory().getCode());
+                    funLimit = insuranceDetails.getEventLimit();
+                    BigDecimal sum = insuranceClaimsRequestRepository.getSumRequestAmountByEmployeeAndTreatmentAndTreatmentCategoryAndStatus(
+                            applicationUser,
+                            treatmentCode,
+                            category,
+                            List.of(Workflow.APPROVED)
+                    );
+                    log.info("Sum amount insurance ref data {} {}", sum, in.getClaimLimit());
+                    BigDecimal remaining = funLimit.subtract(sum != null ? sum : BigDecimal.valueOf(0.00));
+                    log.info("Remaining amount insurance ref data {}", remaining);
+
+                    limitMap
+                            .computeIfAbsent(treatmentCode, k -> new HashMap<>())
+                            .merge(category, new AvailableInsuranceLimitDTO(remaining, funLimit),
+                                    (existing, newDetails) -> new AvailableInsuranceLimitDTO(
+                                            newDetails.getAvailableLimit(),
+                                            newDetails.getFundLimit()
+                                    ));
+                }
 
             }
         }
@@ -860,7 +892,7 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
                     log.info("inside document list claims request details attachment view {} ", document);
                     return new DocumentDownloadResponseDTO(String.valueOf(document.getType()), document.getFileName(), document.getFileType(), document.getDoc());
                 })).toList();
-                return ResponseEntity.ok().body(responseUtil.success((Object) Map.of("documents",collect),
+                return ResponseEntity.ok().body(responseUtil.success((Object) Map.of("documents", collect),
                         messageSource.getMessage(ResponseMessageUtil.INSURANCE_CLAIM_REQUEST_FIND_BY_ID_SUCCESS,
                                 null, locale)));
             }).orElseGet(() -> {
@@ -885,7 +917,7 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
     }
 
     @Transactional
-    protected ApprovalWorkFlow updateApprovalData(){
+    protected ApprovalWorkFlow updateApprovalData() {
         log.info("Update approval process data");
         ApprovalWorkFlow approvalWorkFlow = new ApprovalWorkFlow();
         approvalWorkFlow.setApprovalLevel(ApprovalLevel.LEVEL01);
@@ -946,7 +978,7 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
     @Transactional
     protected String saveClaimRequest(ClaimRequestDTO claimRequestDTO, ApplicationUser applicationUser,
                                       Optional<ClaimsDependents> claimsDependents, Treatment treatment,
-                                      com.dtech.claim.model.TreatmentCategory treatmentCategory,ApprovalWorkFlow approvalWorkFlow) {
+                                      com.dtech.claim.model.TreatmentCategory treatmentCategory, ApprovalWorkFlow approvalWorkFlow) {
         try {
             log.info("Claim request save started {}", claimRequestDTO);
 
