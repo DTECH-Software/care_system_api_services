@@ -33,16 +33,6 @@ public interface InsuranceDetailsRepository extends JpaRepository<InsuranceDetai
                                                                                                                                          @Param("treatmentCategory")TreatmentCategory treatmentCategory,
                                                                                                                                          @Param("status")Status status,
                                                                                                                                          @Param("insurancePeriodList")InsurancePeriod insurancePeriodList);
-//
-
-//    Optional<InsuranceDetails> findByInsurancePolicyAndTreatmentAndTreatmentCategoryAndStatusAndInsurancePeriod(InsurancePolicy insurancePolicy,
-//                                                                                                                                         Treatment treatment,
-//                                                                                                                                         TreatmentCategory treatmentCategory,
-//                                                                                                                                         Status status,
-//                                                                                                                                         InsurancePeriod insurancePeriodList);
-//
-//
-
     @Query(value = "SELECT ind FROM InsuranceDetails ind " +
             "LEFT OUTER JOIN InsuranceDetailsLimit icdl ON ind.insuranceDetailsLimit.id = icdl.id " +
             "LEFT OUTER JOIN InsurancePolicy inp ON icdl.insurancePolicy.code = inp.code " +
@@ -58,22 +48,5 @@ public interface InsuranceDetailsRepository extends JpaRepository<InsuranceDetai
                                                                                                                                          @Param("status")Status status,
                                                                                                                                          @Param("insurancePeriodList")Long insurancePeriodList,
                                                                                                                                          @Param("insuranceMonthCategory")String insuranceMonthCategory);
-//
-
-//    @Query(value = "SELECT ind FROM InsuranceDetails ind " +
-//            "LEFT OUTER JOIN InsuranceDetailsLimit icdl ON ind.insuranceDetailsLimit.id = icdl.id " +
-//            "LEFT OUTER JOIN InsurancePolicy inp ON icdl.id = inp.id " +
-//            "LEFT OUTER JOIN InsurancePeriod  ip ON icdl.insurancePolicy.id = ip.id " +
-//            "WHERE inp.id = :insurancePolicy " +
-//            "AND icdl.status = :status AND ip.id = :insurancePeriodList  ",nativeQuery = false)
-//    Optional<InsuranceDetails> findByInsurancePolicyAndTreatmentAndTreatmentCategoryAndStatusAndInsurancePeriod(@Param("insurancePolicy") InsurancePolicy insurancePolicy,
-//                                                                                                                                         @Param("status")Status status,
-//                                                                                                                                         @Param("insurancePeriodList")InsurancePeriod insurancePeriodList);
-
-//    findByInsurancePolicyAndTreatmentAndTreatmentCategoryAndStatusAndInsurancePeriod
-//    List<InsuranceDetails> findByInsurancePolicyAndStatusAndInsurancePeriod(InsurancePolicy insurancePolicy,
-//                                                                                        Status status,
-//                                                                                        InsurancePeriod insurancePeriodList);
-//
 
 }

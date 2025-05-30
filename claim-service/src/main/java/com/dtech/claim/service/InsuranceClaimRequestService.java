@@ -11,8 +11,11 @@ import org.springframework.http.ResponseEntity;
 import java.util.Locale;
 
 public interface InsuranceClaimRequestService {
-   ResponseEntity<ApiResponse<Object>> insuranceClaimRequest(ClaimRequestDTO claimRequestDTO, Locale locale);
+    ResponseEntity<ApiResponse<Object>> insuranceClaimRequest(ClaimRequestDTO claimRequestDTO, Locale locale);
+
     ResponseEntity<ApiResponse<Object>> insuranceClaimReferenceData(ChannelRequestDTO channelRequestDTO, Locale locale);
+
     ResponseEntity<ApiResponse<Object>> insuranceClaimHistoryList(PaginationRequest<ClaimHistory> paginationRequest, Locale locale);
+
     ResponseEntity<ApiResponse<Object>> insuranceDetailsFindById(DetailsViewRequestDTO detailsViewRequestDTO, Locale locale);
- }
+}

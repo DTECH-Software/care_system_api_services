@@ -68,11 +68,8 @@ public class DashboardServiceImpl implements DashboardService {
 
                 /*Insurance*/
                 log.info("insurance claims");
-                CountTypeResponseDTO countOfInsurance = null ;
-
-
-//                insuranceClaimsRequestRepository.
-//                        findSummary(dashboardSummaryDTO, user.getId(),user.getUserPersonalDetails().getUserCompanyDetails().getInsurancePolicy().getCode());
+                CountTypeResponseDTO countOfInsurance = insuranceClaimsRequestRepository.
+                        findSummary(dashboardSummaryDTO, user.getId(),user.getUserPersonalDetails().getUserCompanyDetails().getInsurancePolicy().getCode());
                 log.info("insurance claims counts success");
                 //get latest updated insurance
                 List<LatestUpdatedResponseDTO> approved = insuranceClaimsRequestRepository.getLatestUpdatedRecordSummary(user.getId(), Workflow.APPROVED.name());
