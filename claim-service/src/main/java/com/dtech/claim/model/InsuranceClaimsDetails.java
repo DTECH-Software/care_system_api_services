@@ -58,4 +58,8 @@ public class InsuranceClaimsDetails extends Audit implements Serializable {
     )
     private List<Document> documents = new ArrayList<>();
 
+    @ManyToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    @JoinColumn(name = "insurance_period", updatable = false,referencedColumnName = "id")
+    private InsurancePeriod insurancePeriod;
+
 }

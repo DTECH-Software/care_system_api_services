@@ -29,6 +29,9 @@ public class InsuranceDetails extends AdminAudit implements Serializable {
     @Column(name = "id",nullable = false,updatable = false,unique = true)
     private Long id;
 
+    @Column(name = "claim_limit",nullable = false)
+    private BigDecimal claimLimit;
+
     @Column(name = "event_limit",nullable = false)
     private BigDecimal eventLimit;
 

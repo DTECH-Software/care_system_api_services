@@ -22,8 +22,8 @@ public class InsuranceDetailsLimit extends AdminAudit implements Serializable {
     @Column(name = "id",nullable = false,updatable = false,unique = true)
     private Long id;
 
-    @Column(name = "claim_limit",nullable = false)
-    private BigDecimal claimLimit;
+    @Column(name = "global_limit",nullable = false)
+    private BigDecimal globalLimit;
 
     @ManyToOne(fetch = FetchType.LAZY,cascade = CascadeType.ALL)
     @JoinColumn(name = "insurance_policy",nullable = false,referencedColumnName = "code")

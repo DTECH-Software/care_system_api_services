@@ -24,24 +24,30 @@ public interface InsuranceClaimsRequestRepository extends JpaRepository<Insuranc
 
     @Query("SELECT SUM(ic.requestAmount) FROM InsuranceClaimsRequest ic " +
             "LEFT OUTER JOIN InsuranceClaimsDetails icd ON ic.insuranceClaimsDetails.id = icd.id " +
+            "LEFT OUTER JOIN InsurancePeriod ip ON ic.insuranceClaimsDetails.insurancePeriod.id = ip.id " +
             "WHERE ic.employee = :employee " +
             "AND icd.treatment.treatmentCode = :treatment " +
+            "AND ip.id = :insurancePeriod " +
             "AND ic.requestStatus IN :statuses")
     BigDecimal getSumRequestAmountByEmployeeAndTreatmentAndStatus(
             @Param("employee") ApplicationUser employee,
             @Param("treatment") String treatment,
+            @Param("insurancePeriod") Long insurancePeriod,
             @Param("statuses") List<Workflow> statuses);
 
     @Query("SELECT SUM(ic.requestAmount) FROM InsuranceClaimsRequest ic " +
             "LEFT OUTER JOIN InsuranceClaimsDetails icd ON ic.insuranceClaimsDetails.id = icd.id " +
+            "LEFT OUTER JOIN InsurancePeriod ip ON ic.insuranceClaimsDetails.insurancePeriod.id = ip.id " +
             "WHERE ic.employee = :employee " +
             "AND icd.treatment.treatmentCode = :treatment " +
             "AND icd.treatmentCategory.code = :treatmentCategory " +
+            "AND ip.id = :insurancePeriod " +
             "AND ic.requestStatus IN :statuses")
     BigDecimal getSumRequestAmountByEmployeeAndTreatmentAndTreatmentCategoryAndStatus(
             @Param("employee") ApplicationUser employee,
             @Param("treatment") String treatment,
             @Param("treatmentCategory") String treatmentCategory,
+            @Param("insurancePeriod") Long insurancePeriod,
             @Param("statuses") List<Workflow> statuses);
 
     @Query(value = "SELECT " +
@@ -50,7 +56,7 @@ public interface InsuranceClaimsRequestRepository extends JpaRepository<Insuranc
             "    COUNT(CASE WHEN ic.request_status = 'REJECTED' THEN 1 END) AS rejectedCount, " +
             "    COUNT(CASE WHEN ic.request_status = 'UNDER_REVIEW' THEN 1 END) AS underReviewCount, " +
             "    COALESCE(SUM(CASE WHEN ic.request_status IN ('APPROVED') THEN ic.request_amount END), 0) AS sumOfUtilizeAmount, " +
-            "    (SELECT COALESCE(SUM(idl.claim_limit), 0) FROM insurance_details_limit idl " +
+            "    (SELECT COALESCE(SUM(idl.global_limit), 0) FROM insurance_details_limit idl " +
             "     LEFT JOIN insurance_policy ip ON ip.code = idl.insurance_policy " +
             "     LEFT JOIN insurance_period pe ON pe.id = idl.insurance_period " +
             "     WHERE  ip.code = :policy " +

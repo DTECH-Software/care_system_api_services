@@ -195,25 +195,35 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
                                             } else {
                                                 claimsDependents = Optional.empty();
                                             }
+                                            log.info("Gey current year {}", DateTimeUtil.getCurrentYear());
+
+                                            InsurancePeriod insurancePeriod = insurancePeriodRepository.findByYearAndStatus(String.valueOf(DateTimeUtil.getCurrentYear()), Status.ACTIVE).orElse(null);
+
+                                            if (insurancePeriod == null) {
+                                                log.info("Insurance period not found");
+                                                return ResponseEntity.ok().body(responseUtil.error(null, 1057, messageSource.getMessage(ResponseMessageUtil.INSURANCE_PERIOD_NOT_FOUND, null, locale)));
+                                            }
 
                                             BigDecimal sumOfClaims = insuranceClaimsRequestRepository.
                                                     getSumRequestAmountByEmployeeAndTreatmentAndStatus(user,
                                                             claimRequestDTO.getTreatment(),
+                                                            insurancePeriod.getId(),
                                                             List.of(Workflow.APPROVED));
 
                                             log.info("Already claims {} sum of claims ", sumOfClaims);
-                                            if (claimRequestDTO.getTreatmentCategory().equals(TreatmentCategory.OTHER.name()) && !(claimRequestDTO.getTreatment().equals(TreatmentType.CRIC.name()))) {
+                                            int currentYear = DateTimeUtil.getCurrentYear();
+                                            int year = DateTimeUtil.getYear(user.getUserPersonalDetails().getUserCompanyDetails().getPermanentDate());
+                                            log.info("Current year {}", currentYear);
+                                            log.info("User year per {}", year);
+
+                                            if (currentYear == year) {
                                                 log.info("Request fund limit exceeded with ent limit");
-                                                int currentYear = DateTimeUtil.getCurrentYear();
-                                                log.info("Current year {}", currentYear);
                                                 int currentMonth = DateTimeUtil.getCurrentMonth();
                                                 log.info("Current month {}", currentMonth);
-                                                int year = DateTimeUtil.getYear(user.getUserPersonalDetails().getUserCompanyDetails().getPermanentDate());
-                                                log.info("User year per {}", year);
                                                 int month = DateTimeUtil.getMonth(user.getUserPersonalDetails().getUserCompanyDetails().getPermanentDate());
                                                 log.info("User month per {}", month);
 
-                                                if (currentYear == year) {
+                                                if (claimRequestDTO.getTreatmentCategory().equals(TreatmentCategory.OTHER.name()) && !(claimRequestDTO.getTreatment().equals(TreatmentType.CRIC.name()))) {
                                                     log.info("Match current year and user per date {}", month);
                                                     InsuranceMonthCategory insuranceMontCategory;
                                                     if (month >= 1 && month <= 6) {
@@ -236,213 +246,213 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
                                                                     log.info("Sum of claims current {}", sumOfClaims);
                                                                     if (InsuranceMonthCategory.FIRST.equals(insuranceMontCategory)) {
                                                                         log.info("First");
-                                                                        if (currentMonth <= 6) {
-                                                                            log.info("Processing first with event limit {} {}", currentMonth, month);
-                                                                            BigDecimal remainingBalance = insuranceDetails.getEventLimit().subtract(sumOfClaims != null ? sumOfClaims : BigDecimal.valueOf(0.00));
-                                                                            log.info("Remaining balance {}", remainingBalance);
-                                                                            if (claimRequestDTO.getRequestAmount().compareTo(remainingBalance) > 0) {
-                                                                                log.info("Request fund limit exceeded with ent limit {} {} {} {}", claimRequestDTO.getRequestAmount(), insuranceDetails.getEventLimit(), remainingBalance, sumOfClaims);
-                                                                                return ResponseEntity.ok().body(responseUtil.error(null, 1052, messageSource.getMessage(ResponseMessageUtil.CLAIM_LIMIT_EXCEED_WITH_LIMIT, new Object[]{remainingBalance}, locale)));
-                                                                            }
-                                                                            if (claimRequestDTO.getIsValidation()) {
-                                                                                log.info("Insurance claim request validate only success {}", true);
-                                                                                return ResponseEntity.ok().body(responseUtil.success(null, messageSource.getMessage(ResponseMessageUtil.INSURANCE_CLAIM_REQUEST_VALIDATION_SUCCESS, null, locale)));
-                                                                            } else {
-
-                                                                                if (user.getApplicationOtpSession() != null) {
-                                                                                    log.info("Otp request otp session  {} ", user.getApplicationOtpSession());
-
-                                                                                    if (DateTimeUtil.getSeconds(user.getApplicationOtpSession().getCreatedDate(), 600).after(DateTimeUtil.getCurrentDateTime()) &&
-                                                                                            user.getApplicationOtpSession().getOtp().equals(claimRequestDTO.getOtp()) && user.getApplicationOtpSession().isValidated()) {
-                                                                                        log.info("Otp request valid {} ", user.getApplicationOtpSession());
-                                                                                        ApprovalWorkFlow approvalWorkFlow = updateApprovalData();
-                                                                                        updateApplicationUserOtpData(user, user.getApplicationOtpSession());
-                                                                                        String claimRequestId = saveClaimRequest(claimRequestDTO, user, claimsDependents, treatment, tc, approvalWorkFlow);
-                                                                                        notifyMessage(user.getPrimaryMobile(), claimRequestId);
-                                                                                        return ResponseEntity.ok().body(responseUtil.success(null, messageSource.getMessage(ResponseMessageUtil.INSURANCE_CLAIM_REQUEST_SUBMIT_SUCCESS, null, locale)));
-                                                                                    } else {
-                                                                                        log.info("Otp request validation fail otp or invalid session {}", user.getApplicationOtpSession());
-                                                                                        return ResponseEntity.ok().body(responseUtil.error(null, 1016, messageSource.getMessage(ResponseMessageUtil.OTP_INVALID_OR_SESSION_TIME_OUT, null, locale)));
-                                                                                    }
-                                                                                } else {
-                                                                                    log.info("Otp request otp session not found {} ", claimRequestDTO.getUsername());
-                                                                                    return ResponseEntity.ok().body(responseUtil.error(null, 1015, messageSource.getMessage(ResponseMessageUtil.OTP_SESSION_NOT_FOUND, null, locale)));
-                                                                                }
-                                                                            }
+                                                                        //  if (currentMonth <= 6) {
+                                                                        log.info("Processing first with event limit {} {}", currentMonth, month);
+                                                                        BigDecimal remainingBalance = insuranceDetails.getEventLimit().subtract(sumOfClaims != null ? sumOfClaims : BigDecimal.valueOf(0.00));
+                                                                        log.info("Remaining balance {}", remainingBalance);
+                                                                        if (claimRequestDTO.getRequestAmount().compareTo(remainingBalance) > 0) {
+                                                                            log.info("Request fund limit exceeded with ent limit {} {} {} {}", claimRequestDTO.getRequestAmount(), insuranceDetails.getEventLimit(), remainingBalance, sumOfClaims);
+                                                                            return ResponseEntity.ok().body(responseUtil.error(null, 1052, messageSource.getMessage(ResponseMessageUtil.CLAIM_LIMIT_EXCEED_WITH_LIMIT, new Object[]{remainingBalance}, locale)));
+                                                                        }
+                                                                        if (claimRequestDTO.getIsValidation()) {
+                                                                            log.info("Insurance claim request validate only success {}", true);
+                                                                            return ResponseEntity.ok().body(responseUtil.success(null, messageSource.getMessage(ResponseMessageUtil.INSURANCE_CLAIM_REQUEST_VALIDATION_SUCCESS, null, locale)));
                                                                         } else {
-                                                                            log.info("Without first event limit {} {} ", currentMonth, month);
-                                                                            BigDecimal remainingBalance = insuranceDetails.getInsuranceDetailsLimit().getClaimLimit().subtract(sumOfClaims != null ? sumOfClaims : BigDecimal.valueOf(0.00));
-                                                                            log.info("Remaining balance {}", remainingBalance);
-                                                                            if (claimRequestDTO.getRequestAmount().compareTo(remainingBalance) > 0) {
-                                                                                log.info("Request fund limit exceeded without event limit {} {} {} {}", claimRequestDTO.getRequestAmount(), insuranceDetails.getEventLimit(), remainingBalance, sumOfClaims);
-                                                                                return ResponseEntity.ok().body(responseUtil.error(null, 1052, messageSource.getMessage(ResponseMessageUtil.CLAIM_LIMIT_EXCEED_WITH_LIMIT, new Object[]{remainingBalance}, locale)));
-                                                                            }
-                                                                            if (claimRequestDTO.getIsValidation()) {
-                                                                                log.info("Insurance claim request validate only success {}", true);
-                                                                                return ResponseEntity.ok().body(responseUtil.success(null, messageSource.getMessage(ResponseMessageUtil.INSURANCE_CLAIM_REQUEST_VALIDATION_SUCCESS, null, locale)));
-                                                                            } else {
 
-                                                                                if (user.getApplicationOtpSession() != null) {
-                                                                                    log.info("Otp request otp session  {} ", user.getApplicationOtpSession());
+                                                                            if (user.getApplicationOtpSession() != null) {
+                                                                                log.info("Otp request otp session  {} ", user.getApplicationOtpSession());
 
-                                                                                    if (DateTimeUtil.getSeconds(user.getApplicationOtpSession().getCreatedDate(), 600).after(DateTimeUtil.getCurrentDateTime()) &&
-                                                                                            user.getApplicationOtpSession().getOtp().equals(claimRequestDTO.getOtp()) && user.getApplicationOtpSession().isValidated()) {
-                                                                                        log.info("Otp request valid {} ", user.getApplicationOtpSession());
-                                                                                        ApprovalWorkFlow approvalWorkFlow = updateApprovalData();
-                                                                                        updateApplicationUserOtpData(user, user.getApplicationOtpSession());
-                                                                                        String claimRequestId = saveClaimRequest(claimRequestDTO, user, claimsDependents, treatment, tc, approvalWorkFlow);
-                                                                                        notifyMessage(user.getPrimaryMobile(), claimRequestId);
-                                                                                        return ResponseEntity.ok().body(responseUtil.success(null, messageSource.getMessage(ResponseMessageUtil.INSURANCE_CLAIM_REQUEST_SUBMIT_SUCCESS, null, locale)));
-                                                                                    } else {
-                                                                                        log.info("Otp request validation fail otp or invalid session {}", user.getApplicationOtpSession());
-                                                                                        return ResponseEntity.ok().body(responseUtil.error(null, 1016, messageSource.getMessage(ResponseMessageUtil.OTP_INVALID_OR_SESSION_TIME_OUT, null, locale)));
-                                                                                    }
+                                                                                if (DateTimeUtil.getSeconds(user.getApplicationOtpSession().getCreatedDate(), 600).after(DateTimeUtil.getCurrentDateTime()) &&
+                                                                                        user.getApplicationOtpSession().getOtp().equals(claimRequestDTO.getOtp()) && user.getApplicationOtpSession().isValidated()) {
+                                                                                    log.info("Otp request valid {} ", user.getApplicationOtpSession());
+                                                                                    ApprovalWorkFlow approvalWorkFlow = updateApprovalData();
+                                                                                    updateApplicationUserOtpData(user, user.getApplicationOtpSession());
+                                                                                    String claimRequestId = saveClaimRequest(claimRequestDTO, user, claimsDependents, treatment, tc, approvalWorkFlow, insurancePeriod);
+                                                                                    notifyMessage(user.getPrimaryMobile(), claimRequestId);
+                                                                                    return ResponseEntity.ok().body(responseUtil.success(null, messageSource.getMessage(ResponseMessageUtil.INSURANCE_CLAIM_REQUEST_SUBMIT_SUCCESS, null, locale)));
                                                                                 } else {
-                                                                                    log.info("Otp request otp session not found {} ", claimRequestDTO.getUsername());
-                                                                                    return ResponseEntity.ok().body(responseUtil.error(null, 1015, messageSource.getMessage(ResponseMessageUtil.OTP_SESSION_NOT_FOUND, null, locale)));
+                                                                                    log.info("Otp request validation fail otp or invalid session {}", user.getApplicationOtpSession());
+                                                                                    return ResponseEntity.ok().body(responseUtil.error(null, 1016, messageSource.getMessage(ResponseMessageUtil.OTP_INVALID_OR_SESSION_TIME_OUT, null, locale)));
                                                                                 }
+                                                                            } else {
+                                                                                log.info("Otp request otp session not found {} ", claimRequestDTO.getUsername());
+                                                                                return ResponseEntity.ok().body(responseUtil.error(null, 1015, messageSource.getMessage(ResponseMessageUtil.OTP_SESSION_NOT_FOUND, null, locale)));
                                                                             }
                                                                         }
+//                                                                        } else {
+//                                                                            log.info("Without first event limit {} {} ", currentMonth, month);
+//                                                                            BigDecimal remainingBalance = insuranceDetails.getInsuranceDetailsLimit().getGlobalLimit().subtract(sumOfClaims != null ? sumOfClaims : BigDecimal.valueOf(0.00));
+//                                                                            log.info("Remaining balance {}", remainingBalance);
+//                                                                            if (claimRequestDTO.getRequestAmount().compareTo(remainingBalance) > 0) {
+//                                                                                log.info("Request fund limit exceeded without event limit {} {} {} {}", claimRequestDTO.getRequestAmount(), insuranceDetails.getEventLimit(), remainingBalance, sumOfClaims);
+//                                                                                return ResponseEntity.ok().body(responseUtil.error(null, 1052, messageSource.getMessage(ResponseMessageUtil.CLAIM_LIMIT_EXCEED_WITH_LIMIT, new Object[]{remainingBalance}, locale)));
+//                                                                            }
+//                                                                            if (claimRequestDTO.getIsValidation()) {
+//                                                                                log.info("Insurance claim request validate only success {}", true);
+//                                                                                return ResponseEntity.ok().body(responseUtil.success(null, messageSource.getMessage(ResponseMessageUtil.INSURANCE_CLAIM_REQUEST_VALIDATION_SUCCESS, null, locale)));
+//                                                                            } else {
+//
+//                                                                                if (user.getApplicationOtpSession() != null) {
+//                                                                                    log.info("Otp request otp session  {} ", user.getApplicationOtpSession());
+//
+//                                                                                    if (DateTimeUtil.getSeconds(user.getApplicationOtpSession().getCreatedDate(), 600).after(DateTimeUtil.getCurrentDateTime()) &&
+//                                                                                            user.getApplicationOtpSession().getOtp().equals(claimRequestDTO.getOtp()) && user.getApplicationOtpSession().isValidated()) {
+//                                                                                        log.info("Otp request valid {} ", user.getApplicationOtpSession());
+//                                                                                        ApprovalWorkFlow approvalWorkFlow = updateApprovalData();
+//                                                                                        updateApplicationUserOtpData(user, user.getApplicationOtpSession());
+//                                                                                        String claimRequestId = saveClaimRequest(claimRequestDTO, user, claimsDependents, treatment, tc, approvalWorkFlow);
+//                                                                                        notifyMessage(user.getPrimaryMobile(), claimRequestId);
+//                                                                                        return ResponseEntity.ok().body(responseUtil.success(null, messageSource.getMessage(ResponseMessageUtil.INSURANCE_CLAIM_REQUEST_SUBMIT_SUCCESS, null, locale)));
+//                                                                                    } else {
+//                                                                                        log.info("Otp request validation fail otp or invalid session {}", user.getApplicationOtpSession());
+//                                                                                        return ResponseEntity.ok().body(responseUtil.error(null, 1016, messageSource.getMessage(ResponseMessageUtil.OTP_INVALID_OR_SESSION_TIME_OUT, null, locale)));
+//                                                                                    }
+//                                                                                } else {
+//                                                                                    log.info("Otp request otp session not found {} ", claimRequestDTO.getUsername());
+//                                                                                    return ResponseEntity.ok().body(responseUtil.error(null, 1015, messageSource.getMessage(ResponseMessageUtil.OTP_SESSION_NOT_FOUND, null, locale)));
+//                                                                                }
+//                                                                            }
+//                                                                        }
                                                                     } else if (InsuranceMonthCategory.SECOND.equals(insuranceMontCategory)) {
                                                                         log.info("Second");
-                                                                        if (currentMonth <= 9) {
-                                                                            log.info("Processing  second with ent limit {} {}", currentMonth, month);
-                                                                            BigDecimal remainingBalance = insuranceDetails.getEventLimit().subtract(sumOfClaims != null ? sumOfClaims : BigDecimal.valueOf(0.00));
-                                                                            log.info("Remaining balance {}", remainingBalance);
-                                                                            if (claimRequestDTO.getRequestAmount().compareTo(remainingBalance) > 0) {
-                                                                                log.info("Request fund limit exceeded with ent limit {} {} {} {}", claimRequestDTO.getRequestAmount(), insuranceDetails.getEventLimit(), remainingBalance, sumOfClaims);
-                                                                                return ResponseEntity.ok().body(responseUtil.error(null, 1052, messageSource.getMessage(ResponseMessageUtil.CLAIM_LIMIT_EXCEED_WITH_LIMIT, new Object[]{remainingBalance}, locale)));
-                                                                            }
-                                                                            if (claimRequestDTO.getIsValidation()) {
-                                                                                log.info("Insurance claim request validate only success{}", true);
-                                                                                return ResponseEntity.ok().body(responseUtil.success(null, messageSource.getMessage(ResponseMessageUtil.INSURANCE_CLAIM_REQUEST_VALIDATION_SUCCESS, null, locale)));
-                                                                            } else {
-
-                                                                                if (user.getApplicationOtpSession() != null) {
-                                                                                    log.info("Otp request otp session  {} ", user.getApplicationOtpSession());
-
-                                                                                    if (DateTimeUtil.getSeconds(user.getApplicationOtpSession().getCreatedDate(), 600).after(DateTimeUtil.getCurrentDateTime()) &&
-                                                                                            user.getApplicationOtpSession().getOtp().equals(claimRequestDTO.getOtp()) && user.getApplicationOtpSession().isValidated()) {
-                                                                                        log.info("Otp request valid {} ", user.getApplicationOtpSession());
-                                                                                        ApprovalWorkFlow approvalWorkFlow = updateApprovalData();
-                                                                                        updateApplicationUserOtpData(user, user.getApplicationOtpSession());
-                                                                                        String claimRequestId = saveClaimRequest(claimRequestDTO, user, claimsDependents, treatment, tc, approvalWorkFlow);
-                                                                                        notifyMessage(user.getPrimaryMobile(), claimRequestId);
-                                                                                        return ResponseEntity.ok().body(responseUtil.success(null, messageSource.getMessage(ResponseMessageUtil.INSURANCE_CLAIM_REQUEST_SUBMIT_SUCCESS, null, locale)));
-                                                                                    } else {
-                                                                                        log.info("Otp request validation fail otp or invalid session {}", user.getApplicationOtpSession());
-                                                                                        return ResponseEntity.ok().body(responseUtil.error(null, 1016, messageSource.getMessage(ResponseMessageUtil.OTP_INVALID_OR_SESSION_TIME_OUT, null, locale)));
-                                                                                    }
-                                                                                } else {
-                                                                                    log.info("Otp request otp session not found {} ", claimRequestDTO.getUsername());
-                                                                                    return ResponseEntity.ok().body(responseUtil.error(null, 1015, messageSource.getMessage(ResponseMessageUtil.OTP_SESSION_NOT_FOUND, null, locale)));
-                                                                                }
-                                                                            }
-
+//                                                                        if (currentMonth <= 9) {
+                                                                        log.info("Processing  second with ent limit {} {}", currentMonth, month);
+                                                                        BigDecimal remainingBalance = insuranceDetails.getEventLimit().subtract(sumOfClaims != null ? sumOfClaims : BigDecimal.valueOf(0.00));
+                                                                        log.info("Remaining balance {}", remainingBalance);
+                                                                        if (claimRequestDTO.getRequestAmount().compareTo(remainingBalance) > 0) {
+                                                                            log.info("Request fund limit exceeded with ent limit {} {} {} {}", claimRequestDTO.getRequestAmount(), insuranceDetails.getEventLimit(), remainingBalance, sumOfClaims);
+                                                                            return ResponseEntity.ok().body(responseUtil.error(null, 1052, messageSource.getMessage(ResponseMessageUtil.CLAIM_LIMIT_EXCEED_WITH_LIMIT, new Object[]{remainingBalance}, locale)));
+                                                                        }
+                                                                        if (claimRequestDTO.getIsValidation()) {
+                                                                            log.info("Insurance claim request validate only success{}", true);
+                                                                            return ResponseEntity.ok().body(responseUtil.success(null, messageSource.getMessage(ResponseMessageUtil.INSURANCE_CLAIM_REQUEST_VALIDATION_SUCCESS, null, locale)));
                                                                         } else {
-                                                                            log.info("Without second ent limit {} {} ", currentMonth, month);
-                                                                            BigDecimal remainingBalance = insuranceDetails.getInsuranceDetailsLimit().getClaimLimit().subtract(sumOfClaims != null ? sumOfClaims : BigDecimal.valueOf(0.00));
-                                                                            log.info("Remaining balance {}", remainingBalance);
-                                                                            if (claimRequestDTO.getRequestAmount().compareTo(remainingBalance) > 0) {
-                                                                                log.info("Request fund limit exceeded without event limit {} {} {} {}", claimRequestDTO.getRequestAmount(), insuranceDetails.getEventLimit(), remainingBalance, sumOfClaims);
-                                                                                return ResponseEntity.ok().body(responseUtil.error(null, 1052, messageSource.getMessage(ResponseMessageUtil.CLAIM_LIMIT_EXCEED_WITH_LIMIT, new Object[]{remainingBalance}, locale)));
-                                                                            }
-                                                                            if (claimRequestDTO.getIsValidation()) {
-                                                                                log.info("Insurance claim request validate only success{}", true);
-                                                                                return ResponseEntity.ok().body(responseUtil.success(null, messageSource.getMessage(ResponseMessageUtil.INSURANCE_CLAIM_REQUEST_VALIDATION_SUCCESS, null, locale)));
-                                                                            } else {
 
-                                                                                if (user.getApplicationOtpSession() != null) {
-                                                                                    log.info("Otp request otp session  {} ", user.getApplicationOtpSession());
+                                                                            if (user.getApplicationOtpSession() != null) {
+                                                                                log.info("Otp request otp session  {} ", user.getApplicationOtpSession());
 
-                                                                                    if (DateTimeUtil.getSeconds(user.getApplicationOtpSession().getCreatedDate(), 600).after(DateTimeUtil.getCurrentDateTime()) &&
-                                                                                            user.getApplicationOtpSession().getOtp().equals(claimRequestDTO.getOtp()) && user.getApplicationOtpSession().isValidated()) {
-                                                                                        log.info("Otp request valid {} ", user.getApplicationOtpSession());
-                                                                                        ApprovalWorkFlow approvalWorkFlow = updateApprovalData();
-                                                                                        updateApplicationUserOtpData(user, user.getApplicationOtpSession());
-                                                                                        String claimRequestId = saveClaimRequest(claimRequestDTO, user, claimsDependents, treatment, tc, approvalWorkFlow);
-                                                                                        notifyMessage(user.getPrimaryMobile(), claimRequestId);
-                                                                                        return ResponseEntity.ok().body(responseUtil.success(null, messageSource.getMessage(ResponseMessageUtil.INSURANCE_CLAIM_REQUEST_SUBMIT_SUCCESS, null, locale)));
-                                                                                    } else {
-                                                                                        log.info("Otp request validation fail otp or invalid session {}", user.getApplicationOtpSession());
-                                                                                        return ResponseEntity.ok().body(responseUtil.error(null, 1016, messageSource.getMessage(ResponseMessageUtil.OTP_INVALID_OR_SESSION_TIME_OUT, null, locale)));
-                                                                                    }
+                                                                                if (DateTimeUtil.getSeconds(user.getApplicationOtpSession().getCreatedDate(), 600).after(DateTimeUtil.getCurrentDateTime()) &&
+                                                                                        user.getApplicationOtpSession().getOtp().equals(claimRequestDTO.getOtp()) && user.getApplicationOtpSession().isValidated()) {
+                                                                                    log.info("Otp request valid {} ", user.getApplicationOtpSession());
+                                                                                    ApprovalWorkFlow approvalWorkFlow = updateApprovalData();
+                                                                                    updateApplicationUserOtpData(user, user.getApplicationOtpSession());
+                                                                                    String claimRequestId = saveClaimRequest(claimRequestDTO, user, claimsDependents, treatment, tc, approvalWorkFlow, insurancePeriod);
+                                                                                    notifyMessage(user.getPrimaryMobile(), claimRequestId);
+                                                                                    return ResponseEntity.ok().body(responseUtil.success(null, messageSource.getMessage(ResponseMessageUtil.INSURANCE_CLAIM_REQUEST_SUBMIT_SUCCESS, null, locale)));
                                                                                 } else {
-                                                                                    log.info("Otp request otp session not found {} ", claimRequestDTO.getUsername());
-                                                                                    return ResponseEntity.ok().body(responseUtil.error(null, 1015, messageSource.getMessage(ResponseMessageUtil.OTP_SESSION_NOT_FOUND, null, locale)));
+                                                                                    log.info("Otp request validation fail otp or invalid session {}", user.getApplicationOtpSession());
+                                                                                    return ResponseEntity.ok().body(responseUtil.error(null, 1016, messageSource.getMessage(ResponseMessageUtil.OTP_INVALID_OR_SESSION_TIME_OUT, null, locale)));
                                                                                 }
+                                                                            } else {
+                                                                                log.info("Otp request otp session not found {} ", claimRequestDTO.getUsername());
+                                                                                return ResponseEntity.ok().body(responseUtil.error(null, 1015, messageSource.getMessage(ResponseMessageUtil.OTP_SESSION_NOT_FOUND, null, locale)));
                                                                             }
                                                                         }
+
+//                                                                        } else {
+//                                                                            log.info("Without second ent limit {} {} ", currentMonth, month);
+//                                                                            BigDecimal remainingBalance = insuranceDetails.getInsuranceDetailsLimit().getGlobalLimit().subtract(sumOfClaims != null ? sumOfClaims : BigDecimal.valueOf(0.00));
+//                                                                            log.info("Remaining balance {}", remainingBalance);
+//                                                                            if (claimRequestDTO.getRequestAmount().compareTo(remainingBalance) > 0) {
+//                                                                                log.info("Request fund limit exceeded without event limit {} {} {} {}", claimRequestDTO.getRequestAmount(), insuranceDetails.getEventLimit(), remainingBalance, sumOfClaims);
+//                                                                                return ResponseEntity.ok().body(responseUtil.error(null, 1052, messageSource.getMessage(ResponseMessageUtil.CLAIM_LIMIT_EXCEED_WITH_LIMIT, new Object[]{remainingBalance}, locale)));
+//                                                                            }
+//                                                                            if (claimRequestDTO.getIsValidation()) {
+//                                                                                log.info("Insurance claim request validate only success{}", true);
+//                                                                                return ResponseEntity.ok().body(responseUtil.success(null, messageSource.getMessage(ResponseMessageUtil.INSURANCE_CLAIM_REQUEST_VALIDATION_SUCCESS, null, locale)));
+//                                                                            } else {
+//
+//                                                                                if (user.getApplicationOtpSession() != null) {
+//                                                                                    log.info("Otp request otp session  {} ", user.getApplicationOtpSession());
+//
+//                                                                                    if (DateTimeUtil.getSeconds(user.getApplicationOtpSession().getCreatedDate(), 600).after(DateTimeUtil.getCurrentDateTime()) &&
+//                                                                                            user.getApplicationOtpSession().getOtp().equals(claimRequestDTO.getOtp()) && user.getApplicationOtpSession().isValidated()) {
+//                                                                                        log.info("Otp request valid {} ", user.getApplicationOtpSession());
+//                                                                                        ApprovalWorkFlow approvalWorkFlow = updateApprovalData();
+//                                                                                        updateApplicationUserOtpData(user, user.getApplicationOtpSession());
+//                                                                                        String claimRequestId = saveClaimRequest(claimRequestDTO, user, claimsDependents, treatment, tc, approvalWorkFlow);
+//                                                                                        notifyMessage(user.getPrimaryMobile(), claimRequestId);
+//                                                                                        return ResponseEntity.ok().body(responseUtil.success(null, messageSource.getMessage(ResponseMessageUtil.INSURANCE_CLAIM_REQUEST_SUBMIT_SUCCESS, null, locale)));
+//                                                                                    } else {
+//                                                                                        log.info("Otp request validation fail otp or invalid session {}", user.getApplicationOtpSession());
+//                                                                                        return ResponseEntity.ok().body(responseUtil.error(null, 1016, messageSource.getMessage(ResponseMessageUtil.OTP_INVALID_OR_SESSION_TIME_OUT, null, locale)));
+//                                                                                    }
+//                                                                                } else {
+//                                                                                    log.info("Otp request otp session not found {} ", claimRequestDTO.getUsername());
+//                                                                                    return ResponseEntity.ok().body(responseUtil.error(null, 1015, messageSource.getMessage(ResponseMessageUtil.OTP_SESSION_NOT_FOUND, null, locale)));
+//                                                                                }
+//                                                                            }
+//                                                                        }
                                                                     } else {
                                                                         log.info("Third");
-                                                                        if (currentMonth <= 12) {
-                                                                            log.info("Processing  third with ent limit {} {}", currentMonth, month);
-                                                                            BigDecimal remainingBalance = insuranceDetails.getEventLimit().subtract(sumOfClaims != null ? sumOfClaims : BigDecimal.valueOf(0.00));
-                                                                            log.info("Remaining balance {}", remainingBalance);
-                                                                            if (claimRequestDTO.getRequestAmount().compareTo(remainingBalance) > 0) {
-                                                                                log.info("Request fund limit exceeded with ent limit {} {} {} {}", claimRequestDTO.getRequestAmount(), insuranceDetails.getEventLimit(), remainingBalance, sumOfClaims);
-                                                                                return ResponseEntity.ok().body(responseUtil.error(null, 1052, messageSource.getMessage(ResponseMessageUtil.CLAIM_LIMIT_EXCEED_WITH_LIMIT, new Object[]{remainingBalance}, locale)));
-                                                                            }
-                                                                            if (claimRequestDTO.getIsValidation()) {
-                                                                                log.info("Insurance claim request validate only success{}", true);
-                                                                                return ResponseEntity.ok().body(responseUtil.success(null, messageSource.getMessage(ResponseMessageUtil.INSURANCE_CLAIM_REQUEST_VALIDATION_SUCCESS, null, locale)));
-                                                                            } else {
-
-                                                                                if (user.getApplicationOtpSession() != null) {
-                                                                                    log.info("Otp request otp session  {} ", user.getApplicationOtpSession());
-
-                                                                                    if (DateTimeUtil.getSeconds(user.getApplicationOtpSession().getCreatedDate(), 600).after(DateTimeUtil.getCurrentDateTime()) &&
-                                                                                            user.getApplicationOtpSession().getOtp().equals(claimRequestDTO.getOtp()) && user.getApplicationOtpSession().isValidated()) {
-                                                                                        log.info("Otp request valid {} ", user.getApplicationOtpSession());
-                                                                                        ApprovalWorkFlow approvalWorkFlow = updateApprovalData();
-                                                                                        updateApplicationUserOtpData(user, user.getApplicationOtpSession());
-                                                                                        String claimRequestId = saveClaimRequest(claimRequestDTO, user, claimsDependents, treatment, tc, approvalWorkFlow);
-                                                                                        notifyMessage(user.getPrimaryMobile(), claimRequestId);
-                                                                                        return ResponseEntity.ok().body(responseUtil.success(null, messageSource.getMessage(ResponseMessageUtil.INSURANCE_CLAIM_REQUEST_SUBMIT_SUCCESS, null, locale)));
-                                                                                    } else {
-                                                                                        log.info("Otp request validation fail otp or invalid session {}", user.getApplicationOtpSession());
-                                                                                        return ResponseEntity.ok().body(responseUtil.error(null, 1016, messageSource.getMessage(ResponseMessageUtil.OTP_INVALID_OR_SESSION_TIME_OUT, null, locale)));
-                                                                                    }
-                                                                                } else {
-                                                                                    log.info("Otp request otp session not found {} ", claimRequestDTO.getUsername());
-                                                                                    return ResponseEntity.ok().body(responseUtil.error(null, 1015, messageSource.getMessage(ResponseMessageUtil.OTP_SESSION_NOT_FOUND, null, locale)));
-                                                                                }
-                                                                            }
+                                                                        // if (currentMonth <= 12) {
+                                                                        log.info("Processing  third with ent limit {} {}", currentMonth, month);
+                                                                        BigDecimal remainingBalance = insuranceDetails.getEventLimit().subtract(sumOfClaims != null ? sumOfClaims : BigDecimal.valueOf(0.00));
+                                                                        log.info("Remaining balance {}", remainingBalance);
+                                                                        if (claimRequestDTO.getRequestAmount().compareTo(remainingBalance) > 0) {
+                                                                            log.info("Request fund limit exceeded with ent limit {} {} {} {}", claimRequestDTO.getRequestAmount(), insuranceDetails.getEventLimit(), remainingBalance, sumOfClaims);
+                                                                            return ResponseEntity.ok().body(responseUtil.error(null, 1052, messageSource.getMessage(ResponseMessageUtil.CLAIM_LIMIT_EXCEED_WITH_LIMIT, new Object[]{remainingBalance}, locale)));
+                                                                        }
+                                                                        if (claimRequestDTO.getIsValidation()) {
+                                                                            log.info("Insurance claim request validate only success{}", true);
+                                                                            return ResponseEntity.ok().body(responseUtil.success(null, messageSource.getMessage(ResponseMessageUtil.INSURANCE_CLAIM_REQUEST_VALIDATION_SUCCESS, null, locale)));
                                                                         } else {
-                                                                            log.info("Without third ent limit {} {} ", currentMonth, month);
-                                                                            BigDecimal remainingBalance = insuranceDetails.getInsuranceDetailsLimit().getClaimLimit().subtract(sumOfClaims != null ? sumOfClaims : BigDecimal.valueOf(0.00));
-                                                                            log.info("Remaining balance {}", remainingBalance);
-                                                                            if (claimRequestDTO.getRequestAmount().compareTo(remainingBalance) > 0) {
-                                                                                log.info("Request fund limit exceeded without event limit {} {} {} {}", claimRequestDTO.getRequestAmount(), insuranceDetails.getEventLimit(), remainingBalance, sumOfClaims);
-                                                                                return ResponseEntity.ok().body(responseUtil.error(null, 1052, messageSource.getMessage(ResponseMessageUtil.CLAIM_LIMIT_EXCEED_WITH_LIMIT, new Object[]{remainingBalance}, locale)));
-                                                                            }
 
-                                                                            if (claimRequestDTO.getIsValidation()) {
-                                                                                log.info("Insurance claim request validate only success{}", true);
-                                                                                return ResponseEntity.ok().body(responseUtil.success(null, messageSource.getMessage(ResponseMessageUtil.INSURANCE_CLAIM_REQUEST_VALIDATION_SUCCESS, null, locale)));
-                                                                            } else {
+                                                                            if (user.getApplicationOtpSession() != null) {
+                                                                                log.info("Otp request otp session  {} ", user.getApplicationOtpSession());
 
-                                                                                if (user.getApplicationOtpSession() != null) {
-                                                                                    log.info("Otp request otp session  {} ", user.getApplicationOtpSession());
-
-                                                                                    if (DateTimeUtil.getSeconds(user.getApplicationOtpSession().getCreatedDate(), 600).after(DateTimeUtil.getCurrentDateTime()) &&
-                                                                                            user.getApplicationOtpSession().getOtp().equals(claimRequestDTO.getOtp()) && user.getApplicationOtpSession().isValidated()) {
-                                                                                        log.info("Otp request valid {} ", user.getApplicationOtpSession());
-                                                                                        ApprovalWorkFlow approvalWorkFlow = updateApprovalData();
-                                                                                        updateApplicationUserOtpData(user, user.getApplicationOtpSession());
-                                                                                        String claimRequestId = saveClaimRequest(claimRequestDTO, user, claimsDependents, treatment, tc, approvalWorkFlow);
-                                                                                        notifyMessage(user.getPrimaryMobile(), claimRequestId);
-                                                                                        return ResponseEntity.ok().body(responseUtil.success(null, messageSource.getMessage(ResponseMessageUtil.INSURANCE_CLAIM_REQUEST_SUBMIT_SUCCESS, null, locale)));
-                                                                                    } else {
-                                                                                        log.info("Otp request validation fail otp or invalid session {}", user.getApplicationOtpSession());
-                                                                                        return ResponseEntity.ok().body(responseUtil.error(null, 1016, messageSource.getMessage(ResponseMessageUtil.OTP_INVALID_OR_SESSION_TIME_OUT, null, locale)));
-                                                                                    }
+                                                                                if (DateTimeUtil.getSeconds(user.getApplicationOtpSession().getCreatedDate(), 600).after(DateTimeUtil.getCurrentDateTime()) &&
+                                                                                        user.getApplicationOtpSession().getOtp().equals(claimRequestDTO.getOtp()) && user.getApplicationOtpSession().isValidated()) {
+                                                                                    log.info("Otp request valid {} ", user.getApplicationOtpSession());
+                                                                                    ApprovalWorkFlow approvalWorkFlow = updateApprovalData();
+                                                                                    updateApplicationUserOtpData(user, user.getApplicationOtpSession());
+                                                                                    String claimRequestId = saveClaimRequest(claimRequestDTO, user, claimsDependents, treatment, tc, approvalWorkFlow, insurancePeriod);
+                                                                                    notifyMessage(user.getPrimaryMobile(), claimRequestId);
+                                                                                    return ResponseEntity.ok().body(responseUtil.success(null, messageSource.getMessage(ResponseMessageUtil.INSURANCE_CLAIM_REQUEST_SUBMIT_SUCCESS, null, locale)));
                                                                                 } else {
-                                                                                    log.info("Otp request otp session not found {} ", claimRequestDTO.getUsername());
-                                                                                    return ResponseEntity.ok().body(responseUtil.error(null, 1015, messageSource.getMessage(ResponseMessageUtil.OTP_SESSION_NOT_FOUND, null, locale)));
+                                                                                    log.info("Otp request validation fail otp or invalid session {}", user.getApplicationOtpSession());
+                                                                                    return ResponseEntity.ok().body(responseUtil.error(null, 1016, messageSource.getMessage(ResponseMessageUtil.OTP_INVALID_OR_SESSION_TIME_OUT, null, locale)));
                                                                                 }
+                                                                            } else {
+                                                                                log.info("Otp request otp session not found {} ", claimRequestDTO.getUsername());
+                                                                                return ResponseEntity.ok().body(responseUtil.error(null, 1015, messageSource.getMessage(ResponseMessageUtil.OTP_SESSION_NOT_FOUND, null, locale)));
                                                                             }
                                                                         }
+//                                                                        } else {
+//                                                                            log.info("Without third ent limit {} {} ", currentMonth, month);
+//                                                                            BigDecimal remainingBalance = insuranceDetails.getInsuranceDetailsLimit().getGlobalLimit().subtract(sumOfClaims != null ? sumOfClaims : BigDecimal.valueOf(0.00));
+//                                                                            log.info("Remaining balance {}", remainingBalance);
+//                                                                            if (claimRequestDTO.getRequestAmount().compareTo(remainingBalance) > 0) {
+//                                                                                log.info("Request fund limit exceeded without event limit {} {} {} {}", claimRequestDTO.getRequestAmount(), insuranceDetails.getEventLimit(), remainingBalance, sumOfClaims);
+//                                                                                return ResponseEntity.ok().body(responseUtil.error(null, 1052, messageSource.getMessage(ResponseMessageUtil.CLAIM_LIMIT_EXCEED_WITH_LIMIT, new Object[]{remainingBalance}, locale)));
+//                                                                            }
+//
+//                                                                            if (claimRequestDTO.getIsValidation()) {
+//                                                                                log.info("Insurance claim request validate only success{}", true);
+//                                                                                return ResponseEntity.ok().body(responseUtil.success(null, messageSource.getMessage(ResponseMessageUtil.INSURANCE_CLAIM_REQUEST_VALIDATION_SUCCESS, null, locale)));
+//                                                                            } else {
+//
+//                                                                                if (user.getApplicationOtpSession() != null) {
+//                                                                                    log.info("Otp request otp session  {} ", user.getApplicationOtpSession());
+//
+//                                                                                    if (DateTimeUtil.getSeconds(user.getApplicationOtpSession().getCreatedDate(), 600).after(DateTimeUtil.getCurrentDateTime()) &&
+//                                                                                            user.getApplicationOtpSession().getOtp().equals(claimRequestDTO.getOtp()) && user.getApplicationOtpSession().isValidated()) {
+//                                                                                        log.info("Otp request valid {} ", user.getApplicationOtpSession());
+//                                                                                        ApprovalWorkFlow approvalWorkFlow = updateApprovalData();
+//                                                                                        updateApplicationUserOtpData(user, user.getApplicationOtpSession());
+//                                                                                        String claimRequestId = saveClaimRequest(claimRequestDTO, user, claimsDependents, treatment, tc, approvalWorkFlow);
+//                                                                                        notifyMessage(user.getPrimaryMobile(), claimRequestId);
+//                                                                                        return ResponseEntity.ok().body(responseUtil.success(null, messageSource.getMessage(ResponseMessageUtil.INSURANCE_CLAIM_REQUEST_SUBMIT_SUCCESS, null, locale)));
+//                                                                                    } else {
+//                                                                                        log.info("Otp request validation fail otp or invalid session {}", user.getApplicationOtpSession());
+//                                                                                        return ResponseEntity.ok().body(responseUtil.error(null, 1016, messageSource.getMessage(ResponseMessageUtil.OTP_INVALID_OR_SESSION_TIME_OUT, null, locale)));
+//                                                                                    }
+//                                                                                } else {
+//                                                                                    log.info("Otp request otp session not found {} ", claimRequestDTO.getUsername());
+//                                                                                    return ResponseEntity.ok().body(responseUtil.error(null, 1015, messageSource.getMessage(ResponseMessageUtil.OTP_SESSION_NOT_FOUND, null, locale)));
+//                                                                                }
+//                                                                            }
+//                                                                        }
                                                                     }
                                                                 }).orElseGet(() -> {
                                                                     log.info("Insurance details not fount");
@@ -454,58 +464,82 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
                                                         return ResponseEntity.ok().body(responseUtil.error(null, 1050, messageSource.getMessage(ResponseMessageUtil.POLICY_MONTH_CATEGORY_PERIOD_NOT_FOUND_OR_INACTIVE, null, locale)));
                                                     });
                                                 } else {
-                                                    return insuranceMonthCategoryRepository.findByCodeAndStatus(InsuranceMonthCategory.FIRST.name(), Status.ACTIVE).map((insuranceMonthCategory) -> {
-                                                        log.info("Without event limit {} ", insuranceMonthCategory);
-                                                        return insuranceDetailsRepository.
-                                                                findByInsurancePolicyAndTreatmentAndTreatmentCategoryAndStatusAndInsurancePeriodAndInsuranceMonthCategory(policy.getCode(), treatment.getTreatmentCode(), tc.getCode(), Status.ACTIVE, period.getId(), insuranceMonthCategory.getCode()).map((insuranceDetails) -> {
-                                                                    BigDecimal remainingBalance = insuranceDetails.getInsuranceDetailsLimit().getClaimLimit().subtract(sumOfClaims != null ? sumOfClaims : BigDecimal.valueOf(0.00));
-                                                                    log.info("Remaining balance {}", remainingBalance);
-                                                                    if (claimRequestDTO.getRequestAmount().compareTo(remainingBalance) > 0) {
-                                                                        log.info("Request fund limit exceeded without event limit {} {} {} {}", claimRequestDTO.getRequestAmount(), insuranceDetails.getEventLimit(), remainingBalance, sumOfClaims);
-                                                                        return ResponseEntity.ok().body(responseUtil.error(null, 1052, messageSource.getMessage(ResponseMessageUtil.CLAIM_LIMIT_EXCEED_WITH_LIMIT, new Object[]{remainingBalance}, locale)));
+                                                    // return insuranceMonthCategoryRepository.findByCodeAndStatus(InsuranceMonthCategory.FIRST.name(), Status.ACTIVE).map((insuranceMonthCategory) -> {
+                                                    //      log.info("Without event limit {} ", insuranceMonthCategory);
+                                                    return insuranceDetailsRepository.
+                                                            findByInsurancePolicyAndTreatmentAndTreatmentCategoryAndStatusAndInsurancePeriod(policy, treatment, tc, Status.ACTIVE, period).map((insuranceDetails) -> {
+
+                                                                if (claimRequestDTO.getTreatmentCategory().equals(TreatmentCategory.DENTAL.name()) || claimRequestDTO.getTreatmentCategory().equals(TreatmentCategory.SPECTACLE.name())) {
+                                                                    log.info("Check dental max limit");
+
+                                                                    if (claimRequestDTO.getRequestAmount().compareTo(insuranceDetails.getClaimLimit()) > 0) {
+                                                                        log.info("Request fund limit exceeded without event limit but dental max limit {} {} {} ", claimRequestDTO.getRequestAmount(), insuranceDetails.getClaimLimit(), sumOfClaims);
+                                                                        return ResponseEntity.ok().body(responseUtil.error(null, 1052, messageSource.getMessage(ResponseMessageUtil.CLAIM_LIMIT_EXCEED_WITH_LIMIT, new Object[]{insuranceDetails.getClaimLimit()}, locale)));
+
                                                                     }
 
-                                                                    if (claimRequestDTO.getIsValidation()) {
-                                                                        log.info("Insurance claim request validate only success{}", true);
-                                                                        return ResponseEntity.ok().body(responseUtil.success(null, messageSource.getMessage(ResponseMessageUtil.INSURANCE_CLAIM_REQUEST_VALIDATION_SUCCESS, null, locale)));
-                                                                    } else {
+                                                                }
 
-                                                                        if (user.getApplicationOtpSession() != null) {
-                                                                            log.info("Otp request otp session  {} ", user.getApplicationOtpSession());
+                                                                BigDecimal remainingBalance = insuranceDetails.getInsuranceDetailsLimit().getGlobalLimit().subtract(sumOfClaims != null ? sumOfClaims : BigDecimal.valueOf(0.00));
+                                                                log.info("Remaining balance {}", remainingBalance);
+                                                                if (claimRequestDTO.getRequestAmount().compareTo(remainingBalance) > 0) {
+                                                                    log.info("Request fund limit exceeded without event limit {} {} {} {}", claimRequestDTO.getRequestAmount(), insuranceDetails.getEventLimit(), remainingBalance, sumOfClaims);
+                                                                    return ResponseEntity.ok().body(responseUtil.error(null, 1052, messageSource.getMessage(ResponseMessageUtil.CLAIM_LIMIT_EXCEED_WITH_LIMIT, new Object[]{remainingBalance}, locale)));
+                                                                }
 
-                                                                            if (DateTimeUtil.getSeconds(user.getApplicationOtpSession().getCreatedDate(), 600).after(DateTimeUtil.getCurrentDateTime()) &&
-                                                                                    user.getApplicationOtpSession().getOtp().equals(claimRequestDTO.getOtp()) && user.getApplicationOtpSession().isValidated()) {
-                                                                                log.info("Otp request valid {} ", user.getApplicationOtpSession());
-                                                                                ApprovalWorkFlow approvalWorkFlow = updateApprovalData();
-                                                                                updateApplicationUserOtpData(user, user.getApplicationOtpSession());
-                                                                                String claimRequestId = saveClaimRequest(claimRequestDTO, user, claimsDependents, treatment, tc, approvalWorkFlow);
-                                                                                notifyMessage(user.getPrimaryMobile(), claimRequestId);
-                                                                                return ResponseEntity.ok().body(responseUtil.success(null, messageSource.getMessage(ResponseMessageUtil.INSURANCE_CLAIM_REQUEST_SUBMIT_SUCCESS, null, locale)));
-                                                                            } else {
-                                                                                log.info("Otp request validation fail otp or invalid session {}", user.getApplicationOtpSession());
-                                                                                return ResponseEntity.ok().body(responseUtil.error(null, 1016, messageSource.getMessage(ResponseMessageUtil.OTP_INVALID_OR_SESSION_TIME_OUT, null, locale)));
-                                                                            }
+                                                                if (claimRequestDTO.getIsValidation()) {
+                                                                    log.info("Insurance claim request validate only success{}", true);
+                                                                    return ResponseEntity.ok().body(responseUtil.success(null, messageSource.getMessage(ResponseMessageUtil.INSURANCE_CLAIM_REQUEST_VALIDATION_SUCCESS, null, locale)));
+                                                                } else {
+
+                                                                    if (user.getApplicationOtpSession() != null) {
+                                                                        log.info("Otp request otp session  {} ", user.getApplicationOtpSession());
+
+                                                                        if (DateTimeUtil.getSeconds(user.getApplicationOtpSession().getCreatedDate(), 600).after(DateTimeUtil.getCurrentDateTime()) &&
+                                                                                user.getApplicationOtpSession().getOtp().equals(claimRequestDTO.getOtp()) && user.getApplicationOtpSession().isValidated()) {
+                                                                            log.info("Otp request valid {} ", user.getApplicationOtpSession());
+                                                                            ApprovalWorkFlow approvalWorkFlow = updateApprovalData();
+                                                                            updateApplicationUserOtpData(user, user.getApplicationOtpSession());
+                                                                            String claimRequestId = saveClaimRequest(claimRequestDTO, user, claimsDependents, treatment, tc, approvalWorkFlow, insurancePeriod);
+                                                                            notifyMessage(user.getPrimaryMobile(), claimRequestId);
+                                                                            return ResponseEntity.ok().body(responseUtil.success(null, messageSource.getMessage(ResponseMessageUtil.INSURANCE_CLAIM_REQUEST_SUBMIT_SUCCESS, null, locale)));
                                                                         } else {
-                                                                            log.info("Otp request otp session not found {} ", claimRequestDTO.getUsername());
-                                                                            return ResponseEntity.ok().body(responseUtil.error(null, 1015, messageSource.getMessage(ResponseMessageUtil.OTP_SESSION_NOT_FOUND, null, locale)));
+                                                                            log.info("Otp request validation fail otp or invalid session {}", user.getApplicationOtpSession());
+                                                                            return ResponseEntity.ok().body(responseUtil.error(null, 1016, messageSource.getMessage(ResponseMessageUtil.OTP_INVALID_OR_SESSION_TIME_OUT, null, locale)));
                                                                         }
+                                                                    } else {
+                                                                        log.info("Otp request otp session not found {} ", claimRequestDTO.getUsername());
+                                                                        return ResponseEntity.ok().body(responseUtil.error(null, 1015, messageSource.getMessage(ResponseMessageUtil.OTP_SESSION_NOT_FOUND, null, locale)));
                                                                     }
+                                                                }
 
-                                                                }).orElseGet(() -> {
-                                                                    log.info("Insurance details not fount");
-                                                                    return ResponseEntity.ok().body(responseUtil.error(null, 1051, messageSource.getMessage(ResponseMessageUtil.INSURANCE_DETAILS_NOT_FOUND_OR_INACTIVE, null, locale)));
-                                                                });
-                                                    }).orElseGet(() -> {
-                                                        log.info("Insurance month not found");
-                                                        return ResponseEntity.ok().body(responseUtil.error(null, 1050, messageSource.getMessage(ResponseMessageUtil.POLICY_MONTH_CATEGORY_PERIOD_NOT_FOUND_OR_INACTIVE, null, locale)));
-                                                    });
+                                                            }).orElseGet(() -> {
+                                                                log.info("Insurance details not fount");
+                                                                return ResponseEntity.ok().body(responseUtil.error(null, 1051, messageSource.getMessage(ResponseMessageUtil.INSURANCE_DETAILS_NOT_FOUND_OR_INACTIVE, null, locale)));
+                                                            });
+//                                                    }).orElseGet(() -> {
+//                                                        log.info("Insurance month not found");
+//                                                        return ResponseEntity.ok().body(responseUtil.error(null, 1050, messageSource.getMessage(ResponseMessageUtil.POLICY_MONTH_CATEGORY_PERIOD_NOT_FOUND_OR_INACTIVE, null, locale)));
+//                                                    });
                                                 }
                                             } else {
 
                                                 log.info("Without event limit dental or specs");
                                                 return insuranceDetailsRepository.
                                                         findByInsurancePolicyAndTreatmentAndTreatmentCategoryAndStatusAndInsurancePeriod(policy, treatment, tc, Status.ACTIVE, period).map((insuranceDetails) -> {
-                                                            BigDecimal remainingBalance = insuranceDetails.getInsuranceDetailsLimit().getClaimLimit().subtract(sumOfClaims != null ? sumOfClaims : BigDecimal.valueOf(0.00));
+
+                                                            if (claimRequestDTO.getTreatmentCategory().equals(TreatmentCategory.DENTAL.name()) || claimRequestDTO.getTreatmentCategory().equals(TreatmentCategory.SPECTACLE.name())) {
+                                                                log.info("Check dental max limit");
+
+                                                                if (claimRequestDTO.getRequestAmount().compareTo(insuranceDetails.getClaimLimit()) > 0) {
+                                                                    log.info("Request fund limit exceeded without event limit but dental max limit {} {} {} ", claimRequestDTO.getRequestAmount(), insuranceDetails.getClaimLimit(), sumOfClaims);
+                                                                    return ResponseEntity.ok().body(responseUtil.error(null, 1052, messageSource.getMessage(ResponseMessageUtil.CLAIM_LIMIT_EXCEED_WITH_LIMIT, new Object[]{insuranceDetails.getClaimLimit()}, locale)));
+
+                                                                }
+
+                                                            }
+
+                                                            BigDecimal remainingBalance = insuranceDetails.getInsuranceDetailsLimit().getGlobalLimit().subtract(sumOfClaims != null ? sumOfClaims : BigDecimal.valueOf(0.00));
                                                             log.info("Remaining balance {}", remainingBalance);
                                                             if (claimRequestDTO.getRequestAmount().compareTo(remainingBalance) > 0) {
                                                                 log.info("Request fund limit exceeded without event limit {} {} {} {}", claimRequestDTO.getRequestAmount(), insuranceDetails.getEventLimit(), remainingBalance, sumOfClaims);
@@ -525,7 +559,7 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
                                                                         log.info("Otp request valid {} ", user.getApplicationOtpSession());
                                                                         ApprovalWorkFlow approvalWorkFlow = updateApprovalData();
                                                                         updateApplicationUserOtpData(user, user.getApplicationOtpSession());
-                                                                        String claimRequestId = saveClaimRequest(claimRequestDTO, user, claimsDependents, treatment, tc, approvalWorkFlow);
+                                                                        String claimRequestId = saveClaimRequest(claimRequestDTO, user, claimsDependents, treatment, tc, approvalWorkFlow, insurancePeriod);
                                                                         notifyMessage(user.getPrimaryMobile(), claimRequestId);
                                                                         return ResponseEntity.ok().body(responseUtil.success(null, messageSource.getMessage(ResponseMessageUtil.INSURANCE_CLAIM_REQUEST_SUBMIT_SUCCESS, null, locale)));
                                                                     } else {
@@ -690,6 +724,7 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
 
             String category = insuranceDetails.getTreatmentCategory().getCode();
             String treatmentCode = in.getTreatment().getTreatmentCode();
+            Long insurancePeriod = in.getInsurancePeriod().getId();
 
             int currentYear = DateTimeUtil.getCurrentYear();
             log.info("Current year {}", currentYear);
@@ -705,7 +740,7 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
             if (currentYear == year) {
                 log.info("Year equals {} {}", year, currentYear);
                 log.info("Treatment insurance month category {} ", insuranceDetails.getInsuranceMonthCategory());
-
+                log.info("Insurance {} ", in.getTreatment().getTreatmentCode());
                 if (insuranceDetails.getTreatmentCategory().getCode().equals(TreatmentCategory.OTHER.name()) &&
                         !(in.getTreatment().getTreatmentCode().equals(TreatmentType.CRIC.name()))) {
                     InsuranceMonthCategory insuranceMontCategory;
@@ -723,20 +758,30 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
 
                     if (insuranceDetails.getInsuranceMonthCategory().getCode().equals(insuranceMontCategory.name())) {
                         log.info("Inside matching month category  indoor{}", insuranceDetails.getInsuranceMonthCategory().getCode());
-                        funLimit = insuranceDetails.getEventLimit();
-                        BigDecimal sum = insuranceClaimsRequestRepository.getSumRequestAmountByEmployeeAndTreatmentAndTreatmentCategoryAndStatus(
+                        BigDecimal sum = insuranceClaimsRequestRepository.getSumRequestAmountByEmployeeAndTreatmentAndStatus(
                                 applicationUser,
                                 treatmentCode,
-                                category,
+                                insurancePeriod,
                                 List.of(Workflow.APPROVED)
                         );
-                        log.info("Sum amount insurance ref data {} {}", sum, in.getClaimLimit());
-                        BigDecimal remaining = funLimit.subtract(sum != null ? sum : BigDecimal.valueOf(0.00));
-                        log.info("Remaining amount insurance ref data {}", remaining);
+                        if (sum == null || sum.compareTo(BigDecimal.ZERO) > 0) {
+                            log.info("First request {} ", insuranceDetails.getEventLimit());
+                            funLimit = insuranceDetails.getEventLimit();
+                        } else {
+                            log.info("Second request");
+                            funLimit = in.getGlobalLimit();
+                        }
+
+                        BigDecimal maxLimit = insuranceDetails.getEventLimit();
+
+                        log.info("Sum amount insurance ref data {} {}", sum, in.getGlobalLimit());
+                        BigDecimal reValue = funLimit.subtract(sum != null ? sum : BigDecimal.valueOf(0.00));
+                        BigDecimal remaining = reValue.compareTo(BigDecimal.ZERO) > 0 ? reValue : BigDecimal.valueOf(0.00);
+                        log.info("Remaining amount insurance ref data {}", reValue);
 
                         limitMap
                                 .computeIfAbsent(treatmentCode, k -> new HashMap<>())
-                                .merge(category, new AvailableInsuranceLimitDTO(remaining, funLimit),
+                                .merge(category, new AvailableInsuranceLimitDTO(remaining, maxLimit),
                                         (existing, newDetails) -> new AvailableInsuranceLimitDTO(
                                                 newDetails.getAvailableLimit(),
                                                 newDetails.getFundLimit()
@@ -744,22 +789,55 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
                     }
 
                 } else {
-                    log.info("Event period but dental or Spec {}", insuranceDetails.getTreatmentCategory().getCode());
+                    log.info("Event period but dental or Spec or cri {}", insuranceDetails.getTreatmentCategory().getCode());
 
-                    funLimit = insuranceDetails.getEventLimit();
-                    BigDecimal sum = insuranceClaimsRequestRepository.getSumRequestAmountByEmployeeAndTreatmentAndTreatmentCategoryAndStatus(
+                    BigDecimal sum = insuranceClaimsRequestRepository.getSumRequestAmountByEmployeeAndTreatmentAndStatus(
                             applicationUser,
                             treatmentCode,
-                            category,
+                            insurancePeriod,
                             List.of(Workflow.APPROVED)
                     );
-                    log.info("Sum amount insurance ref data {} {}", sum, in.getClaimLimit());
-                    BigDecimal remaining = funLimit.subtract(sum != null ? sum : BigDecimal.valueOf(0.00));
-                    log.info("Remaining amount insurance ref data {}", remaining);
+
+                    BigDecimal maxLimit = insuranceDetails.getClaimLimit();
+
+                    if (sum == null) {
+                        log.info("First request");
+                        funLimit = insuranceDetails.getClaimLimit();
+                    } else {
+                        log.info("Second request");
+                        if((in.getTreatment().getTreatmentCode().equals(TreatmentType.CRIC.name()))){
+                            funLimit = insuranceDetails.getClaimLimit();
+                        }else{
+
+                            funLimit = in.getGlobalLimit();
+                            log.info("sum {} maxLimit {} ", sum, maxLimit);
+
+
+                               BigDecimal balance =  funLimit.subtract(sum);
+
+                               if(balance.compareTo(maxLimit) > 0){
+                                   funLimit = maxLimit;
+                                   sum = null;
+                               }else if(balance.compareTo(maxLimit) < 0){
+                                  funLimit = balance;
+                                  sum = null;
+                               }else{
+                                   funLimit = BigDecimal.ZERO;
+                               }
+
+
+                        }
+
+                    }
+
+                    log.info("Sum amount insurance ref data {} {}", sum, in.getGlobalLimit());
+                    BigDecimal reValue = funLimit.subtract(sum != null ? sum : BigDecimal.valueOf(0.00));
+                    BigDecimal remaining = reValue.compareTo(BigDecimal.ZERO) > 0 ? reValue : BigDecimal.valueOf(0.00);
+                    log.info("Remaining amount insurance ref data {}", reValue);
 
                     limitMap
                             .computeIfAbsent(treatmentCode, k -> new HashMap<>())
-                            .merge(category, new AvailableInsuranceLimitDTO(remaining, funLimit),
+                            .merge(category, new AvailableInsuranceLimitDTO(remaining, maxLimit),
                                     (existing, newDetails) -> new AvailableInsuranceLimitDTO(
                                             newDetails.getAvailableLimit(),
                                             newDetails.getFundLimit()
@@ -769,48 +847,81 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
             } else {
 
                 log.info("Without year {}", year);
-                if (insuranceDetails.getTreatmentCategory().getCode().equals(TreatmentCategory.OTHER.name())) {
+//                if (insuranceDetails.getTreatmentCategory().getCode().equals(TreatmentCategory.OTHER.name())) {
+//
+//                    funLimit = insuranceDetails.getInsuranceDetailsLimit().getClaimLimit();
+//                    BigDecimal sum = insuranceClaimsRequestRepository.getSumRequestAmountByEmployeeAndTreatmentAndTreatmentCategoryAndStatus(
+//                            applicationUser,
+//                            treatmentCode,
+//                            category,
+//                            insurancePeriod,
+//                            List.of(Workflow.APPROVED)
+//                    );
+//                    log.info("Sum amount insurance ref data {} {}", sum, in.getClaimLimit());
+//                    BigDecimal remaining = funLimit.subtract(sum != null ? sum : BigDecimal.valueOf(0.00));
+//                    log.info("Remaining amount insurance ref data {}", remaining);
+//
+//                    limitMap
+//                            .computeIfAbsent(treatmentCode, k -> new HashMap<>())
+//                            .merge(category, new AvailableInsuranceLimitDTO(remaining, funLimit),
+//                                    (existing, newDetails) -> new AvailableInsuranceLimitDTO(
+//                                            newDetails.getAvailableLimit(),
+//                                            newDetails.getFundLimit()
+//                                    ));
+//
+//                }else{
+                log.info("Without Event period {}", insuranceDetails.getTreatmentCategory().getCode());
 
-                    funLimit = insuranceDetails.getInsuranceDetailsLimit().getClaimLimit();
-                    BigDecimal sum = insuranceClaimsRequestRepository.getSumRequestAmountByEmployeeAndTreatmentAndTreatmentCategoryAndStatus(
-                            applicationUser,
-                            treatmentCode,
-                            category,
-                            List.of(Workflow.APPROVED)
-                    );
-                    log.info("Sum amount insurance ref data {} {}", sum, in.getClaimLimit());
-                    BigDecimal remaining = funLimit.subtract(sum != null ? sum : BigDecimal.valueOf(0.00));
-                    log.info("Remaining amount insurance ref data {}", remaining);
+                BigDecimal sum = insuranceClaimsRequestRepository.getSumRequestAmountByEmployeeAndTreatmentAndStatus(
+                        applicationUser,
+                        treatmentCode,
+                        insurancePeriod,
+                        List.of(Workflow.APPROVED)
+                );
 
-                    limitMap
-                            .computeIfAbsent(treatmentCode, k -> new HashMap<>())
-                            .merge(category, new AvailableInsuranceLimitDTO(remaining, funLimit),
-                                    (existing, newDetails) -> new AvailableInsuranceLimitDTO(
-                                            newDetails.getAvailableLimit(),
-                                            newDetails.getFundLimit()
-                                    ));
+                BigDecimal maxLimit = insuranceDetails.getClaimLimit();
 
-                }else{
-                    log.info("Without Event period but dental or Spec {}", insuranceDetails.getTreatmentCategory().getCode());
-                    funLimit = insuranceDetails.getEventLimit();
-                    BigDecimal sum = insuranceClaimsRequestRepository.getSumRequestAmountByEmployeeAndTreatmentAndTreatmentCategoryAndStatus(
-                            applicationUser,
-                            treatmentCode,
-                            category,
-                            List.of(Workflow.APPROVED)
-                    );
-                    log.info("Sum amount insurance ref data {} {}", sum, in.getClaimLimit());
-                    BigDecimal remaining = funLimit.subtract(sum != null ? sum : BigDecimal.valueOf(0.00));
-                    log.info("Remaining amount insurance ref data {}", remaining);
+                if (sum == null) {
+                    log.info("First request");
+                    funLimit = insuranceDetails.getClaimLimit();
+                } else {
+                    log.info("Second request");
+                    if((in.getTreatment().getTreatmentCode().equals(TreatmentType.CRIC.name()))){
+                        funLimit = insuranceDetails.getClaimLimit();
+                    }else{
 
-                    limitMap
-                            .computeIfAbsent(treatmentCode, k -> new HashMap<>())
-                            .merge(category, new AvailableInsuranceLimitDTO(remaining, funLimit),
-                                    (existing, newDetails) -> new AvailableInsuranceLimitDTO(
-                                            newDetails.getAvailableLimit(),
-                                            newDetails.getFundLimit()
-                                    ));
+                        funLimit = in.getGlobalLimit();
+                        log.info("sum {} maxLimit {} ", sum, maxLimit);
+
+
+                            BigDecimal balance =  funLimit.subtract(sum);
+
+                            if(balance.compareTo(maxLimit) > 0){
+                                funLimit = maxLimit;
+                                sum = null;
+                            }else if(balance.compareTo(maxLimit) < 0){
+                                funLimit = balance;
+                                sum = null;
+                            }else{
+                                funLimit = BigDecimal.ZERO;
+                            }
+
+                    }
                 }
+                log.info("Sum amount insurance ref data {} {}", sum, in.getGlobalLimit());
+
+                BigDecimal reValue = funLimit.subtract(sum != null ? sum : BigDecimal.valueOf(0.00));
+                BigDecimal remaining = reValue.compareTo(BigDecimal.ZERO) > 0 ? reValue : BigDecimal.valueOf(0.00);
+                log.info("Remaining amount insurance ref data {}", reValue);
+
+                limitMap
+                        .computeIfAbsent(treatmentCode, k -> new HashMap<>())
+                        .merge(category, new AvailableInsuranceLimitDTO(remaining, maxLimit),
+                                (existing, newDetails) -> new AvailableInsuranceLimitDTO(
+                                        newDetails.getAvailableLimit(),
+                                        newDetails.getFundLimit()
+                                ));
+                //    }
 
             }
         }
@@ -926,12 +1037,13 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
     }
 
     @Transactional
-    protected InsuranceClaimsDetails saveClaimRequestDetails(ClaimRequestDTO claimRequestDTO, Treatment treatment, com.dtech.claim.model.TreatmentCategory treatmentCategory) {
+    protected InsuranceClaimsDetails saveClaimRequestDetails(ClaimRequestDTO claimRequestDTO, Treatment treatment, com.dtech.claim.model.TreatmentCategory treatmentCategory, InsurancePeriod insurancePeriod) {
         try {
             log.info("Claim request details save started {}", claimRequestDTO);
             InsuranceClaimsDetails insuranceClaimsDetails = new InsuranceClaimsDetails();
             insuranceClaimsDetails.setTreatment(treatment);
             insuranceClaimsDetails.setTreatmentCategory(treatmentCategory);
+            insuranceClaimsDetails.setInsurancePeriod(insurancePeriod);
             if (claimRequestDTO.getFromDate() != null) {
                 insuranceClaimsDetails.setFromTreatmentDate(claimRequestDTO.getFromDate());
             }
@@ -978,11 +1090,11 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
     @Transactional
     protected String saveClaimRequest(ClaimRequestDTO claimRequestDTO, ApplicationUser applicationUser,
                                       Optional<ClaimsDependents> claimsDependents, Treatment treatment,
-                                      com.dtech.claim.model.TreatmentCategory treatmentCategory, ApprovalWorkFlow approvalWorkFlow) {
+                                      com.dtech.claim.model.TreatmentCategory treatmentCategory, ApprovalWorkFlow approvalWorkFlow, InsurancePeriod insurancePeriod) {
         try {
             log.info("Claim request save started {}", claimRequestDTO);
 
-            InsuranceClaimsDetails insuranceClaimsDetails = saveClaimRequestDetails(claimRequestDTO, treatment, treatmentCategory);
+            InsuranceClaimsDetails insuranceClaimsDetails = saveClaimRequestDetails(claimRequestDTO, treatment, treatmentCategory, insurancePeriod);
 
             ClaimRequestIdGen claimRequestIdGen = ClaimRequestIdGen
                     .builder().year(String.valueOf(LocalDate.now().getYear()))
