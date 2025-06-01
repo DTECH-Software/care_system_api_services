@@ -112,7 +112,7 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
     private final ApprovalWorkFlowRepository approvalWorkFlowRepository;
 
     @Autowired
-    private InsuranceDetailsLimitRepository insuranceDetailsLimitRepository;
+    private final InsuranceDetailsLimitRepository insuranceDetailsLimitRepository;
 
     @Override
     @Transactional
@@ -465,17 +465,34 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
                                                     });
                                                 } else {
                                                     // return insuranceMonthCategoryRepository.findByCodeAndStatus(InsuranceMonthCategory.FIRST.name(), Status.ACTIVE).map((insuranceMonthCategory) -> {
-                                                    //      log.info("Without event limit {} ", insuranceMonthCategory);
+                                                    log.info("Without event limit ");
                                                     return insuranceDetailsRepository.
                                                             findByInsurancePolicyAndTreatmentAndTreatmentCategoryAndStatusAndInsurancePeriod(policy, treatment, tc, Status.ACTIVE, period).map((insuranceDetails) -> {
 
                                                                 if (claimRequestDTO.getTreatmentCategory().equals(TreatmentCategory.DENTAL.name()) || claimRequestDTO.getTreatmentCategory().equals(TreatmentCategory.SPECTACLE.name())) {
                                                                     log.info("Check dental max limit");
-
                                                                     if (claimRequestDTO.getRequestAmount().compareTo(insuranceDetails.getClaimLimit()) > 0) {
                                                                         log.info("Request fund limit exceeded without event limit but dental max limit {} {} {} ", claimRequestDTO.getRequestAmount(), insuranceDetails.getClaimLimit(), sumOfClaims);
                                                                         return ResponseEntity.ok().body(responseUtil.error(null, 1052, messageSource.getMessage(ResponseMessageUtil.CLAIM_LIMIT_EXCEED_WITH_LIMIT, new Object[]{insuranceDetails.getClaimLimit()}, locale)));
 
+                                                                    } else {
+                                                                        log.info("Request already dental spec exist fund limit");
+                                                                        BigDecimal sumOfClaimsCategory = insuranceClaimsRequestRepository.
+                                                                                getSumRequestAmountByEmployeeAndTreatmentAndTreatmentCategoryAndStatus(user,
+                                                                                        claimRequestDTO.getTreatment(),
+                                                                                        claimRequestDTO.getTreatmentCategory(),
+                                                                                        insurancePeriod.getId(),
+                                                                                        List.of(Workflow.APPROVED));
+
+                                                                        if (sumOfClaimsCategory.compareTo(insuranceDetails.getClaimLimit()) == 0) {
+                                                                            log.info("Request fund limit exceeded without event limit but dental max limit equals {} {} {} ", claimRequestDTO.getRequestAmount(), insuranceDetails.getClaimLimit(), sumOfClaims);
+                                                                            return ResponseEntity.ok().body(responseUtil.error(null, 1052, messageSource.getMessage(ResponseMessageUtil.CLAIM_LIMIT_EXCEED_WITH_LIMIT, new Object[]{insuranceDetails.getClaimLimit()}, locale)));
+
+                                                                        } else if (insuranceDetails.getClaimLimit().subtract(sumOfClaimsCategory).compareTo(claimRequestDTO.getRequestAmount()) > 0) {
+                                                                            log.info("Request fund limit exceeded without event limit but dental max limit request balance {} {} {} ", claimRequestDTO.getRequestAmount(), insuranceDetails.getClaimLimit(), sumOfClaims);
+                                                                            return ResponseEntity.ok().body(responseUtil.error(null, 1052, messageSource.getMessage(ResponseMessageUtil.CLAIM_LIMIT_EXCEED_WITH_LIMIT, new Object[]{insuranceDetails.getClaimLimit()}, locale)));
+
+                                                                        }
                                                                     }
 
                                                                 }
@@ -534,6 +551,25 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
                                                                 if (claimRequestDTO.getRequestAmount().compareTo(insuranceDetails.getClaimLimit()) > 0) {
                                                                     log.info("Request fund limit exceeded without event limit but dental max limit {} {} {} ", claimRequestDTO.getRequestAmount(), insuranceDetails.getClaimLimit(), sumOfClaims);
                                                                     return ResponseEntity.ok().body(responseUtil.error(null, 1052, messageSource.getMessage(ResponseMessageUtil.CLAIM_LIMIT_EXCEED_WITH_LIMIT, new Object[]{insuranceDetails.getClaimLimit()}, locale)));
+
+                                                                } else {
+                                                                    log.info("Request already dental spec exist fund limit");
+                                                                    BigDecimal sumOfClaimsCategory = insuranceClaimsRequestRepository.
+                                                                            getSumRequestAmountByEmployeeAndTreatmentAndTreatmentCategoryAndStatus(user,
+                                                                                    claimRequestDTO.getTreatment(),
+                                                                                    claimRequestDTO.getTreatmentCategory(),
+                                                                                    insurancePeriod.getId(),
+                                                                                    List.of(Workflow.APPROVED));
+
+                                                                    if (sumOfClaimsCategory.compareTo(insuranceDetails.getClaimLimit()) == 0) {
+                                                                        log.info("Request fund limit exceeded without event limit but dental max limit equals {} {} {} ", claimRequestDTO.getRequestAmount(), insuranceDetails.getClaimLimit(), sumOfClaims);
+                                                                        return ResponseEntity.ok().body(responseUtil.error(null, 1052, messageSource.getMessage(ResponseMessageUtil.CLAIM_LIMIT_EXCEED_WITH_LIMIT, new Object[]{insuranceDetails.getClaimLimit()}, locale)));
+
+                                                                    } else if (insuranceDetails.getClaimLimit().subtract(sumOfClaimsCategory).compareTo(claimRequestDTO.getRequestAmount()) > 0) {
+                                                                        log.info("Request fund limit exceeded without event limit but dental max limit request balance {} {} {} ", claimRequestDTO.getRequestAmount(), insuranceDetails.getClaimLimit(), sumOfClaims);
+                                                                        return ResponseEntity.ok().body(responseUtil.error(null, 1052, messageSource.getMessage(ResponseMessageUtil.CLAIM_LIMIT_EXCEED_WITH_LIMIT, new Object[]{insuranceDetails.getClaimLimit()}, locale)));
+
+                                                                    }
 
                                                                 }
 
@@ -737,12 +773,14 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
 
             BigDecimal funLimit = BigDecimal.valueOf(0.00);
 
+            String staffCategory = applicationUser.getUserPersonalDetails().getUserCompanyDetails().getStaffCategories().getCode();
+
             if (currentYear == year) {
                 log.info("Year equals {} {}", year, currentYear);
-                log.info("Treatment insurance month category {} ", insuranceDetails.getInsuranceMonthCategory());
                 log.info("Insurance {} ", in.getTreatment().getTreatmentCode());
-                if (insuranceDetails.getTreatmentCategory().getCode().equals(TreatmentCategory.OTHER.name()) &&
-                        !(in.getTreatment().getTreatmentCode().equals(TreatmentType.CRIC.name()))) {
+                if ((staffCategory.equals("NS") && (treatmentCode.equals(TreatmentType.OUTDOOR.name()) || treatmentCode.equals(TreatmentType.INDOOR.name())) && category.equals(TreatmentCategory.OTHER.name()))
+                        || (treatmentCode.equals(TreatmentType.OUTDOOR.name()) && category.equals(TreatmentCategory.OTHER.name()))) {
+
                     InsuranceMonthCategory insuranceMontCategory;
                     if (month >= 1 && month <= 6) {
                         log.info("First month range");
@@ -810,38 +848,43 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
                         } else {
 
                             BigDecimal gFLimit = in.getGlobalLimit();
-
-                            BigDecimal sum = insuranceClaimsRequestRepository.getSumRequestAmountByEmployeeAndTreatmentAndTreatmentCategoryAndStatus(
-                                    applicationUser,
-                                    treatmentCode,
-                                    insuranceDetails.getTreatmentCategory().getCode(),
-                                    insurancePeriod,
-                                    List.of(Workflow.APPROVED)
-                            );
-
-                            if (sum != null) {
-                                if (maxLimit.compareTo(sum) == 0) {
-                                    funLimit = BigDecimal.valueOf(0.00);
-                                    gSum = null;
-                                } else if (maxLimit.compareTo(sum) > 0) {
-                                    funLimit = maxLimit.subtract(sum);
-                                    gSum = null;
-                                } else {
-                                    funLimit = gFLimit.subtract(gSum);
-                                    gSum = null;
-                                }
-
-                            } else {
-
-                                funLimit = gFLimit.subtract(gSum);
-                                if (funLimit.compareTo(maxLimit) > 0) {
-                                    funLimit = maxLimit;
-                                    gSum = null;
-                                }
-
+                            log.info("Himal 1 {} {}", gFLimit,gSum);
+                            if(gFLimit.compareTo(gSum) == 0) {
+                                funLimit = BigDecimal.ZERO;
                                 gSum = null;
-                            }
+                            }else {
+                                log.info("Himal 2 {} {}", gFLimit,gSum);
 
+                                BigDecimal sum = insuranceClaimsRequestRepository.getSumRequestAmountByEmployeeAndTreatmentAndTreatmentCategoryAndStatus(
+                                        applicationUser,
+                                        treatmentCode,
+                                        insuranceDetails.getTreatmentCategory().getCode(),
+                                        insurancePeriod,
+                                        List.of(Workflow.APPROVED)
+                                );
+
+                                if (sum != null) {
+                                    if (maxLimit.compareTo(sum) == 0) {
+                                        funLimit = BigDecimal.valueOf(0.00);
+                                        gSum = null;
+                                    } else if (maxLimit.compareTo(sum) > 0) {
+                                        funLimit = maxLimit.subtract(sum);
+                                        gSum = null;
+                                    } else {
+                                        funLimit = gFLimit.subtract(gSum);
+                                        gSum = null;
+                                    }
+
+                                } else {
+
+                                    funLimit = gFLimit.subtract(gSum);
+                                    if (funLimit.compareTo(maxLimit) > 0) {
+                                        funLimit = maxLimit;
+                                    }
+
+                                    gSum = null;
+                                }
+                            }
                         }
 
                     }
@@ -863,9 +906,11 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
             } else {
 
                 log.info("Without year {}", year);
-                if (insuranceDetails.getTreatmentCategory().getCode().equals(TreatmentCategory.OTHER.name()) &&
-                        !(in.getTreatment().getTreatmentCode().equals(TreatmentType.CRIC.name()))) {
+                if ((staffCategory.equals("NS") && (treatmentCode.equals(TreatmentType.OUTDOOR.name()) || treatmentCode.equals(TreatmentType.INDOOR.name())) && category.equals(TreatmentCategory.OTHER.name()))
+                        || (treatmentCode.equals(TreatmentType.OUTDOOR.name()) && category.equals(TreatmentCategory.OTHER.name()))) {
 
+
+                    log.info("Log  {} {} {}  ",applicationUser.getId(),treatmentCode,category);
                     BigDecimal sum = insuranceClaimsRequestRepository.getSumRequestAmountByEmployeeAndTreatmentAndStatus(
                             applicationUser,
                             treatmentCode,
@@ -874,8 +919,7 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
                     );
 
 
-                        funLimit = in.getGlobalLimit();
-
+                    funLimit = in.getGlobalLimit();
 
                     BigDecimal maxLimit = in.getGlobalLimit();
 
@@ -894,7 +938,8 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
 
 
                 } else {
-                    log.info("Without Event period {}", insuranceDetails.getTreatmentCategory().getCode());
+                    log.info("Without Event period but dental or Spec or cri {}", insuranceDetails.getTreatmentCategory().getCode());
+                    log.info("Log {} {} {}",applicationUser.getId(),treatmentCode,category);
                     BigDecimal gSum = insuranceClaimsRequestRepository.getSumRequestAmountByEmployeeAndTreatmentAndStatus(
                             applicationUser,
                             treatmentCode,
@@ -914,38 +959,43 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
                         } else {
 
                             BigDecimal gFLimit = in.getGlobalLimit();
+                                log.info("Himal 1 {} {}", gFLimit,gSum);
+                                if(gFLimit.compareTo(gSum) == 0) {
+                                    funLimit = BigDecimal.ZERO;
+                                    gSum = null;
+                                }else {
+                                    log.info("Himal 2 {} {}", gFLimit,gSum);
 
-                            BigDecimal sum = insuranceClaimsRequestRepository.getSumRequestAmountByEmployeeAndTreatmentAndTreatmentCategoryAndStatus(
-                                    applicationUser,
-                                    treatmentCode,
-                                    insuranceDetails.getTreatmentCategory().getCode(),
-                                    insurancePeriod,
-                                    List.of(Workflow.APPROVED)
-                            );
+                                    BigDecimal sum = insuranceClaimsRequestRepository.getSumRequestAmountByEmployeeAndTreatmentAndTreatmentCategoryAndStatus(
+                                            applicationUser,
+                                            treatmentCode,
+                                            insuranceDetails.getTreatmentCategory().getCode(),
+                                            insurancePeriod,
+                                            List.of(Workflow.APPROVED)
+                                    );
 
-                            if (sum != null) {
-                                if (maxLimit.compareTo(sum) == 0) {
-                                    funLimit = BigDecimal.valueOf(0.00);
-                                    gSum = null;
-                                } else if (maxLimit.compareTo(sum) > 0) {
-                                    funLimit = maxLimit.subtract(sum);
-                                    gSum = null;
-                                } else {
-                                    funLimit = gFLimit.subtract(gSum);
-                                    gSum = null;
+                                    if (sum != null) {
+                                        if (maxLimit.compareTo(sum) == 0) {
+                                            funLimit = BigDecimal.valueOf(0.00);
+                                            gSum = null;
+                                        } else if (maxLimit.compareTo(sum) > 0) {
+                                            funLimit = maxLimit.subtract(sum);
+                                            gSum = null;
+                                        } else {
+                                            funLimit = gFLimit.subtract(gSum);
+                                            gSum = null;
+                                        }
+
+                                    } else {
+
+                                        funLimit = gFLimit.subtract(gSum);
+                                        if (funLimit.compareTo(maxLimit) > 0) {
+                                            funLimit = maxLimit;
+                                        }
+
+                                        gSum = null;
+                                    }
                                 }
-
-                            } else {
-
-                                funLimit = gFLimit.subtract(gSum);
-                                if (funLimit.compareTo(maxLimit) > 0) {
-                                    funLimit = maxLimit;
-                                    gSum = null;
-                                }
-
-                                gSum = null;
-                            }
-
                         }
 
                     }
