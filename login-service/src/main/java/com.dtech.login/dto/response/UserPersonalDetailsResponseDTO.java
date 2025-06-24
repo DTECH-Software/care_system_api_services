@@ -28,4 +28,6 @@ public class UserPersonalDetailsResponseDTO {
     private String titleDescription;
     private UserAddressResponseDTO userAddress;
     private UserCompanyDetailsResponseDTO userCompanyDetails;
+    private Boolean isTemp;
+    private String tempId;
 }

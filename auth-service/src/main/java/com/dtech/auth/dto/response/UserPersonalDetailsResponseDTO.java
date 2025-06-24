@@ -15,6 +15,8 @@ import java.util.Date;
 @Data
 public class UserPersonalDetailsResponseDTO {
     private String epfNo;
+    private Boolean isTemp;
+    private String tempId;
     private String initials;
     private String firstName;
     private String lastName;

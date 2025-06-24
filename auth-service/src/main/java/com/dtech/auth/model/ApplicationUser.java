@@ -130,10 +130,4 @@ public class ApplicationUser extends Audit implements Serializable {
     @JoinColumn(name = "profile_img",referencedColumnName = "id")
     private Document profileImg;
 
-    @Column(name = "is_temp",nullable = false)
-    private boolean isTemp;
-
-    @Column(name = "temp_id")
-    private String tempId;
-
 }

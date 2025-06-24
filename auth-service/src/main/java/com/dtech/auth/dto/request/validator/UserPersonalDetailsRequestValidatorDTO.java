@@ -7,6 +7,7 @@
 
 package com.dtech.auth.dto.request.validator;
 
+import com.dtech.auth.validator.Conditional;
 import com.dtech.auth.validator.PasswordEquals;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.validation.Valid;
@@ -21,13 +22,17 @@ import java.util.Date;
 @EqualsAndHashCode(callSuper = true)
 @Data
 @PasswordEquals(message = "Password and confirm password mismatch")
+@Conditional(selected = "isTemp", values = {"true"}, required = {"tempId"}, message = "Temporary number is required.")
+@Conditional(selected = "isTemp", values = {"false"}, required = {"epfNo"}, message = "EPF number is required.")
 public class UserPersonalDetailsRequestValidatorDTO extends ChannelRequestValidatorDTO{
     @NotBlank(message = "Password is required.")
     private String password;
     @NotBlank(message = "Confirm password is required.")
     private String confirmPassword;
-    @NotBlank(message = "EPF no is required.")
     private String epfNo;
+    private String tempId;
+    @NotNull(message = "Employee company status category is required.")
+    private Boolean isTemp;
 
 //    @NotBlank(message = "Title is required.")
 //    private String title;

@@ -23,8 +23,10 @@ import com.dtech.auth.util.*;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
+import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
+import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -101,10 +103,16 @@ public class SignupServiceImpl implements SignupService {
     private final MarriedRepository marriedRepository;
 
     @Autowired
-    private TreatmentRepository treatmentRepository;
+    private final TreatmentRepository treatmentRepository;
 
     @Autowired
-    private TreatmentCategoryRepository treatmentCategoryRepository;
+    private final TreatmentCategoryRepository treatmentCategoryRepository;
+
+    @Autowired
+    private final FacilityIdGenUtil facilityIdGenUtil;
+
+    @Autowired
+    private final EntityManager entityManager;
 
     @Override
     @Transactional(readOnly = true)
@@ -128,8 +136,8 @@ public class SignupServiceImpl implements SignupService {
                     .toList();
 
             splashData.put("marriedRounds", marriedRounds);
-            splashData.put("passwordPolicy", modelMapper.map(applicationPasswordPolicyRepository.findPasswordPolicy().orElse(null),PolicyResponseDTO.class));
-            splashData.put("usernamePolicy", modelMapper.map(applicationUsernamePolicyRepository.findUsernamePolicy().orElse(null),PolicyResponseDTO.class));
+            splashData.put("passwordPolicy", modelMapper.map(applicationPasswordPolicyRepository.findPasswordPolicy().orElse(null), PolicyResponseDTO.class));
+            splashData.put("usernamePolicy", modelMapper.map(applicationUsernamePolicyRepository.findUsernamePolicy().orElse(null), PolicyResponseDTO.class));
             splashData.put("gender", getEnumList(Gender.class));
             splashData.put("dependents", getEnumList(DependentCategory.class));
             splashData.put("title", getEnumList(Title.class));
@@ -153,15 +161,21 @@ public class SignupServiceImpl implements SignupService {
         try {
             log.info("Processing SignupInquiry {}", signupInquiryDTO);
 
-            return userPersonalDetailsRepository.findByEpfNoAndNicIgnoreCaseAndUserStatus(signupInquiryDTO.getEpfNo().trim(), signupInquiryDTO.getNic().trim(), Status.ACTIVE)
-                    .map(user -> applicationUserRepository.findByUserPersonalDetails(user).map(applicationUser -> {
+            Optional<UserPersonalDetails> optionalResponse = userPersonalDetailsRepository.findByEpfNoAndNicIgnoreCaseAndUserStatus(signupInquiryDTO.getEpfNo().trim(), signupInquiryDTO.getNic().trim(), Status.ACTIVE);
+
+            if (optionalResponse.isEmpty()) {
+                log.info("Signup in not found nic: {}", signupInquiryDTO.getNic());
+                optionalResponse = userPersonalDetailsRepository.findByTempIdAndNicIgnoreCaseAndUserStatus(signupInquiryDTO.getEpfNo().trim(), signupInquiryDTO.getNic().trim(), Status.ACTIVE);
+            }
+
+            return optionalResponse.map(user -> applicationUserRepository.findByUserPersonalDetails(user).map(applicationUser -> {
                         log.info("User already sign up {}", applicationUser);
                         return ResponseEntity.ok().body(responseUtil.error(null, 1018, messageSource.getMessage(ResponseMessageUtil.EMPLOYEE_ALREADY_SIGN_UP, null, locale)));
                     }).orElseGet(() -> {
                         log.info("Sign up inquiry start");
                         UserPersonalDetailsResponseDTO userPersonalDetailsResponseDTO = modelMapper.map(user, UserPersonalDetailsResponseDTO.class);
                         getAge(userPersonalDetailsResponseDTO);
-                        log.info("Sign up inquiry end {} ",userPersonalDetailsResponseDTO);
+                        log.info("Sign up inquiry end {} ", userPersonalDetailsResponseDTO);
                         return ResponseEntity.ok().body(responseUtil.success(userPersonalDetailsResponseDTO, messageSource.getMessage(ResponseMessageUtil.EMPLOYEE_DETAILS_INQUIRY_SUCCESS, null, locale)));
                     }))
                     .orElseGet(() -> {
@@ -214,56 +228,70 @@ public class SignupServiceImpl implements SignupService {
                 if (alignPassword == null || alignPassword.trim().isEmpty()) {
 
                     //check company details
-             //       String alignCompanyDetails = validCompanyDetails(userPersonalDetailsRequestDTO.getUserCompanyDetails());
+                    //       String alignCompanyDetails = validCompanyDetails(userPersonalDetailsRequestDTO.getUserCompanyDetails());
 
-              //      if (alignCompanyDetails == null || alignCompanyDetails.trim().isEmpty()) {
-                        return userPersonalDetailsRepository
+                    //      if (alignCompanyDetails == null || alignCompanyDetails.trim().isEmpty()) {
+
+                    Optional<UserPersonalDetails> optionalResponse;
+
+                    if (!userPersonalDetailsRequestDTO.getIsTemp()) {
+
+                        optionalResponse = userPersonalDetailsRepository
                                 .findByEpfNoAndNicIgnoreCaseAndUserStatus(userPersonalDetailsRequestDTO.getEpfNo().trim(),
-                                        userPersonalDetailsRequestDTO.getNic().trim(), Status.ACTIVE).map(pd -> {
-                                    Optional<ApplicationUser> userPersonalDetails = applicationUserRepository.findByUserPersonalDetails(pd);
+                                        userPersonalDetailsRequestDTO.getNic().trim(), Status.ACTIVE);
 
-                                    if (userPersonalDetails.isPresent()) {
-                                        log.info("User already sign up {}", userPersonalDetails.get());
-                                        return ResponseEntity.ok().body(responseUtil.error(null, 1018, messageSource.getMessage(ResponseMessageUtil.EMPLOYEE_ALREADY_SIGN_UP, null, locale)));
-                                    }
+                    } else {
 
-                                    String hashPassword = "";
-                                    String saltKey = "";
-                                    try {
-                                        log.info("processing signup generate salt key {}", password);
-                                        saltKey = PasswordUtil.generateSaltKey(
-                                                userPersonalDetailsRequestDTO.getNic().trim()
-                                                        + DateTimeUtil.getCurrentDateTime());
-                                    } catch (NoSuchAlgorithmException e) {
-                                        log.error(e);
-                                        throw new RuntimeException(e);
-                                    }
+                        log.info("Signup in not found nic: {}", userPersonalDetailsRequestDTO.getNic());
+                        optionalResponse = userPersonalDetailsRepository.findByTempIdAndNicIgnoreCaseAndUserStatus(userPersonalDetailsRequestDTO.getTempId().trim(), userPersonalDetailsRequestDTO.getNic().trim(), Status.ACTIVE);
 
-                                    try {
-                                        log.info("processing signup password hash {}", password);
-                                        hashPassword = PasswordUtil.passwordEncoder(saltKey, password);
-                                    } catch (NoSuchAlgorithmException e) {
-                                        log.error(e);
-                                        throw new RuntimeException(e);
-                                    }
-                                    String jsonString = "";
-                                    try {
-                                        log.info("processing signup  json {}", userPersonalDetailsRequestDTO);
-                                        jsonString = objectMapper.writeValueAsString(userPersonalDetailsRequestDTO);
-                                    } catch (JsonProcessingException e) {
-                                        log.error(e);
-                                        throw new RuntimeException(e);
-                                    }
-                                    OnboardingRequest onboardingRequest = updateOnboardingRequest(userPersonalDetailsRequestDTO, jsonString);
-                                    ApplicationUser applicationUser = updateApplicationUser(userPersonalDetailsRequestDTO, hashPassword, saltKey, onboardingRequest, pd);
-                                    updateApplicationUserPasswordHistory(applicationUser, hashPassword);
-                                    log.info("Signup register success {}", applicationUser);
-                                    return ResponseEntity.ok().body(responseUtil.success(null, messageSource.getMessage(ResponseMessageUtil.SIGNUP_PROCESS_SUCCESS, null, locale)));
+                    }
 
-                                }).orElseGet(() -> {
-                                    log.info("Signup inquiry user not found {}", userPersonalDetailsRequestDTO);
-                                    return ResponseEntity.ok().body(responseUtil.error(null, 1017, messageSource.getMessage(ResponseMessageUtil.EMPLOYEE_DETAILS_NOT_FOUND_ON_SYSTEM, new Object[]{clientMobile}, locale)));
-                                });
+                    return optionalResponse.map(pd -> {
+                        Optional<ApplicationUser> userPersonalDetails = applicationUserRepository.findByUserPersonalDetails(pd);
+
+                        if (userPersonalDetails.isPresent()) {
+                            log.info("User already sign up {}", userPersonalDetails.get());
+                            return ResponseEntity.ok().body(responseUtil.error(null, 1018, messageSource.getMessage(ResponseMessageUtil.EMPLOYEE_ALREADY_SIGN_UP, null, locale)));
+                        }
+
+                        String hashPassword = "";
+                        String saltKey = "";
+                        try {
+                            log.info("processing signup generate salt key {}", password);
+                            saltKey = PasswordUtil.generateSaltKey(
+                                    userPersonalDetailsRequestDTO.getNic().trim()
+                                            + DateTimeUtil.getCurrentDateTime());
+                        } catch (NoSuchAlgorithmException e) {
+                            log.error(e);
+                            throw new RuntimeException(e);
+                        }
+
+                        try {
+                            log.info("processing signup password hash {}", password);
+                            hashPassword = PasswordUtil.passwordEncoder(saltKey, password);
+                        } catch (NoSuchAlgorithmException e) {
+                            log.error(e);
+                            throw new RuntimeException(e);
+                        }
+                        String jsonString = "";
+                        try {
+                            log.info("processing signup  json {}", userPersonalDetailsRequestDTO);
+                            jsonString = objectMapper.writeValueAsString(userPersonalDetailsRequestDTO);
+                        } catch (JsonProcessingException e) {
+                            log.error(e);
+                            throw new RuntimeException(e);
+                        }
+                        OnboardingRequest onboardingRequest = updateOnboardingRequest(userPersonalDetailsRequestDTO, jsonString);
+                        ApplicationUser applicationUser = updateApplicationUser(userPersonalDetailsRequestDTO, hashPassword, saltKey, onboardingRequest, pd);
+                        updateApplicationUserPasswordHistory(applicationUser, hashPassword);
+                        log.info("Signup register success {}", applicationUser);
+                        return ResponseEntity.ok().body(responseUtil.success(null, messageSource.getMessage(ResponseMessageUtil.SIGNUP_PROCESS_SUCCESS, null, locale)));
+
+                    }).orElseGet(() -> {
+                        log.info("Signup inquiry user not found {}", userPersonalDetailsRequestDTO);
+                        return ResponseEntity.ok().body(responseUtil.error(null, 1017, messageSource.getMessage(ResponseMessageUtil.EMPLOYEE_DETAILS_NOT_FOUND_ON_SYSTEM, new Object[]{clientMobile}, locale)));
+                    });
 //                    }
 //                    log.info("Signup not align company details {}", alignCompanyDetails);
 //                    return ResponseEntity.ok().body(responseUtil.error(null, 1022, alignCompanyDetails));
@@ -288,9 +316,11 @@ public class SignupServiceImpl implements SignupService {
                                                     UserPersonalDetails userPersonalDetails) {
         try {
             log.info("Processing signup application user {}", userPersonalDetailsRequestDTO);
-            ApplicationUser applicationUser = new ApplicationUser();
 
+            String facilityId  =(String)facilityIdGenUtil.generate(entityManager.unwrap(SharedSessionContractImplementor.class),null);
+            ApplicationUser applicationUser = new ApplicationUser();
             applicationUser.setUsername(userPersonalDetailsRequestDTO.getUsername().trim());
+            applicationUser.setFacilityId(facilityId);
             applicationUser.setPassword(hashPassword);
             applicationUser.setUserKey(saltKey);
             applicationUser.setPrimaryEmail(userPersonalDetailsRequestDTO.getEmail().trim().toLowerCase());

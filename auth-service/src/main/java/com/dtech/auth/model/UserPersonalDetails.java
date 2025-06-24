@@ -81,4 +81,10 @@ public class UserPersonalDetails extends Audit implements Serializable {
     @Enumerated(EnumType.STRING)
     private Status userStatus;
 
+    @Column(name = "is_temp",nullable = false)
+    private Boolean isTemp;
+
+    @Column(name = "temp_id")
+    private String tempId;
+
 }

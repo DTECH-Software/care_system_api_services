@@ -11,5 +11,6 @@ import java.util.Optional;
 public interface UserPersonalDetailsRepository extends JpaRepository<UserPersonalDetails, Long> {
 
     Optional<UserPersonalDetails> findByEpfNoAndNicIgnoreCaseAndUserStatus(String efpNo, String nic, Status status);
+    Optional<UserPersonalDetails> findByTempIdAndNicIgnoreCaseAndUserStatus(String tempId, String nic, Status status);
 
 }

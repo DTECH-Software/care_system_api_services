@@ -56,8 +56,8 @@ public class ProfileMapper {
                 applicationUserDetailsResponseDTO.setProfileImg(documentDownloadResponseDTO);
                 log.info("application user get profile img downloaded");
             }
-            if(applicationUser.isTemp()){
-                applicationUserDetailsResponseDTO.setTempId(applicationUser.getTempId());
+            if(applicationUser.getUserPersonalDetails().getIsTemp()){
+                applicationUserDetailsResponseDTO.getUserPersonalDetails().setTempId(applicationUser.getUserPersonalDetails().getTempId());
             }
             List<NotificationHistoryResponseDTO> collectList = notificationHistory.stream()
                     .map(val ->  {
