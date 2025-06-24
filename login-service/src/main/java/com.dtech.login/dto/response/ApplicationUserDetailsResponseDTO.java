@@ -30,4 +30,7 @@ public class ApplicationUserDetailsResponseDTO {
     private NotificationSummaryResponseDTO notification;
     @JsonFormat(pattern = "yyyy-MM-dd", timezone = "Asia/Colombo")
     private Date createdDate;
+    private String facilityId;
+    private boolean isTemp;
+    private String tempId;
 }

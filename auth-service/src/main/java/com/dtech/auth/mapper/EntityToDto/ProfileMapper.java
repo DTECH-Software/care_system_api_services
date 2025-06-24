@@ -10,6 +10,7 @@ package com.dtech.auth.mapper.EntityToDto;
 
 import com.dtech.auth.dto.SimpleBaseDTO;
 import com.dtech.auth.dto.response.*;
+import com.dtech.auth.enums.Facility;
 import com.dtech.auth.enums.Gender;
 import com.dtech.auth.enums.NotificationTitle;
 import com.dtech.auth.enums.Title;
@@ -47,12 +48,16 @@ public class ProfileMapper {
 
             applicationUserDetailsResponseDTO.getUserPersonalDetails().setGenderDescription(Gender.valueOf(applicationUserDetailsResponseDTO.getUserPersonalDetails().getGender()).getDescription());
             applicationUserDetailsResponseDTO.getUserPersonalDetails().setTitleDescription(Title.valueOf(applicationUserDetailsResponseDTO.getUserPersonalDetails().getTitle()).getDescription());
+            applicationUserDetailsResponseDTO.getUserPersonalDetails().getUserCompanyDetails().setFacilityDescription(Facility.valueOf(applicationUserDetailsResponseDTO.getUserPersonalDetails().getUserCompanyDetails().getFacility()).getDescription());
             applicationUserDetailsResponseDTO.setCreatedDate(applicationUser.getCreatedDate());
             if (applicationUser.getProfileImg() != null) {
                 log.info("application user get profile img");
                 DocumentDownloadResponseDTO documentDownloadResponseDTO = modelMapper.map(applicationUser.getProfileImg(), DocumentDownloadResponseDTO.class);
                 applicationUserDetailsResponseDTO.setProfileImg(documentDownloadResponseDTO);
                 log.info("application user get profile img downloaded");
+            }
+            if(applicationUser.isTemp()){
+                applicationUserDetailsResponseDTO.setTempId(applicationUser.getTempId());
             }
             List<NotificationHistoryResponseDTO> collectList = notificationHistory.stream()
                     .map(val ->  {

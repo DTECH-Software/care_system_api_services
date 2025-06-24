@@ -24,4 +24,6 @@ public class UserCompanyDetailsResponseDTO {
     private Date terminateDate;
     private String designation;
     private SimpleBaseDTO insurancePolicy;
+    private String facility;
+    private String facilityDescription;
 }

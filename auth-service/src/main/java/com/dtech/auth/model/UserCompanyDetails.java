@@ -8,6 +8,7 @@
 package com.dtech.auth.model;
 
 
+import com.dtech.auth.enums.Facility;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -57,5 +58,9 @@ public class UserCompanyDetails extends Audit implements Serializable {
     @ManyToOne(fetch = FetchType.LAZY,cascade = CascadeType.ALL)
     @JoinColumn(name = "insurance_policy",nullable = false,referencedColumnName = "code")
     private InsurancePolicy insurancePolicy;
+
+    @Column(name = "facility",nullable = false)
+    @Enumerated(EnumType.STRING)
+    private Facility facility;
 
 }

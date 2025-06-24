@@ -39,6 +39,9 @@ public class ApplicationUser extends Audit implements Serializable {
     @Column(name = "id",nullable = false,updatable = false,unique = true)
     private Long id;
 
+    @Column(name = "facility_id",nullable = false)
+    private String facilityId;
+
     @Column(name = "username",nullable = false,updatable = false,unique = true)
     private String username;
 
@@ -126,5 +129,11 @@ public class ApplicationUser extends Audit implements Serializable {
     @OneToOne(fetch = FetchType.EAGER,cascade = CascadeType.REFRESH,targetEntity = Document.class)
     @JoinColumn(name = "profile_img",referencedColumnName = "id")
     private Document profileImg;
+
+    @Column(name = "is_temp",nullable = false)
+    private boolean isTemp;
+
+    @Column(name = "temp_id")
+    private String tempId;
 
 }

@@ -66,7 +66,7 @@ public class ProfileServiceImpl implements ProfileService {
     private final MarriedRepository marriedRepository;
 
     @Autowired
-    private NotificationHistoryRepository notificationHistoryRepository;
+    private final NotificationHistoryRepository notificationHistoryRepository;
 
     @Override
     @Transactional(readOnly = true)

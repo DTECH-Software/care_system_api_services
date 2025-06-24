@@ -223,7 +223,11 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
                                                 int month = DateTimeUtil.getMonth(user.getUserPersonalDetails().getUserCompanyDetails().getPermanentDate());
                                                 log.info("User month per {}", month);
 
-                                                if (claimRequestDTO.getTreatmentCategory().equals(TreatmentCategory.OTHER.name()) && !(claimRequestDTO.getTreatment().equals(TreatmentType.CRIC.name()))) {
+                                                String treatmentCode = treatment.getTreatmentCode();
+                                                String category = tc.getCode();
+
+                                               if ((user.getUserPersonalDetails().getUserCompanyDetails().getStaffCategories().getCode().equals("NS") && (treatmentCode.equals(TreatmentType.OUTDOOR.name()) || treatmentCode.equals(TreatmentType.INDOOR.name())) && category.equals(TreatmentCategory.OTHER.name()))
+                                                        || (treatmentCode.equals(TreatmentType.OUTDOOR.name()) && category.equals(TreatmentCategory.OTHER.name()))) {
                                                     log.info("Match current year and user per date {}", month);
                                                     InsuranceMonthCategory insuranceMontCategory;
                                                     if (month >= 1 && month <= 6) {

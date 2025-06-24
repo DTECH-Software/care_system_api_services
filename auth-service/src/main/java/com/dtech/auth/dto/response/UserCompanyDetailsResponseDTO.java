@@ -9,6 +9,7 @@ package com.dtech.auth.dto.response;
 
 
 import com.dtech.auth.dto.SimpleBaseDTO;
+import com.dtech.auth.enums.Facility;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.Data;
 
@@ -24,4 +25,6 @@ public class UserCompanyDetailsResponseDTO {
     private Date terminateDate;
     private String designation;
     private SimpleBaseDTO insurancePolicy;
+    private String facility;
+    private String facilityDescription;
 }
