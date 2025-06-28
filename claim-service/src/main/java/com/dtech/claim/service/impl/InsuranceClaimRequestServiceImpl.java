@@ -103,9 +103,6 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
     private final TreatmentCategoryRepository treatmentCategoryRepository;
 
     @Autowired
-    private final InsuranceMonthCategoryRepository insuranceMonthCategoryRepository;
-
-    @Autowired
     private final ApprovalWorkFlowRepository approvalWorkFlowRepository;
 
     @Autowired
@@ -113,8 +110,9 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
 
     @Autowired
     private final InsuranceQuarterRepository insuranceQuarterRepository;
+
     @Autowired
-    private InsuranceStaffCategoryPeriodRepository insuranceStaffCategoryPeriodRepository;
+    private final InsuranceStaffCategoryPeriodRepository insuranceStaffCategoryPeriodRepository;
 
     @Override
     @Transactional
@@ -192,7 +190,8 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
                                                             claimsDependents = Optional.empty();
                                                         }
                                                         log.info("Gey current year {}", DateTimeUtil.getCurrentYear());
-
+                                                        log.info(user.getUserPersonalDetails().getUserCompanyDetails().getStaffCategories().getCode());
+                                                        log.info(DateTimeUtil.getCurrentDateTime());
                                                         InsuranceStaffCategoryPeriod insuranceYear = insuranceStaffCategoryPeriodRepository.
                                                                 findByDateWithinRange(DateTimeUtil.getCurrentDateTime(),user.getUserPersonalDetails().getUserCompanyDetails().getStaffCategories().getCode()).orElse(null);
                                                         log.info("Current insurance year {}", insuranceYear);
@@ -219,24 +218,33 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
                                                             log.info("Request fund limit exceeded with ent limit");
                                                             Date permentDateTime = user.getUserPersonalDetails().getUserCompanyDetails().getPermanentDate();
                                                             log.info("User month per {}", permentDateTime);
-
-                                                            log.info("Srtart");
-//                                                            log.info("Current year {}", user.getUserPersonalDetails().getUserCompanyDetails().getInsurancePolicy().toString());
-//                                                            log.info("Current year {}", insuranceYear.toString());
-//                                                            log.info("Current year {}", treatment.toString());
                                                             InsuranceDetailsLimit insuranceDetailsLimit = insuranceDetailsLimitRepository.findByInsurancePolicyAndStatusAndInsuranceStaffCategoryPeriodAndTreatment(
                                                                     user.getUserPersonalDetails().getUserCompanyDetails().getInsurancePolicy(), Status.ACTIVE, insuranceYear, treatment).orElse(null);
 
-                                                            //log.info("thisssss  {}" , insuranceDetailsLimit.toString());
+                                                           if(insuranceDetailsLimit == null){
+                                                               log.info("Insurance detail is null");
+                                                               return ResponseEntity.ok().body(responseUtil.error(null, 1030, messageSource.getMessage(ResponseMessageUtil.INSURANCE_POLICY_NOT_FOUND, null, locale)));
+                                                           }
 
                                                             if (claimRequestDTO.getTreatmentCategory().equals(TreatmentCategory.OTHER.name())) {
 
-                                                                InsuranceQuarter treatmentQuarter = insuranceQuarterRepository.findByDateWithinRangeAndCodeWithLimit(insuranceDetailsLimit, TreatmentCategory.OTHER.name(), permentDateTime).orElse(null);
+                                                                BigDecimal limit = null;
+                                                                if(insuranceDetailsLimit.getIsQuarter()){
+                                                                    InsuranceQuarter treatmentQuarter = insuranceQuarterRepository.findByDateWithinRangeAndCodeWithLimit(insuranceDetailsLimit, TreatmentCategory.OTHER.name(), permentDateTime).orElse(null);
+                                                                    if(treatmentQuarter == null){
+                                                                        log.info("Insurance detail quarter is null");
+                                                                        return ResponseEntity.ok().body(responseUtil.error(null, 1030, messageSource.getMessage(ResponseMessageUtil.INSURANCE_POLICY_NOT_FOUND, null, locale)));
+                                                                    }
 
-                                                                BigDecimal remainingBalance = treatmentQuarter.getQuarterLimit().subtract(sumOfClaims != null ? sumOfClaims : BigDecimal.valueOf(0.00));
+                                                                  limit = treatmentQuarter.getQuarterLimit();
+                                                                }else{
+                                                                    limit = insuranceDetailsLimit.getGlobalLimit();
+                                                                }
+
+                                                                BigDecimal remainingBalance = limit.subtract(sumOfClaims != null ? sumOfClaims : BigDecimal.valueOf(0.00));
                                                                 log.info("Remaining balance {}", remainingBalance);
                                                                 if (claimRequestDTO.getRequestAmount().compareTo(remainingBalance) > 0) {
-                                                                    log.info("Request fund limit exceeded with ent limit {} {} {} {}", claimRequestDTO.getRequestAmount(), treatmentQuarter.getQuarterLimit(), remainingBalance, sumOfClaims);
+                                                                    log.info("Request fund limit exceeded with ent limit {} {} {} {}", claimRequestDTO.getRequestAmount(), limit, remainingBalance, sumOfClaims);
                                                                     return ResponseEntity.ok().body(responseUtil.error(null, 1052, messageSource.getMessage(ResponseMessageUtil.CLAIM_LIMIT_EXCEED_WITH_LIMIT, new Object[]{remainingBalance}, locale)));
                                                                 }
 
@@ -268,7 +276,12 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
 
                                                             } else {
 
-                                                                InsuranceQuarter treatmentQuarter = insuranceQuarterRepository.findByCodeWithLimit(insuranceDetailsLimit, TreatmentCategory.OTHER.name()).orElse(null);
+                                                                InsuranceQuarter treatmentQuarter = insuranceQuarterRepository.findByCodeWithLimit(insuranceDetailsLimit,claimRequestDTO.getTreatmentCategory()).orElse(null);
+
+                                                                if(treatmentQuarter == null){
+                                                                    log.info("Insurance detail quarter is null");
+                                                                    return ResponseEntity.ok().body(responseUtil.error(null, 1030, messageSource.getMessage(ResponseMessageUtil.INSURANCE_POLICY_NOT_FOUND, null, locale)));
+                                                                }
 
                                                                 if (claimRequestDTO.getRequestAmount().compareTo(treatmentQuarter.getQuarterLimit()) > 0) {
                                                                     log.info("Request fund limit exceeded without event limit but dental max limit {} {} {} ", claimRequestDTO.getRequestAmount(), treatmentQuarter.getQuarterLimit(), sumOfClaims);
@@ -341,12 +354,12 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
                                                             log.info(treatment.toString());
                                                             InsuranceDetailsLimit insuranceDetailsLimit = insuranceDetailsLimitRepository.findByInsurancePolicyAndStatusAndInsuranceStaffCategoryPeriodAndTreatment(
                                                                     user.getUserPersonalDetails().getUserCompanyDetails().getInsurancePolicy(), Status.ACTIVE, insuranceYear, treatment).orElse(null);
-
-                                                            log.info("Hiiiiiiiiiiiiiiii");
-                                                            log.info("Whyyyyyy {} ",insuranceDetailsLimit.toString());
+                                                            if(insuranceDetailsLimit == null){
+                                                                log.info("Insurance detail is null");
+                                                                return ResponseEntity.ok().body(responseUtil.error(null, 1030, messageSource.getMessage(ResponseMessageUtil.INSURANCE_POLICY_NOT_FOUND, null, locale)));
+                                                            }
 
                                                             if (claimRequestDTO.getTreatmentCategory().equals(TreatmentCategory.OTHER.name())) {
-
 
                                                                 BigDecimal remainingBalance = insuranceDetailsLimit.getGlobalLimit().subtract(sumOfClaims != null ? sumOfClaims : BigDecimal.valueOf(0.00));
                                                                 log.info("Remaining balance {}", remainingBalance);
@@ -384,7 +397,12 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
 
                                                             } else {
 
-                                                                InsuranceQuarter treatmentQuarter = insuranceQuarterRepository.findByCodeWithLimit(insuranceDetailsLimit, TreatmentCategory.OTHER.name()).orElse(null);
+                                                                InsuranceQuarter treatmentQuarter = insuranceQuarterRepository.findByCodeWithLimit(insuranceDetailsLimit, claimRequestDTO.getTreatmentCategory()).orElse(null);
+
+                                                                if(treatmentQuarter == null){
+                                                                    log.info("Insurance detail quarter is null");
+                                                                    return ResponseEntity.ok().body(responseUtil.error(null, 1030, messageSource.getMessage(ResponseMessageUtil.INSURANCE_POLICY_NOT_FOUND, null, locale)));
+                                                                }
 
                                                                 if (claimRequestDTO.getRequestAmount().compareTo(treatmentQuarter.getQuarterLimit()) > 0) {
                                                                     log.info("Request fund limit exceeded without event limit but dental max limit {} {} {} ", claimRequestDTO.getRequestAmount(), treatmentQuarter.getQuarterLimit(), sumOfClaims);
@@ -967,6 +985,7 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
             }
             insuranceClaimsDetails.setToTreatmentDate(claimRequestDTO.getToDate());
             insuranceClaimsDetails.setDisease(claimRequestDTO.getDisease());
+            insuranceClaimsDetails.setInsuranceStaffCategoryPeriod();
             List<Document> uploadSupportingDocument = claimRequestDTO.getDocuments().stream().map(doc -> {
                 log.info("Upload supporting document from dependent");
                 try {

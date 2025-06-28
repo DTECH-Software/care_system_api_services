@@ -37,6 +37,9 @@ public class InsuranceDetailsLimit extends AdminAudit implements Serializable {
     @Enumerated(EnumType.STRING)
     private Status status;
 
+    @Column(name = "is_quarter",nullable = false)
+    private Boolean isQuarter;
+
     @ManyToOne(fetch = FetchType.LAZY,cascade = CascadeType.ALL)
     @JoinColumn(name = "insurance_staff_category_period",nullable = false,referencedColumnName = "id")
     private InsuranceStaffCategoryPeriod insuranceStaffCategoryPeriod;

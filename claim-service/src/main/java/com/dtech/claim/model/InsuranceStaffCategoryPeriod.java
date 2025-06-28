@@ -22,11 +22,11 @@ public class InsuranceStaffCategoryPeriod extends AdminAudit implements Serializ
     private Long id;
 
     @Column(name = "from_date",nullable = false)
-    @Temporal(TemporalType.TIMESTAMP)
+    @Temporal(TemporalType.DATE)
     private Date fromDate;
 
     @Column(name = "to_date",nullable = false)
-    @Temporal(TemporalType.TIMESTAMP)
+    @Temporal(TemporalType.DATE)
     private Date toDate;
 
     @Column(name = "status",nullable = false)
