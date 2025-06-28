@@ -985,7 +985,6 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
             }
             insuranceClaimsDetails.setToTreatmentDate(claimRequestDTO.getToDate());
             insuranceClaimsDetails.setDisease(claimRequestDTO.getDisease());
-            insuranceClaimsDetails.setInsuranceStaffCategoryPeriod();
             List<Document> uploadSupportingDocument = claimRequestDTO.getDocuments().stream().map(doc -> {
                 log.info("Upload supporting document from dependent");
                 try {
