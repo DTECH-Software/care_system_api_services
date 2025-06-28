@@ -15,7 +15,7 @@ import com.dtech.claim.dto.response.CountTypeResponseDTO;
 import com.dtech.claim.dto.response.LatestUpdatedResponseDTO;
 import com.dtech.claim.enums.Status;
 import com.dtech.claim.enums.Workflow;
-import com.dtech.claim.model.InsurancePeriod;
+import com.dtech.claim.model.InsuranceYear;
 import com.dtech.claim.repository.*;
 import com.dtech.claim.service.DashboardService;
 import com.dtech.claim.util.ResponseMessageUtil;
@@ -101,13 +101,13 @@ public class DashboardServiceImpl implements DashboardService {
                 log.info("death claims set dto success");
 
                 // get active period
-                Optional<InsurancePeriod> activeYear = insurancePeriodRepository.
-                        findByYearAndStatus(String.valueOf(LocalDate.now().getYear()), Status.ACTIVE);
+                Optional<InsuranceYear> activeYear = insurancePeriodRepository.
+                        findByCodeAndStatus(String.valueOf(LocalDate.now().getYear()), Status.ACTIVE);
 
                 //get latest updated death
                 list.put("insurance", insurance);
                 list.put("death", death);
-                list.put("activeYear", activeYear.isPresent() ? activeYear.get().getYear() : 0);
+                list.put("activeYear", activeYear.isPresent() ? activeYear.get().getCode() : 0);
                 return ResponseEntity.ok().body(responseUtil.success((Object) list, messageSource.getMessage(ResponseMessageUtil.DASHBOARD_SUMMARY_SUCCESS, null, locale)));
             }).orElseGet(() -> {
                 log.info("Dashboard summary request user not found {} ", dashboardSummaryDTO);

@@ -38,8 +38,8 @@ public class InsuranceDetailsLimit extends AdminAudit implements Serializable {
     private Status status;
 
     @ManyToOne(fetch = FetchType.LAZY,cascade = CascadeType.ALL)
-    @JoinColumn(name = "insurance_period",nullable = false,referencedColumnName = "id")
-    private InsurancePeriod insurancePeriod;
+    @JoinColumn(name = "insurance_staff_category_period",nullable = false,referencedColumnName = "id")
+    private InsuranceStaffCategoryPeriod insuranceStaffCategoryPeriod;
 
     @OneToMany(fetch = FetchType.LAZY,cascade = CascadeType.ALL,mappedBy = "insuranceDetailsLimit")
     private List<InsuranceDetails> insuranceDetails;

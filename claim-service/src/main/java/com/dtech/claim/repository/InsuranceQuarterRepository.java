@@ -1,0 +1,29 @@
+package com.dtech.claim.repository;
+
+import com.dtech.claim.model.InsuranceDetailsLimit;
+import com.dtech.claim.model.InsuranceQuarter;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+import org.springframework.stereotype.Repository;
+
+import java.util.Date;
+import java.util.Optional;
+
+@Repository
+public interface InsuranceQuarterRepository extends JpaRepository<InsuranceQuarter,Long> {
+
+    @Query("SELECT e FROM InsuranceQuarter e " +
+            "WHERE e.insuranceDetailsLimit = :limit " +
+            "AND e.treatmentCategory.code = :code " +
+            "AND :givenDate BETWEEN e.fromDate AND e.toDate")
+    Optional<InsuranceQuarter> findByDateWithinRangeAndCodeWithLimit(@Param("limit") InsuranceDetailsLimit limit,
+                                                 @Param("code") String code,
+                                                 @Param("givenDate") Date givenDate);
+
+    @Query("SELECT e FROM InsuranceQuarter e " +
+            "WHERE e.insuranceDetailsLimit = :limit " +
+            "AND e.treatmentCategory.code = :code ")
+    Optional<InsuranceQuarter> findByCodeWithLimit(@Param("limit") InsuranceDetailsLimit limit,
+                                                                     @Param("code") String code);
+}

@@ -18,7 +18,8 @@ import java.util.Optional;
 @Repository
 public interface InsuranceDetailsLimitRepository extends JpaRepository<InsuranceDetailsLimit, Long> {
 
-    List<InsuranceDetailsLimit> findByInsurancePolicyAndStatusAndInsurancePeriod(InsurancePolicy insurancePolicy,
-                                                                                     Status status,
-                                                                                     InsurancePeriod insurancePeriodList);
+    Optional<InsuranceDetailsLimit> findByInsurancePolicyAndStatusAndInsuranceStaffCategoryPeriodAndTreatment(InsurancePolicy insurancePolicy,
+                                                                                               Status status,
+                                                                                                              InsuranceStaffCategoryPeriod insuranceYear, Treatment treatment);
+    List<InsuranceDetailsLimit> findByInsurancePolicyAndStatusAndInsuranceStaffCategoryPeriod(InsurancePolicy insurancePolicy,Status status,InsuranceStaffCategoryPeriod insuranceYear);
 }

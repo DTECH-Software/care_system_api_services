@@ -13,14 +13,13 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Date;
 
 @EqualsAndHashCode(callSuper = true)
 @Entity
-@Table(name = "insurance_period")
+@Table(name = "insurance_year")
 @Data
-public class InsurancePeriod extends AdminAudit implements Serializable {
+public class InsuranceYear extends AdminAudit implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
@@ -29,11 +28,18 @@ public class InsurancePeriod extends AdminAudit implements Serializable {
     @Column(name = "id",nullable = false,updatable = false,unique = true)
     private Long id;
 
-    @Column(name = "year",nullable = false,updatable = false,unique = true)
-    private String year;
+    @Column(name = "code",nullable = false,updatable = false,unique = true)
+    private String code;
+
+    @Column(name = "description",nullable = false)
+    private String description;
 
     @Column(name = "status",nullable = false)
     @Enumerated(EnumType.STRING)
     private Status status;
+
+    @ManyToOne(fetch = FetchType.LAZY,cascade = CascadeType.ALL)
+    @JoinColumn(name = "insurance_staff_category_period",nullable = false,referencedColumnName = "id")
+    private InsuranceStaffCategoryPeriod insuranceStaffCategoryPeriod;
 
 }

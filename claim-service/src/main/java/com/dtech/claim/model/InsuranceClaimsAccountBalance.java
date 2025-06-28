@@ -43,6 +43,6 @@ public class InsuranceClaimsAccountBalance extends Audit implements Serializable
 
     @ManyToOne(fetch = FetchType.LAZY,cascade = CascadeType.PERSIST)
     @JoinColumn(name = "year",nullable = false)
-    private InsurancePeriod insurancePeriod;
+    private InsuranceYear insuranceYear;
 
 }

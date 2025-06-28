@@ -7,6 +7,7 @@
 
 package com.dtech.claim.model;
 
+import com.dtech.claim.enums.Facility;
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import lombok.Data;
@@ -59,4 +60,7 @@ public class UserCompanyDetails extends Audit implements Serializable {
     @JoinColumn(name = "insurance_policy",nullable = false,referencedColumnName = "code")
     private InsurancePolicy insurancePolicy;
 
+    @Column(name = "facility",nullable = false)
+    @Enumerated(EnumType.STRING)
+    private Facility facility;
 }

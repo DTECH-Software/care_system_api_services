@@ -56,7 +56,7 @@ public class UserCompanyDetails extends Audit implements Serializable {
     private UserPersonalDetails userCompanyDetails;
 
     @ManyToOne(fetch = FetchType.LAZY,cascade = CascadeType.ALL)
-    @JoinColumn(name = "insurance_policy",nullable = false,referencedColumnName = "code")
+    @JoinColumn(name = "insurance_policy",referencedColumnName = "code")
     private InsurancePolicy insurancePolicy;
 
     @Column(name = "facility",nullable = false)

@@ -17,9 +17,9 @@ import java.util.Date;
 
 @EqualsAndHashCode(callSuper = true)
 @Entity
-@Table(name = "insurance_period")
+@Table(name = "insurance_year")
 @Data
-public class InsurancePeriod extends Audit implements Serializable {
+public class InsuranceYear extends AdminAudit implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
@@ -28,13 +28,11 @@ public class InsurancePeriod extends Audit implements Serializable {
     @Column(name = "id",nullable = false,updatable = false,unique = true)
     private Long id;
 
-    @Column(name = "from",nullable = false)
-    @Temporal(TemporalType.DATE)
-    private Date form;
+    @Column(name = "code",nullable = false,updatable = false,unique = true)
+    private String code;
 
-    @Column(name = "to",nullable = false)
-    @Temporal(TemporalType.DATE)
-    private Date to;
+    @Column(name = "description",nullable = false)
+    private String description;
 
     @Column(name = "status",nullable = false)
     @Enumerated(EnumType.STRING)

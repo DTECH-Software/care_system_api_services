@@ -18,10 +18,10 @@ public class FacilityIdGenUtil implements org.hibernate.id.IdentifierGenerator {
 
             String hql = "SELECT max(id) from ApplicationUser";
 
-            Query<Integer> query = session.createQuery(hql, Integer.class);
+            Query<Long> query = session.createQuery(hql, Long.class);
 
-            Integer nextPrimId = query.uniqueResult();
-            int nextId = (nextPrimId == null ? 1 : nextPrimId);
+            Long nextPrimId = query.uniqueResult();
+            long nextId = (nextPrimId == null ? 1 : nextPrimId);
 
             DecimalFormat formatter = new DecimalFormat("0000");
             log.info("Generating request successfully  " + nextId);

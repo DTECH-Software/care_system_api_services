@@ -24,7 +24,7 @@ public interface InsuranceClaimsRequestRepository extends JpaRepository<Insuranc
 
     @Query("SELECT SUM(ic.requestAmount) FROM InsuranceClaimsRequest ic " +
             "LEFT OUTER JOIN InsuranceClaimsDetails icd ON ic.insuranceClaimsDetails.id = icd.id " +
-            "LEFT OUTER JOIN InsurancePeriod ip ON ic.insuranceClaimsDetails.insurancePeriod.id = ip.id " +
+            "LEFT OUTER JOIN InsuranceStaffCategoryPeriod ip ON ic.insuranceClaimsDetails.insuranceStaffCategoryPeriod.id = ip.id " +
             "WHERE ic.employee = :employee " +
             "AND icd.treatment.treatmentCode = :treatment " +
             "AND ip.id = :insurancePeriod " +
@@ -37,7 +37,7 @@ public interface InsuranceClaimsRequestRepository extends JpaRepository<Insuranc
 
     @Query("SELECT SUM(ic.requestAmount) FROM InsuranceClaimsRequest ic " +
             "LEFT OUTER JOIN InsuranceClaimsDetails icd ON ic.insuranceClaimsDetails.id = icd.id " +
-            "LEFT OUTER JOIN InsurancePeriod ip ON ic.insuranceClaimsDetails.insurancePeriod.id = ip.id " +
+            "LEFT OUTER JOIN InsuranceStaffCategoryPeriod ip ON ic.insuranceClaimsDetails.insuranceStaffCategoryPeriod.id = ip.id " +
             "WHERE ic.employee = :employee " +
             "AND icd.treatment.treatmentCode = :treatment " +
             "AND icd.treatmentCategory.code = :treatmentCategory " +
