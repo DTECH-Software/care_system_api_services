@@ -45,5 +45,5 @@ public class InsuranceDetailsLimit extends AdminAudit implements Serializable {
     private InsuranceStaffCategoryPeriod insuranceStaffCategoryPeriod;
 
     @OneToMany(fetch = FetchType.LAZY,cascade = CascadeType.ALL,mappedBy = "insuranceDetailsLimit")
-    private List<InsuranceDetails> insuranceDetails;
+    private List<InsuranceQuarter> insuranceQuarters;
 }

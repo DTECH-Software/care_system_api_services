@@ -9,6 +9,7 @@ package com.dtech.claim.util;
 
 import lombok.extern.log4j.Log4j2;
 
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.time.*;
 import java.time.format.DateTimeFormatter;
@@ -37,9 +38,11 @@ public class DateTimeUtil {
         return localDateTime.getMonthValue();
     }
 
-    public static int getYear(Date date) {
-        log.info("get  Year");
-        LocalDate localDate = date.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
+    public static int getYear(Date date) throws ParseException {
+        log.info("get  Year {} " ,date);
+        Date formatDate = new SimpleDateFormat("yyyy-MM-dd").parse("2025-04-09");
+        LocalDate localDate = formatDate.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
+
         return localDate.getYear();
     }
 

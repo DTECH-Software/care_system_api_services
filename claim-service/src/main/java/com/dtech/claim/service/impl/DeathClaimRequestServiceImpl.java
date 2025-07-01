@@ -92,12 +92,12 @@ public class DeathClaimRequestServiceImpl implements DeathClaimRequestService {
             return applicationUserRepository.findByUsernameAndUserPersonalDetails_UserStatus(channelRequestDTO.getUsername().trim(), Status.ACTIVE).map((user) -> {
                 Map<String, Object> splashData = new HashMap<>();
 
-                List<ClaimsDependents> claimsDependents = new ArrayList<>(claimDependentsRepository.
-                        findByApplicationUserAndStatusAndEligibleFacilityInAndLiveStatus(user, Workflow.ACTIVE, List.of(Facility.DEATH, Facility.BOTH), true)
+                List<ClaimsDependents> claimsDependents = claimDependentsRepository.
+                        findByApplicationUserAndStatusAndEligibleFacilityInAndLiveStatus(user, Workflow.APPROVED, List.of(Facility.DEATH, Facility.BOTH), true)
                         .stream().filter(dep -> {
                             boolean exists = deathClaimRequestRepository.existsByClaimsDependentsAndEmployeeAndRequestStatusIn(dep, user, List.of(Workflow.APPROVED, Workflow.UNDER_REVIEW));
                             return !exists;
-                        }).toList());
+                        }).collect(Collectors.toList());
 
                 int empAge = DateTimeUtil.getAge(String.valueOf(user.getUserPersonalDetails().getDob()));
 

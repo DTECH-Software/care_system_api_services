@@ -37,6 +37,6 @@ public class InsuranceQuarter extends AdminAudit implements Serializable {
 
     @Column(name = "to_date",nullable = false)
     @Temporal(TemporalType.DATE)
-    private String toDate;
+    private Date toDate;
 
 }
