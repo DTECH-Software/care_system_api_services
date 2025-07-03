@@ -27,6 +27,7 @@ public class ApprovalWorkFlow extends Audit implements Serializable {
     private ApprovalLevel approvalLevel;
 
     @Column(name = "approved_date", updatable = false)
+    @Temporal(TemporalType.TIMESTAMP)
     private Date approvedDate;
 
     @Column(name = "approved_user",updatable = false)

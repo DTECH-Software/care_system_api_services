@@ -155,7 +155,7 @@ public class ProfileServiceImpl implements ProfileService {
                             if (detailsRequestDTO.getRelationCategory().equalsIgnoreCase(RelationCategory.MOTHER.name())) {
                                 boolean claimsDependents = claimDependentsRepository
                                         .existsAllByApplicationUserAndRelationCategoryAndStatusIn(applicationUser,
-                                                RelationCategory.MOTHER, Arrays.asList(Workflow.ACTIVE, Workflow.UNDER_REVIEW));
+                                                RelationCategory.MOTHER, Arrays.asList(Workflow.APPROVED, Workflow.UNDER_REVIEW));
 
                                 if (claimsDependents) {
                                     log.info("User profile add dependent request already active mother {} ", claimsDependents);
@@ -164,7 +164,7 @@ public class ProfileServiceImpl implements ProfileService {
 
                             } else if (detailsRequestDTO.getRelationCategory().equalsIgnoreCase(RelationCategory.FATHER.name())) {
                                 boolean claimsDependents = claimDependentsRepository.existsAllByApplicationUserAndRelationCategoryAndStatusIn(applicationUser,
-                                        RelationCategory.FATHER, Arrays.asList(Workflow.ACTIVE, Workflow.UNDER_REVIEW));
+                                        RelationCategory.FATHER, Arrays.asList(Workflow.APPROVED, Workflow.UNDER_REVIEW));
                                 if (claimsDependents) {
                                     log.info("User profile add dependent request already active father {} ", claimsDependents);
                                     return ResponseEntity.ok().body(responseUtil.error(null, 1022, messageSource.getMessage(ResponseMessageUtil.CLAIM_DEPENDENT_FATHER_FOUND, new Object[]{clientMobile}, locale)));
@@ -172,7 +172,7 @@ public class ProfileServiceImpl implements ProfileService {
                             } else if (detailsRequestDTO.getRelationCategory().equalsIgnoreCase(RelationCategory.WIFE.name())) {
 
                                 boolean existed = claimDependentsRepository.existsAllByApplicationUserAndRelationCategoryAndStatusInAndMarried_Id(applicationUser,
-                                        RelationCategory.WIFE, Arrays.asList(Workflow.ACTIVE, Workflow.UNDER_REVIEW), Long.valueOf(detailsRequestDTO.getMarried()));
+                                        RelationCategory.WIFE, Arrays.asList(Workflow.APPROVED, Workflow.UNDER_REVIEW), Long.valueOf(detailsRequestDTO.getMarried()));
                                 if (existed) {
                                     log.info("User profile add dependent request already married round wife {} ", existed);
                                     return ResponseEntity.ok().body(responseUtil.error(null, 1022, messageSource.getMessage(ResponseMessageUtil.DEPENDENT_WIFE_MARRIED_ROUND_ALREADY_FOUND, new Object[]{clientMobile}, locale)));
@@ -180,7 +180,7 @@ public class ProfileServiceImpl implements ProfileService {
                             } else if (detailsRequestDTO.getRelationCategory().equalsIgnoreCase(RelationCategory.HUSBAND.name())) {
 
                                 boolean existed = claimDependentsRepository.existsAllByApplicationUserAndRelationCategoryAndStatusInAndMarried_Id(applicationUser,
-                                        RelationCategory.HUSBAND, Arrays.asList(Workflow.ACTIVE, Workflow.UNDER_REVIEW), Long.valueOf(detailsRequestDTO.getMarried()));
+                                        RelationCategory.HUSBAND, Arrays.asList(Workflow.APPROVED, Workflow.UNDER_REVIEW), Long.valueOf(detailsRequestDTO.getMarried()));
                                 if (existed) {
                                     log.info("User profile add dependent request already married round husband {} ", existed);
                                     return ResponseEntity.ok().body(responseUtil.error(null, 1022, messageSource.getMessage(ResponseMessageUtil.DEPENDENT_HUSBAND_MARRIED_ROUND_ALREADY_FOUND, new Object[]{clientMobile}, locale)));
@@ -188,7 +188,7 @@ public class ProfileServiceImpl implements ProfileService {
                             } else if (detailsRequestDTO.getRelationCategory().equalsIgnoreCase(RelationCategory.FATHER_IN_LAW.name())) {
 
                                 boolean existed = claimDependentsRepository.existsAllByApplicationUserAndRelationCategoryAndStatusInAndMarried_Id(applicationUser,
-                                        RelationCategory.FATHER_IN_LAW, Arrays.asList(Workflow.ACTIVE, Workflow.UNDER_REVIEW), Long.valueOf(detailsRequestDTO.getMarried()));
+                                        RelationCategory.FATHER_IN_LAW, Arrays.asList(Workflow.APPROVED, Workflow.UNDER_REVIEW), Long.valueOf(detailsRequestDTO.getMarried()));
                                 if (existed) {
                                     log.info("User profile add dependent request already married round father in law {} ", existed);
                                     return ResponseEntity.ok().body(responseUtil.error(null, 1022, messageSource.getMessage(ResponseMessageUtil.DEPENDENT_FATHER_IN_LAW_MARRIED_ROUND_ALREADY_FOUND, new Object[]{clientMobile}, locale)));
@@ -196,7 +196,7 @@ public class ProfileServiceImpl implements ProfileService {
                             } else if (detailsRequestDTO.getRelationCategory().equalsIgnoreCase(RelationCategory.MOTHER_IN_LAW.name())) {
 
                                 boolean existed = claimDependentsRepository.existsAllByApplicationUserAndRelationCategoryAndStatusInAndMarried_Id(applicationUser,
-                                        RelationCategory.MOTHER_IN_LAW, Arrays.asList(Workflow.ACTIVE, Workflow.UNDER_REVIEW), Long.valueOf(detailsRequestDTO.getMarried()));
+                                        RelationCategory.MOTHER_IN_LAW, Arrays.asList(Workflow.APPROVED, Workflow.UNDER_REVIEW), Long.valueOf(detailsRequestDTO.getMarried()));
                                 if (existed) {
                                     log.info("User profile add dependent request already married round mother in law {} ", existed);
                                     return ResponseEntity.ok().body(responseUtil.error(null, 1022, messageSource.getMessage(ResponseMessageUtil.DEPENDENT_MOTHER_IN_LAW_MARRIED_ROUND_ALREADY_FOUND, new Object[]{clientMobile}, locale)));

@@ -40,9 +40,8 @@ public class DateTimeUtil {
 
     public static int getYear(Date date) throws ParseException {
         log.info("get  Year {} " ,date);
-        Date formatDate = new SimpleDateFormat("yyyy-MM-dd").parse("2025-04-09");
+        Date formatDate = new SimpleDateFormat("yyyy-MM-dd").parse(date.toString());
         LocalDate localDate = formatDate.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
-
         return localDate.getYear();
     }
 
