@@ -47,7 +47,6 @@ import java.time.LocalDate;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static org.modelmapper.Converters.Collection.map;
 
 @Service
 @Log4j2
@@ -174,7 +173,7 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
                                                                     findByIdAndApplicationUserAndStatusAndEligibleFacilityIn(
                                                                             claimRequestDTO.getClaimsDependentId(),
                                                                             user,
-                                                                            Workflow.ACTIVE, List.of(Facility.INSURANCE, Facility.BOTH));
+                                                                            Workflow.APPROVED, List.of(Facility.INSURANCE, Facility.BOTH));
 
                                                             if (claimsDependents.isEmpty()) {
                                                                 log.info("Claim dependent not found or not eligible for insurance");
@@ -663,7 +662,7 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
 
                             BigDecimal maxLimit = treatmentQuarter.getQuarterLimit();
 
-                            log.info("Sum amount insurance ref data {} {}", sum, insuranceDetailsLimit.getGlobalLimit());
+                            log.info("Sum amount insurance ref data {} {} ", sum, insuranceDetailsLimit.getGlobalLimit());
                             BigDecimal reValue = funLimit.subtract(sum != null ? sum : BigDecimal.valueOf(0.00));
                             BigDecimal remaining = reValue.compareTo(BigDecimal.ZERO) > 0 ? reValue : BigDecimal.valueOf(0.00);
                             log.info("Remaining amount insurance ref data {}", reValue);

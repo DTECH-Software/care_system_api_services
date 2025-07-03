@@ -237,7 +237,7 @@ public class DeathClaimRequestServiceImpl implements DeathClaimRequestService {
                                             .findByIdAndApplicationUserAndStatusAndEligibleFacilityIn(
                                                     deathClaimRequestDTO.getClaimsDependentId(),
                                                     user,
-                                                    Workflow.ACTIVE, List.of(Facility.DEATH, Facility.BOTH));
+                                                    Workflow.APPROVED, List.of(Facility.DEATH, Facility.BOTH));
 
                                     if (claimsDependents.isEmpty()) {
                                         log.info("Claim dependent not found or not eligible for death");
