@@ -39,6 +39,9 @@ public class ApprovalWorkFlow extends Audit implements Serializable {
     @Enumerated(EnumType.STRING)
     private Workflow status;
 
+    @Column(name = "rejected_remak")
+    private String rejectedRemark;
+
     @ManyToMany(mappedBy = "approvalWorkFlows")
     private List<InsuranceClaimsRequest> claimsRequests = new ArrayList<>();
 

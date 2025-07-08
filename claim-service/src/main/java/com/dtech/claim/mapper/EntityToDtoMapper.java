@@ -13,6 +13,7 @@ import com.dtech.claim.dto.response.DocumentDownloadResponseDTO;
 import com.dtech.claim.enums.PaymentType;
 import com.dtech.claim.enums.RelationCategory;
 import com.dtech.claim.enums.Workflow;
+import com.dtech.claim.model.ApprovalWorkFlow;
 import com.dtech.claim.model.InsuranceClaimsRequest;
 import com.dtech.claim.model.DeathClaimRequest;
 import lombok.extern.log4j.Log4j2;
@@ -33,6 +34,18 @@ public class EntityToDtoMapper {
             if(insuranceClaimRequestResponseDto.getClaimsDependents() != null) {
                 log.info("Found dependent claims: {}", insuranceClaimRequestResponseDto.getClaimsDependents());
                 insuranceClaimRequestResponseDto.getClaimsDependents().setRelationCategoryDescription(RelationCategory.valueOf(insuranceClaimRequestResponseDto.getClaimsDependents().getRelationCategory().name()).getDescription());
+
+            }
+
+            if(insuranceClaimsRequest.getApprovalWorkFlows() != null) {
+
+                List<ApprovalWorkFlow> approvalWorkFlows = insuranceClaimsRequest.getApprovalWorkFlows();
+
+                approvalWorkFlows.stream().filter(approvalWorkFlow -> approvalWorkFlow.getApprovalLevel().equals(insuranceClaimsRequest.getApprovalLevel()))
+                        .forEach(val -> {
+                            insuranceClaimRequestResponseDto.setRemark(val.getRejectedRemark());
+                            insuranceClaimRequestResponseDto.setApprovedDateTime(val.getApprovedDate());
+                });
 
             }
 //            List<DocumentDownloadResponseDTO> collect = insuranceClaimsRequest.getInsuranceClaimsDetails().getDocuments().stream().map((document -> {

@@ -10,6 +10,7 @@ package com.dtech.claim.dto.response;
 import lombok.Data;
 
 import java.math.BigDecimal;
+import java.util.Date;
 
 
 @Data
@@ -20,6 +21,7 @@ public class InsuranceClaimRequestResponseDTO {
     private String requestStatus;
     private String requestStatusDescription;
     private String remark;
+    private Date approvedDateTime;
     private ClaimsDependentsResponseDTO claimsDependents;
     private InsuranceClaimsDetailsResponseDTO insuranceClaimsDetails;
 }

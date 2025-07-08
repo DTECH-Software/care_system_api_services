@@ -45,9 +45,10 @@ public class DateTimeUtil {
         return localDate.getYear();
     }
 
-    public static int getMonth(Date date) {
+    public static int getMonth(Date date) throws ParseException {
         log.info("get  month");
-        LocalDate localDate = date.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
+        Date formatDate = new SimpleDateFormat("yyyy-MM-dd").parse(date.toString());
+        LocalDate localDate = formatDate.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
         return localDate.getMonthValue();
     }
 
