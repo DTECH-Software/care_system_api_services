@@ -7,6 +7,7 @@
 
 package com.dtech.claim.model;
 
+import com.dtech.claim.enums.ApprovalLevel;
 import com.dtech.claim.enums.Workflow;
 import jakarta.persistence.*;
 import lombok.Data;
@@ -14,6 +15,8 @@ import lombok.EqualsAndHashCode;
 
 import java.io.Serializable;
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
 
 
 @EqualsAndHashCode(callSuper = true)
@@ -54,8 +57,24 @@ public class InsuranceClaimsRequest extends Audit implements Serializable {
     @JoinColumn(name = "insurance_claims_details",updatable = false)
     private InsuranceClaimsDetails insuranceClaimsDetails;
 
+    @Column(name = "approval_level", nullable = false)
+    @Enumerated(EnumType.STRING)
+    private ApprovalLevel approvalLevel;
+
+    @ManyToMany(fetch = FetchType.LAZY,cascade = CascadeType.ALL)
+    @JoinTable(
+            name = "insurance_claim_approval_work_flow",
+            joinColumns = @JoinColumn(name = "insurance_claim_id",referencedColumnName = "id"),
+            inverseJoinColumns = @JoinColumn(name = "approval_work_flow_id",referencedColumnName = "id")
+    )
+    private List<ApprovalWorkFlow> approvalWorkFlows = new ArrayList<>();
+
     @ManyToOne(fetch = FetchType.LAZY,cascade = CascadeType.ALL)
-    @JoinColumn(name = "approval_work_flow_id",referencedColumnName = "id")
-    private ApprovalWorkFlow approvalWorkFlow;
+    @JoinColumn(name = "insurance_details_limit_id",referencedColumnName = "id")
+    private InsuranceDetailsLimit insuranceDetailsLimit;
+
+    @ManyToOne(fetch = FetchType.LAZY,cascade = CascadeType.ALL)
+    @JoinColumn(name = "insurance_quarter_id",referencedColumnName = "id")
+    private InsuranceQuarter insuranceQuarter;
 
 }

@@ -7,7 +7,9 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 
 @EqualsAndHashCode(callSuper = true)
 @Entity
@@ -36,5 +38,8 @@ public class ApprovalWorkFlow extends Audit implements Serializable {
     @Column(name = "status",nullable = false)
     @Enumerated(EnumType.STRING)
     private Workflow status;
+
+    @ManyToMany(mappedBy = "approvalWorkFlows")
+    private List<InsuranceClaimsRequest> claimsRequests = new ArrayList<>();
 
 }
