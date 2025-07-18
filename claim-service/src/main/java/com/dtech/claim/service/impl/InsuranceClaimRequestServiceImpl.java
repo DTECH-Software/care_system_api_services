@@ -142,7 +142,7 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
                 if (user.getUserPersonalDetails().getUserCompanyDetails().getInsurancePolicy() == null) {
                     log.info("User not eligible to claim request {}", claimRequestDTO.getUsername());
                     return ResponseEntity.ok().body(responseUtil.error(null, 1029, messageSource.getMessage(ResponseMessageUtil.USER_NOT_ELIGIBLE_TO_CLAIM_REQUEST, null, locale)));
-                } else if ((!claimRequestDTO.getIsEmployee()) && (claimRequestDTO.getTreatment().equals(TreatmentType.CRIC.name()))) {
+                }else if ((!claimRequestDTO.getIsEmployee()) && (claimRequestDTO.getTreatment().equals(TreatmentType.CRIC.name()))) {
                     log.info("This cri facility cant eligibility dependent");
                     return ResponseEntity.ok().body(responseUtil.error(null, 1049, messageSource.getMessage(ResponseMessageUtil.DEPENDENT_NOT_ELIGIBLE_TO_CLAIM_REQUEST, null, locale)));
                 }

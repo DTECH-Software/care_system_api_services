@@ -14,6 +14,7 @@ import com.dtech.auth.feign.DocumentFeignClient;
 import com.dtech.auth.mapper.DtoToEntity.DependenceMapper;
 import com.dtech.auth.mapper.EntityToDto.ProfileMapper;
 import com.dtech.auth.model.*;
+import com.dtech.auth.model.DocumentStore;
 import com.dtech.auth.repository.*;
 import com.dtech.auth.service.ProfileService;
 import com.dtech.auth.util.*;
@@ -23,14 +24,22 @@ import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.MessageSource;
+import org.springframework.core.io.InputStreamResource;
+import org.springframework.core.io.Resource;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -68,6 +77,9 @@ public class ProfileServiceImpl implements ProfileService {
     @Autowired
     private final NotificationHistoryRepository notificationHistoryRepository;
 
+    @Autowired
+    private final DocumentStoreRepository documentStoreRepository;
+
     @Override
     @Transactional(readOnly = true)
     public ResponseEntity<ApiResponse<Object>> profile(ChannelRequestDTO channelRequestDTO, Locale locale) {
@@ -86,11 +98,11 @@ public class ProfileServiceImpl implements ProfileService {
 
             return optionalUser.map((ap) -> {
                 log.info("User profile request user found {} ", ap);
-                long unreadCount = notificationHistoryRepository.countByTypeAndEmployeeAndIsRead(NotificationsType.IN_APP_NOTIFICATION,ap, false);
+                long unreadCount = notificationHistoryRepository.countByTypeAndEmployeeAndIsRead(NotificationsType.IN_APP_NOTIFICATION, ap, false);
                 Pageable pageable = PageRequest.of(0, 5, Sort.by(Sort.Order.asc("lastModifiedDate")));
-                List<NotificationHistory> notificationHistories = notificationHistoryRepository.findAllByTypeAndEmployeeOrderByLastModifiedByDesc(NotificationsType.IN_APP_NOTIFICATION,ap,pageable);
+                List<NotificationHistory> notificationHistories = notificationHistoryRepository.findAllByTypeAndEmployeeOrderByLastModifiedByDesc(NotificationsType.IN_APP_NOTIFICATION, ap, pageable);
                 ProfileMapper profileMapper = new ProfileMapper();
-                ApplicationUserDetailsResponseDTO applicationUserDetailsResponseDTO = profileMapper.mapApplicationUser(ap,unreadCount,notificationHistories);
+                ApplicationUserDetailsResponseDTO applicationUserDetailsResponseDTO = profileMapper.mapApplicationUser(ap, unreadCount, notificationHistories);
                 log.info("User profile request success{} ", applicationUserDetailsResponseDTO);
                 return ResponseEntity.ok().body(responseUtil.success((Object) applicationUserDetailsResponseDTO, messageSource.getMessage(ResponseMessageUtil.APPLICATION_PROFILE_SUCCESS, null, locale)));
             }).orElseGet(() -> {
@@ -403,7 +415,7 @@ public class ProfileServiceImpl implements ProfileService {
 
                 }
                 {
-                    married = marriedRepository.findByCodeAndStatus(claimDependentDetailsRequestDTO.getMarried(),Status.ACTIVE).map(ma -> {
+                    married = marriedRepository.findByCodeAndStatus(claimDependentDetailsRequestDTO.getMarried(), Status.ACTIVE).map(ma -> {
                         log.info("Married  {}", ma);
                         return ma;
                     }).orElse(null);
@@ -426,7 +438,7 @@ public class ProfileServiceImpl implements ProfileService {
                 claimsDependents.setEligibleFacility(isEligibleForBoth ? Facility.BOTH : Facility.DEATH);
                 claimsDependents.setLiveStatus(true);
 
-               claimsDependents.setApplicationUser(applicationUser);
+                claimsDependents.setApplicationUser(applicationUser);
                 if (claimDependentDetailsRequestDTO.getMarried() != null && married != null) {
                     claimsDependents.setMarried(married);
                 }
@@ -451,6 +463,50 @@ public class ProfileServiceImpl implements ProfileService {
         } catch (Exception e) {
             log.error(e);
             throw e;
+        }
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public ResponseEntity<Resource> policyDocument(PolicyDocumentRequestDTO policyDocumentRequestDTO) {
+        log.info("Sample document download request: {}", policyDocumentRequestDTO);
+
+        Optional<ApplicationUser> user = applicationUserRepository.findByUsernameAndUserPersonalDetails_UserStatus(policyDocumentRequestDTO.getUsername(), Status.ACTIVE);
+
+        StaffCategories staffCategories = user.get().getUserPersonalDetails().getUserCompanyDetails().getStaffCategories();
+
+        String req = policyDocumentRequestDTO.getPolicy() ? com.dtech.auth.enums.DocumentStore.POLICY_INS.name().concat(staffCategories.getCode()) :
+                com.dtech.auth.enums.DocumentStore.POLICY_DDF.name().concat(staffCategories.getCode());
+        Optional<DocumentStore> documentStoreOpt = documentStoreRepository.findByCode(req);
+
+        if (documentStoreOpt.isEmpty()) {
+            log.info("Document store not found for code: {}", com.dtech.auth.enums.DocumentStore.POLICY_INS);
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        }
+
+        DocumentStore documentStore = documentStoreOpt.get();
+        File file = new File(documentStore.getPath());
+
+        if (!file.exists()) {
+            log.info("File not found at path: {}", documentStore.getPath());
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        }
+
+        try {
+            Resource resource = new InputStreamResource(new FileInputStream(file));
+
+            HttpHeaders headers = new HttpHeaders();
+            headers.add(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + file.getName() + "\"");
+
+            return ResponseEntity.ok()
+                    .headers(headers)
+                    .contentLength(file.length())
+                    .contentType(MediaType.APPLICATION_PDF)
+                    .body(resource);
+
+        } catch (FileNotFoundException e) {
+            log.error("Error while loading sample format file", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 

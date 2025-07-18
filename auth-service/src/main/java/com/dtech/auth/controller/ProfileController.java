@@ -17,6 +17,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.Resource;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -66,12 +67,18 @@ public class ProfileController {
         return profileService.updateProfileImage(gson.fromJson(gson.toJson(profileImageUpdateRequestValidatorDTO), ProfileImageUpdateRequestDTO.class), locale);
     }
 
-
     @PostMapping(path = "/update-profile",produces = MediaType.APPLICATION_JSON_VALUE,consumes = MediaType.APPLICATION_JSON_VALUE)
     @ApiOperation(value = "Handle update profile details request ",notes = "Update profile details request success or failed")
     public ResponseEntity<ApiResponse<Object>> updateProfileDetails(@RequestBody @Valid ProfileEditRequestValidatorDTO profileEditRequestValidatorDTO, Locale locale) {
         log.info("Update profile details request controller {} ", profileEditRequestValidatorDTO);
         return profileService.updateProfileDetails(gson.fromJson(gson.toJson(profileEditRequestValidatorDTO), ProfileEditRequestDTO.class), locale);
+    }
+
+    @PostMapping(path = "/policy-document" , consumes = MediaType.APPLICATION_JSON_VALUE)
+    @ApiOperation(value = "Handle policy view request", notes = "Policy view request success or failed")
+    public ResponseEntity<Resource> policyDocument(@RequestBody @Valid PolicyDocumentRequestValidatorDTO policyDocumentRequestValidatorDTO, Locale locale) {
+        log.info("Policy view controller: {}", policyDocumentRequestValidatorDTO);
+        return profileService.policyDocument(gson.fromJson(gson.toJson(policyDocumentRequestValidatorDTO), PolicyDocumentRequestDTO.class));
     }
 
 }

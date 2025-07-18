@@ -77,4 +77,7 @@ public class InsuranceClaimsRequest extends Audit implements Serializable {
     @JoinColumn(name = "insurance_quarter_id",referencedColumnName = "id")
     private InsuranceQuarter insuranceQuarter;
 
+    @Column(name = "approved_amount")
+    private BigDecimal approvedAmount;
+
 }

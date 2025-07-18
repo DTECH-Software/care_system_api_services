@@ -24,4 +24,5 @@ public class InsuranceClaimRequestResponseDTO {
     private Date approvedDateTime;
     private ClaimsDependentsResponseDTO claimsDependents;
     private InsuranceClaimsDetailsResponseDTO insuranceClaimsDetails;
+    private BigDecimal approvedAmount;
 }
