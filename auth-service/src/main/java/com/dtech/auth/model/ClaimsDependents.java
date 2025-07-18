@@ -92,4 +92,14 @@ public class ClaimsDependents extends Audit implements Serializable {
     )
     private List<Document> documents = new ArrayList<>();
 
+    @Column(name = "approved_date")
+    @Temporal(TemporalType.TIMESTAMP)
+    private Date approvedDate;
+
+    @Column(name = "approved_user")
+    private String approvedUser;
+
+    @Column(name = "remark")
+    private String remark;
+
 }

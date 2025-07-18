@@ -38,4 +38,7 @@ public class ClaimDependentDetailsResponseDTO {
     private int age;
     private Date createdDate;
     private List<DocumentDownloadResponseDTO> documents;
+    private Date approvedDate;
+    private String approvedUser;
+    private String remark;
 }

@@ -112,6 +112,9 @@ public class ProfileMapper {
                 claimDependentDetailsResponseDTO.setAge(DateTimeUtil.getAge(
                         String.valueOf(dependents.getDob())));
                 claimDependentDetailsResponseDTO.setCreatedDate(dependents.getCreatedDate());
+                claimDependentDetailsResponseDTO.setApprovedUser(dependents.getApprovedUser());
+                claimDependentDetailsResponseDTO.setApprovedDate(dependents.getApprovedDate());
+                claimDependentDetailsResponseDTO.setRemark(dependents.getRemark());
                 claimDependentDetailsResponseDTO.setLiveStatus(dependents.getLiveStatus());
                 claimDependentDetailsResponseDTO.setEligibleFacility(ifNotOrEmpty(String.valueOf(dependents.getEligibleFacility())));
                 log.info("claim dependent details call get image method");
