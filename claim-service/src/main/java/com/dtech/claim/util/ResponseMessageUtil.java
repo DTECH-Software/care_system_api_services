@@ -66,6 +66,8 @@ public class ResponseMessageUtil {
     public final static String DEATH_CLAIM_REQUEST_HISTORY_FILTER_LIST_SUCCESS = "val.death.claim.request.history.filter.list.success";
     public final static String CLAIM_DEPENDENT_NOT_FOUND_OR_FACILITY_NOT_ELIGIBLE = "val.claim.dependent.not.eligible.or.facility.not.eligible";
     public final static String CLAIM_DEPENDENT_DEATH_REQUEST_ALREADY_PROCEED = "val.claim.dependent.death.request.already.proceed";
+    public final static String CLAIM_DEPENDENT_INSURANCE_REQUEST_PARENT_AGE_LIMIT_EXCEED = "val.claim.dependent.insurance.request.parent.age.limit.exceed";
+    public final static String CLAIM_DEPENDENT_INSURANCE_REQUEST_CHILDREN_AGE_LIMIT_EXCEED = "val.claim.dependent.insurance.request.children.age.limit.exceed";
     public final static String BENEFICIARY_NOT_FOUND_OR_FACILITY_NOT_ELIGIBLE = "val.beneficiary.not.eligible.or.facility.not.eligible";
     public final static String INSURANCE_CLAIMS_REFERENCE_DETAILS_SUCCESS = "val.insurance.claims.reference.details.success";
     public final static String DEATH_CLAIMS_REFERENCE_DETAILS_SUCCESS = "val.death.claims.reference.details.success";

@@ -22,7 +22,7 @@ import java.util.List;
 public interface InsuranceClaimsRequestRepository extends JpaRepository<InsuranceClaimsRequest, Long>, JpaSpecificationExecutor<InsuranceClaimsRequest> {
     Page<InsuranceClaimsRequest> findAll(Specification<InsuranceClaimsRequest> spec, Pageable pageable);
 
-    @Query("SELECT SUM(ic.requestAmount) FROM InsuranceClaimsRequest ic " +
+    @Query("SELECT SUM(ic.approvedAmount) FROM InsuranceClaimsRequest ic " +
             "LEFT OUTER JOIN InsuranceClaimsDetails icd ON ic.insuranceClaimsDetails.id = icd.id " +
             "LEFT OUTER JOIN InsuranceStaffCategoryPeriod ip ON ic.insuranceClaimsDetails.insuranceStaffCategoryPeriod.id = ip.id " +
             "WHERE ic.employee = :employee " +
@@ -35,7 +35,7 @@ public interface InsuranceClaimsRequestRepository extends JpaRepository<Insuranc
             @Param("insurancePeriod") Long insurancePeriod,
             @Param("statuses") List<Workflow> statuses);
 
-    @Query("SELECT SUM(ic.requestAmount) FROM InsuranceClaimsRequest ic " +
+    @Query("SELECT SUM(ic.approvedAmount) FROM InsuranceClaimsRequest ic " +
             "LEFT OUTER JOIN InsuranceClaimsDetails icd ON ic.insuranceClaimsDetails.id = icd.id " +
             "LEFT OUTER JOIN InsuranceStaffCategoryPeriod ip ON ic.insuranceClaimsDetails.insuranceStaffCategoryPeriod.id = ip.id " +
             "WHERE ic.employee = :employee " +
@@ -78,7 +78,7 @@ public interface InsuranceClaimsRequestRepository extends JpaRepository<Insuranc
             "LEFT JOIN claims_dependents cd ON ic.dependent = cd.id " +
             "LEFT JOIN insurance_claims_details icd ON ic.insurance_claims_details = icd.id " +
             "LEFT JOIN treatment tr ON icd.treatment = tr.code " +
-            "WHERE ap.id = :userId " +
+            "WHERE ap.id = :userId AND tr.code != 'CRIC' " +
             "AND YEAR(ic.created_date) = :#{#dashboardSummaryDTO.year} " +
             "AND (:#{#dashboardSummaryDTO.month} IS NULL OR MONTH(ic.created_date) = :#{#dashboardSummaryDTO.month}) " +
             "AND (:#{#dashboardSummaryDTO.relationCategory} IS NULL OR cd.relation_category = :#{#dashboardSummaryDTO.relationCategory}) " +
