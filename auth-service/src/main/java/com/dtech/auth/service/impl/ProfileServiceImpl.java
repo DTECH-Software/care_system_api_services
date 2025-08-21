@@ -10,6 +10,7 @@ package com.dtech.auth.service.impl;
 import com.dtech.auth.dto.request.*;
 import com.dtech.auth.dto.response.*;
 import com.dtech.auth.enums.*;
+import com.dtech.auth.enums.MaritalStatus;
 import com.dtech.auth.feign.DocumentFeignClient;
 import com.dtech.auth.mapper.DtoToEntity.DependenceMapper;
 import com.dtech.auth.mapper.EntityToDto.ProfileMapper;
@@ -19,6 +20,7 @@ import com.dtech.auth.repository.*;
 import com.dtech.auth.service.ProfileService;
 import com.dtech.auth.util.*;
 import com.google.gson.Gson;
+import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,6 +36,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -79,6 +82,14 @@ public class ProfileServiceImpl implements ProfileService {
 
     @Autowired
     private final DocumentStoreRepository documentStoreRepository;
+    @Autowired
+    private MaritalStatusRepository maritalStatusRepository;
+    @Autowired
+    private DocumentRepository documentRepository;
+
+    @Autowired
+    private final EntityManager entityManager;
+
 
     @Override
     @Transactional(readOnly = true)
@@ -126,7 +137,7 @@ public class ProfileServiceImpl implements ProfileService {
 
                         for (ClaimDependentDetailsRequestDTO detailsRequestDTO : claimDependentRequestDTO.getDependents()) {
 
-                            if (!applicationUser.getUserPersonalDetails().isMaritalStatus()) {
+                            if (applicationUser.getUserPersonalDetails().equals(MaritalStatus.UNMARRIED)) {
                                 if (detailsRequestDTO.getRelationCategory().equalsIgnoreCase(RelationCategory.WIFE.name())
                                         || detailsRequestDTO.getRelationCategory().equalsIgnoreCase(RelationCategory.HUSBAND.name())
                                         || detailsRequestDTO.getRelationCategory().equalsIgnoreCase(RelationCategory.FATHER_IN_LAW.name())
@@ -422,12 +433,12 @@ public class ProfileServiceImpl implements ProfileService {
 
                 }
                 ClaimsDependents claimsDependents = DependenceMapper.mapDependence(claimDependentDetailsRequestDTO);
-                boolean isMarried = applicationUser.getUserPersonalDetails().isMaritalStatus();
+               // boolean isMarried = applicationUser.getUserPersonalDetails().();
                 String dependentCategory = claimDependentDetailsRequestDTO.getDependentCategory();
                 String relationCategory = claimDependentDetailsRequestDTO.getRelationCategory();
 
                 boolean isEligibleForBoth = false;
-                if (isMarried) {
+                if (applicationUser.getUserPersonalDetails().getMaritalStatus().equals(MaritalStatus.MARRIED)) {
                     isEligibleForBoth = DependentCategory.SPOUSE.name().equalsIgnoreCase(dependentCategory) ||
                             DependentCategory.CHILDREN.name().equalsIgnoreCase(dependentCategory);
                 } else {
@@ -507,6 +518,52 @@ public class ProfileServiceImpl implements ProfileService {
         } catch (FileNotFoundException e) {
             log.error("Error while loading sample format file", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    @Override
+    @Transactional(readOnly = false,isolation = Isolation.READ_COMMITTED)
+    public  ResponseEntity<ApiResponse<Object>> updateMaritalStatus(MaritalStatusRequestDTO maritalStatusRequestDTO,Locale locale) {
+        try {
+            log.info("Update marital status request: {}", maritalStatusRequestDTO);
+            return applicationUserRepository.findByUsernameAndUserPersonalDetails_UserStatus(maritalStatusRequestDTO.getUsername(), Status.ACTIVE).map(user -> {
+
+                if(user.getUserPersonalDetails().getMaritalStatus().equals(MaritalStatus.MARRIED) && maritalStatusRequestDTO.getRequestType().equals(RequestType.MARRIED.name())){
+                    log.info("User marital status update request: {}", maritalStatusRequestDTO);
+                    return ResponseEntity.ok().body(responseUtil.error(null, 1035, messageSource.getMessage(ResponseMessageUtil.ALREADY_MARRIED_EMPLOYEE, null, locale)));
+                } else if ((!user.getUserPersonalDetails().getMaritalStatus().equals(MaritalStatus.MARRIED)) && maritalStatusRequestDTO.getRequestType().equals(RequestType.DIVORCE.name())) {
+                    log.info("User marital status update request employee not married: {}", maritalStatusRequestDTO);
+                    return ResponseEntity.ok().body(responseUtil.error(null, 1036, messageSource.getMessage(ResponseMessageUtil.UNMARRIED_EMPLOYEE_CANT_DIVORCE, null, locale)));
+                }
+
+                List<Document> uploadSupportingDocument = maritalStatusRequestDTO.getDocuments().stream().map(doc -> {
+                    log.info("Upload supporting document from dependent");
+                    try {
+                        Document t = uploadImage(doc.getType(), doc.getFile(), doc.getFileType(), doc.getFileName());
+                        documentRepository.save(t);
+                        return t;
+                    } catch (IOException e) {
+                        log.error(e);
+                        throw new RuntimeException(e);
+                    }
+                }).collect(Collectors.toList());
+
+                com.dtech.auth.model.MaritalStatus maritalStatus = new com.dtech.auth.model.MaritalStatus();
+                maritalStatus.setStatus(Workflow.UNDER_REVIEW);
+                log.info(uploadSupportingDocument.stream().toList());
+                maritalStatus.setDocuments(uploadSupportingDocument);
+                maritalStatus.setMaritalStatus(maritalStatusRequestDTO.getRequestType().equals(RequestType.MARRIED.name()) ? MaritalStatus.MARRIED : MaritalStatus.UNMARRIED);
+                user.setMaritalStatus(maritalStatus);
+                applicationUserRepository.saveAndFlush(user);
+
+                return ResponseEntity.ok().body(responseUtil.success(null, messageSource.getMessage(ResponseMessageUtil.APPLICATION_USER_DETAILS_UPDATE_SUCCESS, null, locale)));
+            }).orElseGet(() -> {
+                log.info("User profile add dependant request application user not found {} ", maritalStatusRequestDTO);
+                return ResponseEntity.ok().body(responseUtil.error(null, 1014, messageSource.getMessage(ResponseMessageUtil.APPLICATION_USER_NOT_FOUND, null, locale)));
+            });
+        }catch (Exception e) {
+            log.error(e);
+            throw e;
         }
     }
 

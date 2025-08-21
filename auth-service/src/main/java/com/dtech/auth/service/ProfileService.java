@@ -14,4 +14,5 @@ public interface ProfileService {
     ResponseEntity<ApiResponse<Object>> updateProfileImage(ProfileImageUpdateRequestDTO profileImageUpdateRequestDTO, Locale locale);
     ResponseEntity<ApiResponse<Object>> updateProfileDetails(ProfileEditRequestDTO profileEditRequestDTO, Locale locale);
     ResponseEntity<Resource> policyDocument(PolicyDocumentRequestDTO policyDocumentRequestDTO);
+    ResponseEntity<ApiResponse<Object>> updateMaritalStatus(MaritalStatusRequestDTO maritalStatusRequestDTO,Locale locale);
 }

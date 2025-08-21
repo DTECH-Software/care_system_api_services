@@ -35,13 +35,13 @@ public class RequestIdGenUtil implements org.hibernate.id.IdentifierGenerator {
 
             if(isMedical){
                 log.info("Generating request id for medical " + object);
-                prefix = "INS"+ "/" + company + "/" + staffCategory + "/" + year + "/";
+                prefix = "HC"+ "/" + company + "/" + staffCategory + "/" + year + "/";
 
                 hql = "SELECT MAX(CAST(SUBSTRING(requestId, LENGTH(:prefix) + 1) AS int)) " +
                         "FROM InsuranceClaimsRequest WHERE requestId LIKE :idPrefix";
             }else{
                 log.info("Generating request id for death " + object);
-                prefix = "DDF"+ "/" + company + "/" + staffCategory + "/" + year + "/";
+                prefix = "HC"+ "/DDF/" + company + "/" + staffCategory + "/" + year + "/";
 
                 hql = "SELECT MAX(CAST(SUBSTRING(requestId, LENGTH(:prefix) + 1) AS int)) " +
                         "FROM DeathClaimRequest WHERE requestId LIKE :idPrefix";

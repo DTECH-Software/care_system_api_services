@@ -84,6 +84,9 @@ public class DeathClaimRequestServiceImpl implements DeathClaimRequestService {
     @Autowired
     private final MessageFeignClient messageFeignClient;
 
+    @Autowired
+    private final ApprovalWorkFlowRepository approvalWorkFlowRepository;
+
     @Override
     @Transactional(readOnly = true)
     public ResponseEntity<ApiResponse<Object>> deathClaimReferenceData(ChannelRequestDTO channelRequestDTO, Locale locale) {
@@ -314,6 +317,8 @@ public class DeathClaimRequestServiceImpl implements DeathClaimRequestService {
                                                                                         amount = deathBeneficiary.getClaimLimit().multiply(fiftyPercent);
                                                                                     }
 
+                                                                                    log.info("Other document {} ",deathClaimRequestDTO.toString());
+
                                                                                     List<Document> uploadSupportingDocument = deathClaimRequestDTO.getDocuments().stream().map(doc -> {
                                                                                         log.info("Upload supporting document from death request {}", deathClaimRequestDTO);
                                                                                         try {
@@ -324,8 +329,8 @@ public class DeathClaimRequestServiceImpl implements DeathClaimRequestService {
                                                                                             throw new RuntimeException(e);
                                                                                         }
                                                                                     }).collect(Collectors.toList());
-
-                                                                                    String claimRequestId = saveDeathClaimRequest(deathClaimRequestDTO, paymentType, amount, claimsDependents.get(), user, deathBeneficiary, uploadSupportingDocument);
+                                                                                    ApprovalWorkFlow approvalWorkFlow = updateApprovalData();
+                                                                                    String claimRequestId = saveDeathClaimRequest(deathClaimRequestDTO, paymentType, amount, claimsDependents.get(), user, approvalWorkFlow,deathBeneficiary, uploadSupportingDocument);
                                                                                     notifyMessage(user.getPrimaryMobile(), claimRequestId);
                                                                                     return ResponseEntity.ok().body(responseUtil.success(null, messageSource.getMessage(ResponseMessageUtil.DEATH_CLAIM_REQUEST_SUBMIT_SUCCESS, null, locale)));
                                                                                 } else {
@@ -364,6 +369,16 @@ public class DeathClaimRequestServiceImpl implements DeathClaimRequestService {
             throw e;
         }
     }
+
+    @Transactional
+    protected ApprovalWorkFlow updateApprovalData() {
+        log.info("Update approval process data");
+        ApprovalWorkFlow approvalWorkFlow = new ApprovalWorkFlow();
+        approvalWorkFlow.setApprovalLevel(ApprovalLevel.LEVEL01);
+        approvalWorkFlow.setStatus(Workflow.UNDER_REVIEW);
+        return approvalWorkFlowRepository.saveAndFlush(approvalWorkFlow);
+    }
+
 
     @Async
     protected void notifyMessage(String mobile, String requestId) {
@@ -470,6 +485,7 @@ public class DeathClaimRequestServiceImpl implements DeathClaimRequestService {
                                            PaymentType paymentType, BigDecimal amount,
                                            ClaimsDependents claimsDependents,
                                            ApplicationUser applicationUser,
+                                           ApprovalWorkFlow approvalWorkFlow,
                                            com.dtech.claim.model.DeathBeneficiary deathBeneficiary, List<Document> uploadSupportingDocument) {
         try {
             log.info("Save death claim request death{}", deathClaimRequestDTO);
@@ -493,6 +509,8 @@ public class DeathClaimRequestServiceImpl implements DeathClaimRequestService {
             deathClaimRequest.setEmployee(applicationUser);
             deathClaimRequest.setDeathBeneficiary(deathBeneficiary);
             deathClaimRequest.setDocuments(uploadSupportingDocument);
+            deathClaimRequest.setApprovalWorkFlows(List.of(approvalWorkFlow));
+            deathClaimRequest.setApprovalLevel(ApprovalLevel.LEVEL01);
             log.info("Save death claim request {}", deathClaimRequestDTO);
             deathClaimRequestRepository.saveAndFlush(deathClaimRequest);
             return claimRequestId;

@@ -7,6 +7,7 @@
 
 package com.dtech.claim.model;
 
+import com.dtech.claim.enums.ApprovalLevel;
 import com.dtech.claim.enums.PaymentType;
 import com.dtech.claim.enums.Workflow;
 import jakarta.persistence.*;
@@ -71,4 +72,19 @@ public class DeathClaimRequest extends Audit implements Serializable {
             inverseJoinColumns = @JoinColumn(name = "document_id", referencedColumnName = "id")
     )
     private List<Document> documents = new ArrayList<>();
+
+    @ManyToMany(fetch = FetchType.LAZY,cascade = CascadeType.ALL)
+    @JoinTable(
+            name = "death_claim_approval_work_flow",
+            joinColumns = @JoinColumn(name = "death_claim_id",referencedColumnName = "id"),
+            inverseJoinColumns = @JoinColumn(name = "approval_work_flow_id",referencedColumnName = "id")
+    )
+    private List<ApprovalWorkFlow> approvalWorkFlows = new ArrayList<>();
+
+    @Column(name = "approval_level", nullable = false)
+    @Enumerated(EnumType.STRING)
+    private ApprovalLevel approvalLevel;
+
+    @Column(name = "approved_amount")
+    private BigDecimal approvedAmount;
 }

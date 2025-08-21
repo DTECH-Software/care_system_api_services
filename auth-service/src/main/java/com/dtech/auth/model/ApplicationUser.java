@@ -130,4 +130,8 @@ public class ApplicationUser extends Audit implements Serializable {
     @JoinColumn(name = "profile_img",referencedColumnName = "id")
     private Document profileImg;
 
+    @OneToOne(fetch = FetchType.LAZY,cascade = CascadeType.ALL,targetEntity = MaritalStatus.class)
+    @JoinColumn(name = "marital_id",referencedColumnName = "id")
+    private MaritalStatus maritalStatus;
+
 }

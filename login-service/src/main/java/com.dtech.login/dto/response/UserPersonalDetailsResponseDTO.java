@@ -26,6 +26,8 @@ public class UserPersonalDetailsResponseDTO {
     private String genderDescription;
     private String title;
     private String titleDescription;
+    private String maritalStatus;
+    private String maritalStatusDescription;
     private UserAddressResponseDTO userAddress;
     private UserCompanyDetailsResponseDTO userCompanyDetails;
     private Boolean isTemp;

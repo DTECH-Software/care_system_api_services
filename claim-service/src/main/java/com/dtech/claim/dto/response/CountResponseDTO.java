@@ -23,4 +23,5 @@ public class CountResponseDTO {
     private List<LatestUpdatedResponseDTO> approved;
     private List<LatestUpdatedResponseDTO> rejected;
     private List<LatestUpdatedResponseDTO> underReview;
+    private int remaining;
 }

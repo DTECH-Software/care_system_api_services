@@ -5,17 +5,12 @@
  * Time: 7:46 AM
  * <p>
  */
- 
+
 package com.dtech.claim.service.impl;
 
 import com.dtech.claim.dto.request.DashboardSummaryDTO;
-import com.dtech.claim.dto.response.ApiResponse;
-import com.dtech.claim.dto.response.CountResponseDTO;
-import com.dtech.claim.dto.response.CountTypeResponseDTO;
-import com.dtech.claim.dto.response.LatestUpdatedResponseDTO;
-import com.dtech.claim.enums.Facility;
-import com.dtech.claim.enums.Status;
-import com.dtech.claim.enums.Workflow;
+import com.dtech.claim.dto.response.*;
+import com.dtech.claim.enums.*;
 import com.dtech.claim.model.InsuranceYear;
 import com.dtech.claim.repository.*;
 import com.dtech.claim.service.DashboardService;
@@ -65,7 +60,7 @@ public class DashboardServiceImpl implements DashboardService {
             log.info("Get dashboard summary {}", dashboardSummaryDTO);
             return applicationUserRepository.findByUsernameAndUserPersonalDetails_UserStatus(dashboardSummaryDTO.getUsername().trim(), Status.ACTIVE).map((user) -> {
 
-                HashMap<String,Object> list = new HashMap<>();
+                HashMap<String, Object> list = new HashMap<>();
 
                 /*Insurance*/
                 log.info("insurance claims");
@@ -75,31 +70,65 @@ public class DashboardServiceImpl implements DashboardService {
                 CountResponseDTO insurance = null;
                 CountResponseDTO death = null;
 
-                if(user.getUserPersonalDetails().getUserCompanyDetails().getFacility().name().equals(Facility.INSURANCE.name()) ||
-                        user.getUserPersonalDetails().getUserCompanyDetails().getFacility().name().equals(Facility.BOTH.name())){
+                if (user.getUserPersonalDetails().getUserCompanyDetails().getFacility().name().equals(Facility.INSURANCE.name()) ||
+                        user.getUserPersonalDetails().getUserCompanyDetails().getFacility().name().equals(Facility.BOTH.name())) {
                     CountTypeResponseDTO countOfInsurance = insuranceClaimsRequestRepository.
-                            findSummary(dashboardSummaryDTO, user.getId(),user.getUserPersonalDetails().getUserCompanyDetails().getInsurancePolicy().getCode());
+                            findSummary(dashboardSummaryDTO, user.getId(), user.getUserPersonalDetails().getUserCompanyDetails().getInsurancePolicy().getCode());
                     log.info("insurance claims counts success");
+
+                    AmountResponseDTO indoor = insuranceClaimsRequestRepository.findSummaryByFacility(dashboardSummaryDTO, user.getId(),
+                            user.getUserPersonalDetails().getUserCompanyDetails().getInsurancePolicy().getCode(), TreatmentType.INDOOR.name());
+                    countOfInsurance.setIndoor(indoor);
+
+                    AmountResponseDTO outdoor = insuranceClaimsRequestRepository.findSummaryByFacility(dashboardSummaryDTO, user.getId(),
+                            user.getUserPersonalDetails().getUserCompanyDetails().getInsurancePolicy().getCode(), TreatmentType.OUTDOOR.name());
+                    countOfInsurance.setOutdoor(outdoor);
+
+                    AmountResponseDTO critical = insuranceClaimsRequestRepository.findSummaryByFacilityCritical(dashboardSummaryDTO,user.getId(),
+                            user.getUserPersonalDetails().getUserCompanyDetails().getInsurancePolicy().getCode(), TreatmentType.CRIC.name());
+
+                    int i = 0;
+                    if (user.getUserPersonalDetails().getUserCompanyDetails().getStaffCategories().getCode().equals("NS")) {
+                        countOfInsurance.setCritical(null);
+                        int requestApprovedCount = insuranceClaimsRequestRepository.findApprovedRequestCountByTreatment(dashboardSummaryDTO,
+                                user.getUserPersonalDetails().getUserCompanyDetails().getInsurancePolicy().getCode(),user.getUserPersonalDetails().getUserCompanyDetails().getCompanyTypes().getCode(),TreatmentType.CRIC.name());
+                        i = 4 - requestApprovedCount;
+                        i= Math.max(i, 0);
+                    } else if(user.getUserPersonalDetails().getUserCompanyDetails().getStaffCategories().getCode().equals("SNR")){
+                        int requestApprovedCount = insuranceClaimsRequestRepository.findApprovedRequestCountByTreatmentSNR(dashboardSummaryDTO, user.getId(),
+                                user.getUserPersonalDetails().getUserCompanyDetails().getInsurancePolicy().getCode(), TreatmentType.CRIC.name());
+                        i = 4 - requestApprovedCount;
+                        i= Math.max(i, 0);
+                        countOfInsurance.setCritical(critical);
+                    }else {
+                        countOfInsurance.setCritical(critical);
+                    }
+
                     //get latest updated insurance
-                     approved = insuranceClaimsRequestRepository.getLatestUpdatedRecordSummary(user.getId(), Workflow.APPROVED.name());
-                     rejected = insuranceClaimsRequestRepository.getLatestUpdatedRecordSummary(user.getId(), Workflow.REJECTED.name());
-                     underReview = insuranceClaimsRequestRepository.getLatestUpdatedRecordSummary(user.getId(), Workflow.UNDER_REVIEW.name());
+                    approved = insuranceClaimsRequestRepository.getLatestUpdatedRecordSummary(user.getId(), Workflow.APPROVED.name());
+                    rejected = insuranceClaimsRequestRepository.getLatestUpdatedRecordSummary(user.getId(), Workflow.REJECTED.name());
+                    underReview = insuranceClaimsRequestRepository.getLatestUpdatedRecordSummary(user.getId(), Workflow.UNDER_REVIEW.name());
                     log.info("insurance claims list success");
-                     insurance = CountResponseDTO.builder()
+                    insurance = CountResponseDTO.builder()
                             .approved(approved)
                             .rejected(rejected)
                             .underReview(underReview)
-                            .countDetails(countOfInsurance).build();
+                            .countDetails(countOfInsurance)
+                            .remaining(i).
+                            build();
                     log.info("insurance claims set dto success");
                 }
 
-                if(user.getUserPersonalDetails().getUserCompanyDetails().getFacility().name().equals(Facility.DEATH.name()) ||
-                        user.getUserPersonalDetails().getUserCompanyDetails().getFacility().name().equals(Facility.BOTH.name())){
+                if (user.getUserPersonalDetails().getUserCompanyDetails().getFacility().name().equals(Facility.DEATH.name()) ||
+                        user.getUserPersonalDetails().getUserCompanyDetails().getFacility().name().equals(Facility.BOTH.name())) {
                     /*Death*/
                     log.info("death claims");
                     CountTypeResponseDTO countOfDeath = deathClaimRequestRepository.
                             findSummary(dashboardSummaryDTO, user.getId());
                     log.info("death claims counts success");
+
+                    AmountResponseDTO deathUtilize = deathClaimRequestRepository.findSummaryByDeath(dashboardSummaryDTO, user.getId());
+                    countOfDeath.setDeath(deathUtilize);
                     //get latest updated death
                     approved = deathClaimRequestRepository.getLatestUpdatedRecordSummary(user.getId(), Workflow.APPROVED.name());
                     rejected = deathClaimRequestRepository.getLatestUpdatedRecordSummary(user.getId(), Workflow.REJECTED.name());
@@ -112,9 +141,6 @@ public class DashboardServiceImpl implements DashboardService {
                             .countDetails(countOfDeath).build();
                     log.info("death claims set dto success");
                 }
-
-
-
 
                 // get active period
                 Optional<InsuranceYear> activeYear = insurancePeriodRepository.
@@ -129,7 +155,7 @@ public class DashboardServiceImpl implements DashboardService {
                 log.info("Dashboard summary request user not found {} ", dashboardSummaryDTO);
                 return ResponseEntity.ok().body(responseUtil.error(null, 1014, messageSource.getMessage(ResponseMessageUtil.APPLICATION_USER_NOT_FOUND, null, locale)));
             });
-        }catch (Exception e) {
+        } catch (Exception e) {
             log.error(e);
             throw e;
         }

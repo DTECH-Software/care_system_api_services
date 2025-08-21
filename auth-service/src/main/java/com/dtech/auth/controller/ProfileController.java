@@ -81,4 +81,11 @@ public class ProfileController {
         return profileService.policyDocument(gson.fromJson(gson.toJson(policyDocumentRequestValidatorDTO), PolicyDocumentRequestDTO.class));
     }
 
+    @PostMapping(path = "/update-marital-status",produces = MediaType.APPLICATION_JSON_VALUE,consumes = MediaType.APPLICATION_JSON_VALUE)
+    @ApiOperation(value = "Handle update marital status details request ",notes = "Update marital status details request success or failed")
+    public ResponseEntity<ApiResponse<Object>> updateMaritalStatus(@RequestBody @Valid MaritalStatusRequestValidatorDTO maritalStatusRequestValidatorDTO, Locale locale) {
+        log.info("Update marital status details request controller {} ", maritalStatusRequestValidatorDTO);
+        return profileService.updateMaritalStatus(gson.fromJson(gson.toJson(maritalStatusRequestValidatorDTO), MaritalStatusRequestDTO.class), locale);
+    }
+
 }

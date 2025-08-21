@@ -17,29 +17,24 @@ public class CountTypeResponseDTO {
     private Long approvedCount;
     private Long rejectedCount;
     private Long underReviewCount;
-    private BigDecimal sumOfUtilizeAmount;
-    private BigDecimal totalLimit;
-    private BigDecimal remainingAmount;
+    private AmountResponseDTO indoor;
+    private AmountResponseDTO outdoor;
+    private AmountResponseDTO critical;
+    private AmountResponseDTO death;
 
-    public CountTypeResponseDTO(Long fullCount, Long approvedCount, Long rejectedCount, Long underReviewCount, BigDecimal sumOfUtilizeAmount, BigDecimal totalLimit, BigDecimal remainingAmount) {
-        System.out.println("CountTypeResponseDTO constructor called!");
+    public CountTypeResponseDTO(Long fullCount, Long approvedCount, Long rejectedCount, Long underReviewCount) {
         this.fullCount = fullCount;
         this.approvedCount = approvedCount;
         this.rejectedCount = rejectedCount;
         this.underReviewCount = underReviewCount;
-        this.sumOfUtilizeAmount = sumOfUtilizeAmount;
-        this.totalLimit = totalLimit;
-        this.remainingAmount = remainingAmount;
     }
 
-    public CountTypeResponseDTO(Long fullCount, Long approvedCount, Long rejectedCount, Long underReviewCount, BigDecimal sumOfUtilizeAmount) {
-        System.out.println("CountTypeResponseDTO constructor called death!");
-        this.fullCount = fullCount;
-        this.approvedCount = approvedCount;
-        this.rejectedCount = rejectedCount;
-        this.underReviewCount = underReviewCount;
-        this.sumOfUtilizeAmount = sumOfUtilizeAmount;
-    }
-
+//    public CountTypeResponseDTO(Long fullCount, Long approvedCount, Long rejectedCount, Long underReviewCount) {
+//        System.out.println("CountTypeResponseDTO constructor called death!");
+//        this.fullCount = fullCount;
+//        this.approvedCount = approvedCount;
+//        this.rejectedCount = rejectedCount;
+//        this.underReviewCount = underReviewCount;
+//    }
 
 }

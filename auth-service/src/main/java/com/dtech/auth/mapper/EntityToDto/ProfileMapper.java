@@ -10,10 +10,7 @@ package com.dtech.auth.mapper.EntityToDto;
 
 import com.dtech.auth.dto.SimpleBaseDTO;
 import com.dtech.auth.dto.response.*;
-import com.dtech.auth.enums.Facility;
-import com.dtech.auth.enums.Gender;
-import com.dtech.auth.enums.NotificationTitle;
-import com.dtech.auth.enums.Title;
+import com.dtech.auth.enums.*;
 import com.dtech.auth.model.ApplicationUser;
 import com.dtech.auth.model.ClaimsDependents;
 import com.dtech.auth.model.NotificationHistory;
@@ -48,6 +45,7 @@ public class ProfileMapper {
 
             applicationUserDetailsResponseDTO.getUserPersonalDetails().setGenderDescription(Gender.valueOf(applicationUserDetailsResponseDTO.getUserPersonalDetails().getGender()).getDescription());
             applicationUserDetailsResponseDTO.getUserPersonalDetails().setTitleDescription(Title.valueOf(applicationUserDetailsResponseDTO.getUserPersonalDetails().getTitle()).getDescription());
+            applicationUserDetailsResponseDTO.getUserPersonalDetails().setMaritalStatusDescription(MaritalStatus.valueOf(applicationUserDetailsResponseDTO.getUserPersonalDetails().getMaritalStatus()).getDescription());
             applicationUserDetailsResponseDTO.getUserPersonalDetails().getUserCompanyDetails().setFacilityDescription(Facility.valueOf(applicationUserDetailsResponseDTO.getUserPersonalDetails().getUserCompanyDetails().getFacility()).getDescription());
             applicationUserDetailsResponseDTO.setCreatedDate(applicationUser.getCreatedDate());
             if (applicationUser.getProfileImg() != null) {

@@ -2,6 +2,7 @@ package com.dtech.claim.repository;
 
 
 import com.dtech.claim.dto.request.DashboardSummaryDTO;
+import com.dtech.claim.dto.response.AmountResponseDTO;
 import com.dtech.claim.dto.response.CountTypeResponseDTO;
 import com.dtech.claim.dto.response.LatestUpdatedResponseDTO;
 import com.dtech.claim.enums.Workflow;
@@ -26,8 +27,7 @@ public interface DeathClaimRequestRepository extends JpaRepository<DeathClaimReq
             "    COUNT(dc.id) AS fullCount, " +
             "    COUNT(CASE WHEN dc.request_status = 'APPROVED' THEN 1 END) AS approvedCount, " +
             "    COUNT(CASE WHEN dc.request_status = 'REJECTED' THEN 1 END) AS rejectedCount, " +
-            "    COUNT(CASE WHEN dc.request_status = 'UNDER_REVIEW' THEN 1 END) AS underReviewCount, " +
-            "    SUM(CASE WHEN dc.request_status IN ('APPROVED', 'UNDER_REVIEW') THEN dc.utilize_amount END) AS sumOfUtilizeAmount " +
+            "    COUNT(CASE WHEN dc.request_status = 'UNDER_REVIEW' THEN 1 END) AS underReviewCount " +
             "FROM death_claim_request dc " +
             "LEFT OUTER JOIN application_user ap ON dc.employee = ap.id " +
             "LEFT OUTER JOIN claims_dependents cd ON dc.dependent = cd.id " +
@@ -45,6 +45,27 @@ public interface DeathClaimRequestRepository extends JpaRepository<DeathClaimReq
             nativeQuery = true)
     CountTypeResponseDTO findSummary(DashboardSummaryDTO dashboardSummaryDTO,
                                      @Param("userId") Long userId);
+
+
+    @Query(value = "SELECT  " +
+            "    SUM(CASE WHEN dc.request_status IN ('APPROVED') THEN dc.utilize_amount END) AS sumOfUtilizeAmount " +
+            "FROM death_claim_request dc " +
+            "LEFT OUTER JOIN application_user ap ON dc.employee = ap.id " +
+            "LEFT OUTER JOIN claims_dependents cd ON dc.dependent = cd.id " +
+            "WHERE ap.id = :userId " +
+            "AND (YEAR(dc.created_date) = :#{#dashboardSummaryDTO.year}) " +
+            "AND ( " +
+            "(:#{#dashboardSummaryDTO.month} IS NULL OR MONTH(dc.created_date) = :#{#dashboardSummaryDTO.month})" +
+            ") " +
+            "AND ( " +
+            "(:#{#dashboardSummaryDTO.relationCategory} IS NULL OR cd.relation_category = :#{#dashboardSummaryDTO.relationCategory})" +
+            ") " +
+            "AND ( " +
+            "(:#{#dashboardSummaryDTO.claimDependentId} IS NULL OR cd.id = :#{#dashboardSummaryDTO.claimDependentId})" +
+            ") ",
+            nativeQuery = true)
+    AmountResponseDTO findSummaryByDeath(DashboardSummaryDTO dashboardSummaryDTO,
+                                         @Param("userId") Long userId);
 
 
     @Query(value = "SELECT " +

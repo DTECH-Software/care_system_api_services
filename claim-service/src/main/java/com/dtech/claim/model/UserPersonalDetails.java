@@ -7,6 +7,7 @@
 
 package com.dtech.claim.model;
 
+import com.dtech.claim.enums.MaritalStatus;
 import com.dtech.claim.enums.Status;
 
 import jakarta.persistence.*;
@@ -51,7 +52,8 @@ public class UserPersonalDetails extends Audit implements Serializable {
     private String mobileNo;
 
     @Column(name = "marital_status",nullable = false)
-    private boolean maritalStatus;
+    @Enumerated(EnumType.STRING)
+    private MaritalStatus maritalStatus;
 
     @Column(name = "dob",nullable = false)
     @Temporal(TemporalType.DATE)

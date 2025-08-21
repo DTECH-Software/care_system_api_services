@@ -6,6 +6,7 @@ public enum DocType implements DescribableEnum{
     PROFILE("Profile"),
     DIAGNOSIS_CARD("Diagnosis card"),
     DEATH_CERTIFICATE("Death certificate"),
+    OTHER_CERTIFICATE("Other certificate"),
     TREATMENT_BILL("Treatment bill");
     private final String description;
     DocType(String description) {

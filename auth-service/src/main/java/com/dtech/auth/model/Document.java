@@ -17,11 +17,11 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
-@EqualsAndHashCode(callSuper = true,exclude = "claimsDependents")
+@EqualsAndHashCode(callSuper = true,exclude = {"claimsDependents","maritalStatus"})
 @Entity
 @Table(name = "document")
 @Data
-@ToString(exclude = {"claimsDependents","doc"})
+@ToString(exclude = {"claimsDependents","doc","maritalStatus"})
 public class Document extends Audit implements Serializable {
 
     private static final long serialVersionUID = 1L;
@@ -47,4 +47,7 @@ public class Document extends Audit implements Serializable {
 
     @ManyToMany(mappedBy = "documents")
     private List<ClaimsDependents> claimsDependents = new ArrayList<>();
+
+    @ManyToMany(mappedBy = "documents")
+    private List<MaritalStatus> maritalStatus = new ArrayList<>();
 }
