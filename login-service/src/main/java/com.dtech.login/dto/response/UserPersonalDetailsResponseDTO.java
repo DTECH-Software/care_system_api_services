@@ -32,4 +32,5 @@ public class UserPersonalDetailsResponseDTO {
     private UserCompanyDetailsResponseDTO userCompanyDetails;
     private Boolean isTemp;
     private String tempId;
+    private DocumentDownloadResponseDTO birthImg;
 }

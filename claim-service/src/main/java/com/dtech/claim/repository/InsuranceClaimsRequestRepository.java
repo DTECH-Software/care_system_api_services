@@ -18,6 +18,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.math.BigDecimal;
+import java.util.Date;
 import java.util.List;
 
 @Repository
@@ -37,6 +38,7 @@ public interface InsuranceClaimsRequestRepository extends JpaRepository<Insuranc
             @Param("insurancePeriod") Long insurancePeriod,
             @Param("statuses") List<Workflow> statuses);
 
+    boolean existsByEmployeeAndInsuranceClaimsDetails_Treatment_TreatmentCodeAndRequestStatus(ApplicationUser employee, String code, Workflow requestStatus);
 
     @Query("SELECT SUM(ic.approvedAmount) FROM InsuranceClaimsRequest ic " +
             "LEFT OUTER JOIN InsuranceClaimsDetails icd ON ic.insuranceClaimsDetails.id = icd.id " +
@@ -92,20 +94,64 @@ public interface InsuranceClaimsRequestRepository extends JpaRepository<Insuranc
                                      @Param("userId") Long userId,
                                      @Param("policy") String policy);
 
+
+
+    @Query(value = """
+    SELECT
+        COALESCE(SUM(CASE
+            WHEN ic.request_status = 'APPROVED'
+             AND (:treatment != 'CRIC' OR :treatment != 'CRIC')
+            THEN ic.request_amount
+        END), 0) AS sumOfUtilizeAmount,
+
+        COALESCE(idl.total_limit, 0) AS totalLimit,
+
+        (COALESCE(idl.total_limit, 0) - COALESCE(SUM(CASE
+            WHEN ic.request_status = 'APPROVED'
+             AND (:treatment != 'CRIC' OR :treatment != 'CRIC')
+            THEN ic.request_amount
+        END), 0)) AS remainingAmount
+
+    FROM (
+        SELECT global_limit AS total_limit
+        FROM insurance_details_limit
+        WHERE insurance_policy = :policy
+          AND treatment = :treatment
+          AND (:treatment != 'CRIC' OR treatment != 'CRIC')
+    ) idl
+
+    LEFT JOIN application_user ap ON ap.id = :userId
+    LEFT JOIN claims_request ic ON ic.employee = ap.id
+    LEFT JOIN claims_dependents cd ON ic.dependent = cd.id
+    LEFT JOIN insurance_claims_details icd ON ic.insurance_claims_details = icd.id
+
+    WHERE
+        (ic.id IS NULL OR (
+            icd.treatment = :treatment
+            AND YEAR(ic.created_date) = :#{#dashboardSummaryDTO.year}
+            AND (:#{#dashboardSummaryDTO.month} IS NULL OR MONTH(ic.created_date) = :#{#dashboardSummaryDTO.month})
+            AND (:#{#dashboardSummaryDTO.relationCategory} IS NULL OR cd.relation_category = :#{#dashboardSummaryDTO.relationCategory})
+            AND (:#{#dashboardSummaryDTO.claimDependentId} IS NULL OR cd.id = :#{#dashboardSummaryDTO.claimDependentId})
+            AND (:#{#dashboardSummaryDTO.treatmentType} IS NULL OR icd.treatment = :#{#dashboardSummaryDTO.treatmentType})
+        ))
+""", nativeQuery = true)
+    AmountResponseDTO findSummaryByFacility(
+            @Param("dashboardSummaryDTO") DashboardSummaryDTO dashboardSummaryDTO,
+            @Param("userId") Long userId,
+            @Param("policy") String policy,
+            @Param("treatment") String treatment
+    );
+
     @Query(value = """
     SELECT 
         COALESCE(SUM(CASE 
             WHEN ic.request_status = 'APPROVED' 
-             AND idl.treatment != 'CRIC' 
              AND tr.code = :treatment 
             THEN ic.request_amount 
         END), 0) AS sumOfUtilizeAmount,
-
         limits.totalLimit AS totalLimit,
-
         (limits.totalLimit - COALESCE(SUM(CASE 
             WHEN ic.request_status = 'APPROVED' 
-             AND idl.treatment != 'CRIC' 
              AND tr.code = :treatment 
             THEN ic.request_amount 
         END), 0)) AS remainingAmount
@@ -120,54 +166,8 @@ public interface InsuranceClaimsRequestRepository extends JpaRepository<Insuranc
         FROM insurance_details_limit idl
         JOIN insurance_policy ip2 ON ip2.code = idl.insurance_policy
         WHERE ip2.code = :policy 
-          AND idl.treatment != 'CRIC' 
           AND idl.treatment = :treatment
     ) AS limits ON 1=1
-    WHERE ap.id = :userId
-      AND tr.code = :treatment
-      AND YEAR(ic.created_date) = :#{#dashboardSummaryDTO.year}
-      AND (:#{#dashboardSummaryDTO.month} IS NULL OR MONTH(ic.created_date) = :#{#dashboardSummaryDTO.month})
-      AND (:#{#dashboardSummaryDTO.relationCategory} IS NULL OR cd.relation_category = :#{#dashboardSummaryDTO.relationCategory})
-      AND (:#{#dashboardSummaryDTO.claimDependentId} IS NULL OR cd.id = :#{#dashboardSummaryDTO.claimDependentId})
-      AND (:#{#dashboardSummaryDTO.treatmentType} IS NULL OR tr.code = :#{#dashboardSummaryDTO.treatmentType})
-    """, nativeQuery = true)
-    AmountResponseDTO findSummaryByFacility(@Param("dashboardSummaryDTO") DashboardSummaryDTO dashboardSummaryDTO,
-                                            @Param("userId") Long userId,
-                                            @Param("policy") String policy,
-                                            @Param("treatment") String treatment);
-
-
-
-    @Query(value = """
-    SELECT 
-        COALESCE(SUM(CASE 
-            WHEN ic.request_status = 'APPROVED' 
-             AND tr.code = :treatment 
-            THEN ic.request_amount 
-        END), 0) AS sumOfUtilizeAmount,
-        limits.totalLimit AS totalLimit,
-        (limits.totalLimit - COALESCE(SUM(CASE 
-            WHEN ic.request_status = 'APPROVED' 
-             AND tr.code = :treatment 
-            THEN ic.request_amount 
-        END), 0)) AS remainingAmount
-
-    FROM claims_request ic
-
-    JOIN application_user ap ON ic.employee = ap.id
-    LEFT JOIN claims_dependents cd ON ic.dependent = cd.id
-    JOIN insurance_claims_details icd ON ic.insurance_claims_details = icd.id
-    JOIN treatment tr ON icd.treatment = tr.code
-    LEFT JOIN insurance_details_limit idl ON idl.insurance_policy = :policy AND idl.treatment = :treatment
-
-    JOIN (
-        SELECT COALESCE(SUM(idl.global_limit), 0) AS totalLimit
-        FROM insurance_details_limit idl
-        JOIN insurance_policy ip2 ON ip2.code = idl.insurance_policy
-        WHERE ip2.code = :policy 
-          AND idl.treatment = :treatment
-    ) AS limits ON 1=1
-
     WHERE tr.code = :treatment and ap.id = :userId
       AND YEAR(ic.created_date) = :#{#dashboardSummaryDTO.year}
       AND (:#{#dashboardSummaryDTO.month} IS NULL OR MONTH(ic.created_date) = :#{#dashboardSummaryDTO.month})
@@ -186,16 +186,14 @@ FROM claims_request ic
 LEFT JOIN application_user ap ON ic.employee = ap.id
 LEFT JOIN user_personal_details up ON ap.user_personal_details = up.id
 LEFT JOIN user_company_details cp ON up.user_company_details = cp.id
-LEFT JOIN  company_types cmp ON cp.company_type = cmp.code
 LEFT JOIN claims_dependents cd ON ic.dependent = cd.id
 LEFT JOIN user_personal_details upd ON ap.user_personal_details = upd.id
-LEFT JOIN user_company_details ucd ON upd.user_company_details = ucd.id
 JOIN insurance_claims_details icd ON ic.insurance_claims_details = icd.id
 JOIN treatment tr ON icd.treatment = tr.code
 LEFT JOIN insurance_details_limit idl ON idl.insurance_policy = :policy AND idl.treatment = :treatment
 WHERE tr.code = :treatment
-  AND ucd.staff_category = 'NS'
-  AND ic.request_status = 'APPROVED' AND cmp.code = :companyCode
+  AND cp.staff_category = 'NS'
+  AND ic.request_status = 'APPROVED'
   AND YEAR(ic.created_date) = :#{#dashboardSummaryDTO.year}
   AND (:#{#dashboardSummaryDTO.month} IS NULL OR MONTH(ic.created_date) = :#{#dashboardSummaryDTO.month})
   AND (:#{#dashboardSummaryDTO.relationCategory} IS NULL OR cd.relation_category = :#{#dashboardSummaryDTO.relationCategory})
@@ -204,10 +202,7 @@ WHERE tr.code = :treatment
 """, nativeQuery = true)
     int findApprovedRequestCountByTreatment(@Param("dashboardSummaryDTO") DashboardSummaryDTO dashboardSummaryDTO,
                                             @Param("policy") String policy,
-                                            @Param("companyCode") String companyCode,
                                             @Param("treatment") String treatment);
-
-
 
     @Query(value = """
     SELECT 
@@ -236,9 +231,6 @@ WHERE tr.code = :treatment
             @Param("treatment") String treatment
     );
 
-
-
-
     @Query(value = "SELECT " +
             "ic.id AS id, " +
             "ic.request_id AS requestId, " +
@@ -257,7 +249,7 @@ WHERE tr.code = :treatment
             "ORDER BY ic.last_modified_date DESC LIMIT 7 ", nativeQuery = true)
     List<LatestUpdatedResponseDTO> getLatestUpdatedRecordSummary(@Param("userId") Long userId, @Param("requestStatus") String requestStatus);
 
-    int countByInsuranceClaimsDetails_Treatment_TreatmentCodeAndRequestStatusInAndEmployee_UserPersonalDetails_UserCompanyDetails_CompanyTypes_Code(String treatmentCode, List<Workflow> workflow,String companyCode);
+    int countByInsuranceClaimsDetails_Treatment_TreatmentCodeAndRequestStatusIn(String treatmentCode, List<Workflow> workflow);
     int countByInsuranceClaimsDetails_Treatment_TreatmentCodeAndRequestStatusInAndEmployee(String treatmentCode, List<Workflow> workflow,ApplicationUser applicationUser);
 
 }

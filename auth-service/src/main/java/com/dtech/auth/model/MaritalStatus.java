@@ -39,4 +39,8 @@ public class MaritalStatus extends Audit implements Serializable {
             inverseJoinColumns = @JoinColumn(name = "document_id",referencedColumnName = "id")
     )
     private List<Document> documents = new ArrayList<>();
+
+    @JoinColumn(name = "user_id")
+    @ManyToOne(fetch = FetchType.LAZY)
+    private ApplicationUser applicationUser;
 }

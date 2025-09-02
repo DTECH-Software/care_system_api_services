@@ -34,4 +34,5 @@ public class UserPersonalDetailsResponseDTO {
     private String maritalStatusDescription;
     private UserAddressResponseDTO userAddress;
     private UserCompanyDetailsResponseDTO userCompanyDetails;
+    private DocumentDownloadResponseDTO birthImg;
 }

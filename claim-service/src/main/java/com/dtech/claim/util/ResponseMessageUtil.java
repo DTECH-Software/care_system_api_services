@@ -44,7 +44,8 @@ public class ResponseMessageUtil {
     public final static String INSURANCE_POLICY_NOT_FOUND = "val.insurance.policy.not.found";
     public final static String INSURANCE_PERIOD_NOT_FOUND = "val.insurance.period.not.found";
     public final static String TREATMENT_NOT_FOUND = "val.treatment.not.found";
-    public final static String INSURANCE_CLAIM_REQUEST_SUBMIT_SUCCESS = "val.insurance.claim.request.submit.success";
+    public final static String INSURANCE_CLAIM_DEFAULT_REQUEST_SUBMIT_SUCCESS = "val.insurance.claim.request.default.submit.success";
+    public final static String INSURANCE_CLAIM_SPECIAL_SUBMIT_SUCCESS = "val.insurance.claim.request.special.submit.success";
     public final static String INSURANCE_CLAIM_REQUEST_VALIDATION_SUCCESS = "val.insurance.claim.request.validation.success";
     public final static String DEATH_CLAIM_REQUEST_SUBMIT_SUCCESS = "val.death.claim.request.submit.success";
     public final static String DEATH_CLAIM_REQUEST_VALIDATION_SUCCESS = "val.death.claim.request.validation.success";
@@ -68,6 +69,7 @@ public class ResponseMessageUtil {
     public final static String CLAIM_DEPENDENT_NOT_FOUND_OR_FACILITY_NOT_ELIGIBLE = "val.claim.dependent.not.eligible.or.facility.not.eligible";
     public final static String CLAIM_DEPENDENT_DEATH_REQUEST_ALREADY_PROCEED = "val.claim.dependent.death.request.already.proceed";
     public final static String CLAIM_DEPENDENT_INSURANCE_REQUEST_PARENT_AGE_LIMIT_EXCEED = "val.claim.dependent.insurance.request.parent.age.limit.exceed";
+    public final static String CLAIM_SENIOR_STAFF_AGE_LIMIT_EXCEED = "val.claim.senior.staff.age.limit.exceed";
     public final static String CLAIM_DEPENDENT_INSURANCE_REQUEST_CHILDREN_AGE_LIMIT_EXCEED = "val.claim.dependent.insurance.request.children.age.limit.exceed";
     public final static String BENEFICIARY_NOT_FOUND_OR_FACILITY_NOT_ELIGIBLE = "val.beneficiary.not.eligible.or.facility.not.eligible";
     public final static String INSURANCE_CLAIMS_REFERENCE_DETAILS_SUCCESS = "val.insurance.claims.reference.details.success";

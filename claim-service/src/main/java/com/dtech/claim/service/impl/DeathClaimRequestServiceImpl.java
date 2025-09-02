@@ -308,14 +308,14 @@ public class DeathClaimRequestServiceImpl implements DeathClaimRequestService {
                                                                                 if (DateTimeUtil.getSeconds(user.getApplicationOtpSession().getCreatedDate(), 600).after(DateTimeUtil.getCurrentDateTime()) &&
                                                                                         user.getApplicationOtpSession().getOtp().equals(deathClaimRequestDTO.getOtp()) && user.getApplicationOtpSession().isValidated()) {
 
-                                                                                    Date halfDays = DateTimeUtil.getMinuesDate(half.getValue());
+                                                                               //     Date halfDays = DateTimeUtil.getMinuesDate(half.getValue());
                                                                                     PaymentType paymentType = PaymentType.FULL;
                                                                                     BigDecimal amount = deathBeneficiary.getClaimLimit();
-                                                                                    if (deathClaimRequestDTO.getDeathDate().before(halfDays)) {
-                                                                                        paymentType = PaymentType.HALF;
-                                                                                        BigDecimal fiftyPercent = new BigDecimal(50).divide(new BigDecimal(100));
-                                                                                        amount = deathBeneficiary.getClaimLimit().multiply(fiftyPercent);
-                                                                                    }
+//                                                                                    if (deathClaimRequestDTO.getDeathDate().before(halfDays)) {
+//                                                                                        paymentType = PaymentType.HALF;
+//                                                                                        BigDecimal fiftyPercent = new BigDecimal(50).divide(new BigDecimal(100));
+//                                                                                        amount = deathBeneficiary.getClaimLimit().multiply(fiftyPercent);
+//                                                                                    }
 
                                                                                     log.info("Other document {} ",deathClaimRequestDTO.toString());
 

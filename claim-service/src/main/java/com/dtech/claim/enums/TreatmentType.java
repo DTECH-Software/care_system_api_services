@@ -12,6 +12,10 @@ public enum TreatmentType {
     INDOOR("Indoor"),
     OUTDOOR("Outpatient"),
     CRIC("Critical illness"),
+    LIFC("Life cover"),
+    ACCD("Accidental death"),
+    TPPD("Total & premanent disability"),
+    PPPD("Partial & premanent disability"),
     DEATH("Death fund");
 
     private final String description;

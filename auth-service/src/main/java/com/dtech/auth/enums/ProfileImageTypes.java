@@ -2,7 +2,8 @@ package com.dtech.auth.enums;
 
 public enum ProfileImageTypes implements DescribableEnum{
 
-    PROFILE("Profile");
+    PROFILE("Profile"),
+    BIRTH("Birth");
 
     private final String description;
     ProfileImageTypes(String description) {

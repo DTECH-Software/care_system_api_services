@@ -9,4 +9,5 @@ import lombok.EqualsAndHashCode;
 public class PolicyDocumentRequestValidatorDTO extends ChannelRequestValidatorDTO {
     @NotNull(message = "Policy is required")
     private Boolean policy;
+    private String language;
 }

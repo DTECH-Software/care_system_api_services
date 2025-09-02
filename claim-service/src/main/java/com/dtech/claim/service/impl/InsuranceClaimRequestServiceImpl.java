@@ -112,6 +112,9 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
     @Autowired
     private final InsuranceStaffCategoryPeriodRepository insuranceStaffCategoryPeriodRepository;
 
+    private static final BigDecimal NS_MAX_CLAIM_AMOUNT = BigDecimal.valueOf(800000);
+    private static final int NS_MAX_EMPLOYEE_REQUESTS = 4;
+
     @Override
     @Transactional
     public ResponseEntity<ApiResponse<Object>> insuranceClaimRequest(ClaimRequestDTO claimRequestDTO, Locale locale) {
@@ -170,6 +173,21 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
                             responseUtil.error(null, 1050,
                                     messageSource.getMessage(ResponseMessageUtil.DEPENDENT_NOT_ELIGIBLE_TO_CLAIM_REQUEST, null, locale))
                     );
+                }else if(user.getUserPersonalDetails().getUserCompanyDetails().getStaffCategories().getCode().equals("SNR")){
+                    log.info("Senior staff cover age limit exceeded {} ",user.getUserPersonalDetails().getUserCompanyDetails().getStaffCategories().getCode());
+
+                    int trAge = 70;
+                    if(claimRequestDTO.getTreatment().equals(TreatmentType.CRIC.name())){
+                        trAge  = 65;
+                    }
+
+                    int age = DateTimeUtil.getAge(String.valueOf(user.getUserPersonalDetails().getDob()));
+                    log.info("Senior staff age {} ", age);
+                    if (trAge > 70) {
+                        log.info("Senior staff age {} ", age);
+                        return ResponseEntity.ok().body(responseUtil.error(null, 1047, messageSource.getMessage(ResponseMessageUtil.CLAIM_SENIOR_STAFF_AGE_LIMIT_EXCEED, new Object[]{trAge}, locale)));
+                    }
+
                 }
 
                 return commonParameterRepository.findByCode(CommonParam.INSURANCE_CLAIM_REQUEST_PERIOD.name()).map((param) -> {
@@ -278,22 +296,34 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
                                                     }
 
                                                     if (isCRIC && "NS".equals(staffCategoryCode)) {
-                                                        sumOfClaims = insuranceClaimsRequestRepository.
-                                                                getSumRequestAmountByEmployeeAndTreatmentAndStatusCompany(user,
-                                                                        claimRequestDTO.getTreatment(),
-                                                                        insuranceYear.getId(),
-                                                                        user.getUserPersonalDetails().getUserCompanyDetails().getCompanyTypes().getCode(),
-                                                                        List.of(Workflow.APPROVED));
                                                         log.info("Dependent eligible due to CRIC {} ", sumOfClaims);
                                                         int requestEmp = insuranceClaimsRequestRepository.
-                                                                countByInsuranceClaimsDetails_Treatment_TreatmentCodeAndRequestStatusInAndEmployee_UserPersonalDetails_UserCompanyDetails_CompanyTypes_Code(TreatmentType.CRIC.name(), List.of(Workflow.APPROVED),user.getUserPersonalDetails().getUserCompanyDetails().getCompanyTypes().getCode());
+                                                                countByInsuranceClaimsDetails_Treatment_TreatmentCodeAndRequestStatusIn(TreatmentType.CRIC.name(), List.of(Workflow.APPROVED));
                                                         log.info("Dependent not eligible due to CRIC {} {}", sumOfClaims, requestEmp);
-                                                        sumOfClaims = sumOfClaims != null ? sumOfClaims : BigDecimal.ZERO;
-                                                        if (requestEmp > 4 || sumOfClaims.compareTo(limit) > 0) {
-                                                            log.info("Invalid claim limit {} {} ", sumOfClaims, requestEmp);
-                                                            return ResponseEntity.ok().body(responseUtil.error(null, 1034, messageSource.getMessage(ResponseMessageUtil.STAFF_CLAIM_LIMIT_OR_OUT_OF_EMPLOYEE_REQUEST_EXCEED, null, locale)));
 
+                                                        boolean exists = insuranceClaimsRequestRepository.
+                                                                existsByEmployeeAndInsuranceClaimsDetails_Treatment_TreatmentCodeAndRequestStatus(user,
+                                                                        TreatmentType.CRIC.name(),
+                                                                        Workflow.APPROVED);
+
+                                                        if (requestEmp > NS_MAX_EMPLOYEE_REQUESTS
+                                                                || exists
+                                                                || claimRequestDTO.getRequestAmount().compareTo(NS_MAX_CLAIM_AMOUNT) > 0) {
+
+                                                            return ResponseEntity.ok().body(
+                                                                    responseUtil.error(
+                                                                            null,
+                                                                            1034,
+                                                                            messageSource.getMessage(
+                                                                                    ResponseMessageUtil.STAFF_CLAIM_LIMIT_OR_OUT_OF_EMPLOYEE_REQUEST_EXCEED,
+                                                                                    null,
+                                                                                    locale
+                                                                            )
+                                                                    )
+                                                            );
                                                         }
+                                                        limit = NS_MAX_CLAIM_AMOUNT;
+                                                        sumOfClaims = null;
                                                     } else if (isCRIC && "SNR".equals(staffCategoryCode)) {
                                                         log.info("Dependent eligible due to CRIC {} ", sumOfClaims);
                                                         int requestEmp = insuranceClaimsRequestRepository.
@@ -330,7 +360,18 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
                                                                 ApprovalWorkFlow approvalWorkFlow = updateApprovalData();
                                                                 String claimRequestId = saveClaimRequest(claimRequestDTO, user, claimsDependents, treatment, tc, approvalWorkFlow, insuranceYear, insuranceDetailsLimit, treatmentQuarter);
                                                                 notifyMessage(user.getPrimaryMobile(), claimRequestId);
-                                                                return ResponseEntity.ok().body(responseUtil.success(null, messageSource.getMessage(ResponseMessageUtil.INSURANCE_CLAIM_REQUEST_SUBMIT_SUCCESS, null, locale)));
+
+                                                                String messageUtil = ResponseMessageUtil.INSURANCE_CLAIM_DEFAULT_REQUEST_SUBMIT_SUCCESS;
+
+                                                                if(claimRequestDTO.getTreatment().equals(TreatmentType.OUTDOOR.name()) ||
+                                                                        claimRequestDTO.getTreatment().equals(TreatmentType.LIFC.name()) ||
+                                                                        claimRequestDTO.getTreatment().equals(TreatmentType.TPPD.name()) ||
+                                                                        claimRequestDTO.getTreatment().equals(TreatmentType.PPPD.name()) ||
+                                                                        claimRequestDTO.getTreatment().equals(TreatmentType.ACCD.name())){
+
+                                                                    messageUtil  = ResponseMessageUtil.INSURANCE_CLAIM_SPECIAL_SUBMIT_SUCCESS;
+                                                                }
+                                                                return ResponseEntity.ok().body(responseUtil.success(null, messageSource.getMessage(messageUtil, null, locale)));
                                                             } else {
                                                                 log.info("Otp request validation fail otp or invalid session {}", user.getApplicationOtpSession());
                                                                 return ResponseEntity.ok().body(responseUtil.error(null, 1016, messageSource.getMessage(ResponseMessageUtil.OTP_INVALID_OR_SESSION_TIME_OUT, null, locale)));
@@ -377,14 +418,34 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
                                                         }
 
                                                         if (isCRIC && "NS".equals(staffCategoryCode)) {
-                                                            log.info("Dependent not eligible due to CRIC");
+                                                            log.info("Dependent eligible due to CRIC {} ", sumOfClaims);
                                                             int requestEmp = insuranceClaimsRequestRepository.
-                                                                    countByInsuranceClaimsDetails_Treatment_TreatmentCodeAndRequestStatusInAndEmployee_UserPersonalDetails_UserCompanyDetails_CompanyTypes_Code(TreatmentType.CRIC.name(), List.of(Workflow.APPROVED),user.getUserPersonalDetails().getUserCompanyDetails().getCompanyTypes().getCode());
-                                                            if (requestEmp > 4 || sumOfClaims.compareTo(insuranceDetailsLimit.getGlobalLimit()) > 0) {
-                                                                log.info("Invalid claim limit {} {} ", sumOfClaims, requestEmp);
-                                                                return ResponseEntity.ok().body(responseUtil.error(null, 1034, messageSource.getMessage(ResponseMessageUtil.STAFF_CLAIM_LIMIT_OR_OUT_OF_EMPLOYEE_REQUEST_EXCEED, null, locale)));
+                                                                    countByInsuranceClaimsDetails_Treatment_TreatmentCodeAndRequestStatusIn(TreatmentType.CRIC.name(), List.of(Workflow.APPROVED));
+                                                            log.info("Dependent not eligible due to CRIC {} {}", sumOfClaims, requestEmp);
 
+                                                            boolean exists = insuranceClaimsRequestRepository.
+                                                                    existsByEmployeeAndInsuranceClaimsDetails_Treatment_TreatmentCodeAndRequestStatus(user,
+                                                                            TreatmentType.CRIC.name(),
+                                                                            Workflow.APPROVED);
+
+                                                            if (requestEmp > NS_MAX_EMPLOYEE_REQUESTS
+                                                                    || exists
+                                                                    || claimRequestDTO.getRequestAmount().compareTo(NS_MAX_CLAIM_AMOUNT) > 0) {
+
+                                                                return ResponseEntity.ok().body(
+                                                                        responseUtil.error(
+                                                                                null,
+                                                                                1034,
+                                                                                messageSource.getMessage(
+                                                                                        ResponseMessageUtil.STAFF_CLAIM_LIMIT_OR_OUT_OF_EMPLOYEE_REQUEST_EXCEED,
+                                                                                        null,
+                                                                                        locale
+                                                                                )
+                                                                        )
+                                                                );
                                                             }
+                                                            insuranceDetailsLimit.setGlobalLimit(NS_MAX_CLAIM_AMOUNT);
+                                                            sumOfClaims = null;
 
                                                         }
 
@@ -412,7 +473,19 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
                                                                 updateApplicationUserOtpData(user, user.getApplicationOtpSession());
                                                                 String claimRequestId = saveClaimRequest(claimRequestDTO, user, claimsDependents, treatment, tc, approvalWorkFlow, insuranceYear, insuranceDetailsLimit, treatmentQuarter);
                                                                 notifyMessage(user.getPrimaryMobile(), claimRequestId);
-                                                                return ResponseEntity.ok().body(responseUtil.success(null, messageSource.getMessage(ResponseMessageUtil.INSURANCE_CLAIM_REQUEST_SUBMIT_SUCCESS, null, locale)));
+
+                                                                String messageUtil = ResponseMessageUtil.INSURANCE_CLAIM_DEFAULT_REQUEST_SUBMIT_SUCCESS;
+
+                                                                if(claimRequestDTO.getTreatment().equals(TreatmentType.OUTDOOR.name()) ||
+                                                                        claimRequestDTO.getTreatment().equals(TreatmentType.LIFC.name()) ||
+                                                                        claimRequestDTO.getTreatment().equals(TreatmentType.TPPD.name()) ||
+                                                                        claimRequestDTO.getTreatment().equals(TreatmentType.PPPD.name()) ||
+                                                                        claimRequestDTO.getTreatment().equals(TreatmentType.ACCD.name())){
+
+                                                                     messageUtil  = ResponseMessageUtil.INSURANCE_CLAIM_SPECIAL_SUBMIT_SUCCESS;
+                                                                }
+
+                                                                return ResponseEntity.ok().body(responseUtil.success(null, messageSource.getMessage(messageUtil, null, locale)));
                                                             } else {
                                                                 log.info("Otp request validation fail otp or invalid session {}", user.getApplicationOtpSession());
                                                                 return ResponseEntity.ok().body(responseUtil.error(null, 1016, messageSource.getMessage(ResponseMessageUtil.OTP_INVALID_OR_SESSION_TIME_OUT, null, locale)));
@@ -582,10 +655,10 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
 
                 int currentYear = DateTimeUtil.getCurrentYear();
                 log.info("Current year {}", currentYear);
-                int year = DateTimeUtil.getYear(applicationUser.getUserPersonalDetails().getUserCompanyDetails().getPermanentDate());
-                int month = DateTimeUtil.getMonth(applicationUser.getUserPersonalDetails().getUserCompanyDetails().getPermanentDate());
-                log.info("Year {}", year);
-                log.info("Month {}", month);
+//                int year = DateTimeUtil.getYear(applicationUser.getUserPersonalDetails().getUserCompanyDetails().getPermanentDate());
+//                int month = DateTimeUtil.getMonth(applicationUser.getUserPersonalDetails().getUserCompanyDetails().getPermanentDate());
+//                log.info("Year {}", year);
+//                log.info("Month {}", month);
 
                 BigDecimal funLimit = BigDecimal.valueOf(0.00);
 
@@ -603,7 +676,8 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
 
                         Date permentDateTime = applicationUser.getUserPersonalDetails().getUserCompanyDetails().getPermanentDate();
 
-                        InsuranceQuarter treatmentQuarter = insuranceQuarterRepository.findByDateWithinRangeAndCodeWithLimit(insuranceDetailsLimit, TreatmentCategory.OTHER.name(), permentDateTime).orElse(null);
+                        InsuranceQuarter treatmentQuarter = insuranceQuarterRepository.
+                                findByDateWithinRangeAndCodeWithLimit(insuranceDetailsLimit, TreatmentCategory.OTHER.name(), permentDateTime).orElse(null);
 
                         BigDecimal maxLimit = BigDecimal.valueOf(0.00);
 

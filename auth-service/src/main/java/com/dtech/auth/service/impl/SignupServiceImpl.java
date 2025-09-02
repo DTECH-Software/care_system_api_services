@@ -218,7 +218,7 @@ public class SignupServiceImpl implements SignupService {
                     log.info("Signup exists mobile {}", userPersonalDetailsRequestDTO.getMobileNo());
                     return ResponseEntity.ok().body(responseUtil.error(null, 1025, messageSource.getMessage(ResponseMessageUtil.PRIMARY_MOBILE_ALREADY_IN_USE, null, locale)));
                 } else if (existsEmail) {
-                    log.info("Signup exists email {}", userPersonalDetailsRequestDTO.getMobileNo());
+                    log.info("Signup exists email {}", userPersonalDetailsRequestDTO.getEmail());
                     return ResponseEntity.ok().body(responseUtil.error(null, 1026, messageSource.getMessage(ResponseMessageUtil.PRIMARY_EMAIL_ALREADY_IN_USE, null, locale)));
                 }
 

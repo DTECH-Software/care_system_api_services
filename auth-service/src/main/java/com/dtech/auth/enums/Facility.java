@@ -9,7 +9,7 @@ package com.dtech.auth.enums;
 
 public enum Facility implements DescribableEnum{
     INSURANCE("Insurance"),
-    DEATH("Death"),
+    DEATH("DDF"),
     BOTH("Both");
 
     private final String description;

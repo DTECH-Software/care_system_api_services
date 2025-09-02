@@ -11,24 +11,26 @@ package com.dtech.claim.service.impl;
 import com.dtech.claim.dto.request.DashboardSummaryDTO;
 import com.dtech.claim.dto.response.*;
 import com.dtech.claim.enums.*;
-import com.dtech.claim.model.InsuranceYear;
+import com.dtech.claim.model.*;
 import com.dtech.claim.repository.*;
 import com.dtech.claim.service.DashboardService;
+import com.dtech.claim.util.DateTimeUtil;
 import com.dtech.claim.util.ResponseMessageUtil;
 import com.dtech.claim.util.ResponseUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.MessageSource;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Optional;
+import java.util.*;
 
 @Service
 @Log4j2
@@ -76,6 +78,7 @@ public class DashboardServiceImpl implements DashboardService {
                             findSummary(dashboardSummaryDTO, user.getId(), user.getUserPersonalDetails().getUserCompanyDetails().getInsurancePolicy().getCode());
                     log.info("insurance claims counts success");
 
+                    System.out.println("test" + user.getUserPersonalDetails().getUserCompanyDetails().getInsurancePolicy().getCode());
                     AmountResponseDTO indoor = insuranceClaimsRequestRepository.findSummaryByFacility(dashboardSummaryDTO, user.getId(),
                             user.getUserPersonalDetails().getUserCompanyDetails().getInsurancePolicy().getCode(), TreatmentType.INDOOR.name());
                     countOfInsurance.setIndoor(indoor);
@@ -91,7 +94,7 @@ public class DashboardServiceImpl implements DashboardService {
                     if (user.getUserPersonalDetails().getUserCompanyDetails().getStaffCategories().getCode().equals("NS")) {
                         countOfInsurance.setCritical(null);
                         int requestApprovedCount = insuranceClaimsRequestRepository.findApprovedRequestCountByTreatment(dashboardSummaryDTO,
-                                user.getUserPersonalDetails().getUserCompanyDetails().getInsurancePolicy().getCode(),user.getUserPersonalDetails().getUserCompanyDetails().getCompanyTypes().getCode(),TreatmentType.CRIC.name());
+                                user.getUserPersonalDetails().getUserCompanyDetails().getInsurancePolicy().getCode(),TreatmentType.CRIC.name());
                         i = 4 - requestApprovedCount;
                         i= Math.max(i, 0);
                     } else if(user.getUserPersonalDetails().getUserCompanyDetails().getStaffCategories().getCode().equals("SNR")){

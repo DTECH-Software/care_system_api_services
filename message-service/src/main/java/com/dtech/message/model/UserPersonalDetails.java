@@ -8,6 +8,7 @@
 package com.dtech.message.model;
 
 import com.dtech.message.enums.Gender;
+import com.dtech.message.enums.MaritalStatus;
 import com.dtech.message.enums.Status;
 import com.dtech.message.enums.Title;
 import jakarta.persistence.*;
@@ -60,7 +61,8 @@ public class UserPersonalDetails extends Audit implements Serializable {
     private Gender gender;
 
     @Column(name = "marital_status",nullable = false)
-    private boolean maritalStatus;
+    @Enumerated(EnumType.STRING)
+    private MaritalStatus maritalStatus;
 
     @Column(name = "dob",nullable = false)
     @Temporal(TemporalType.DATE)

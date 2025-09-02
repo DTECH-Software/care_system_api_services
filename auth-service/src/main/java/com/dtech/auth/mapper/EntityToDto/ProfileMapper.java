@@ -54,6 +54,10 @@ public class ProfileMapper {
                 applicationUserDetailsResponseDTO.setProfileImg(documentDownloadResponseDTO);
                 log.info("application user get profile img downloaded");
             }
+            if(applicationUser.getUserPersonalDetails().getBirthImg() != null) {
+                DocumentDownloadResponseDTO documentDownloadResponseDTO = modelMapper.map(applicationUser.getUserPersonalDetails().getBirthImg(), DocumentDownloadResponseDTO.class);
+                applicationUserDetailsResponseDTO.getUserPersonalDetails().setBirthImg(documentDownloadResponseDTO);
+            }
             if(applicationUser.getUserPersonalDetails().getIsTemp()){
                 applicationUserDetailsResponseDTO.getUserPersonalDetails().setTempId(applicationUser.getUserPersonalDetails().getTempId());
             }

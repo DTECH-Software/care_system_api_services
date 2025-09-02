@@ -82,13 +82,9 @@ public class ProfileServiceImpl implements ProfileService {
 
     @Autowired
     private final DocumentStoreRepository documentStoreRepository;
-    @Autowired
-    private MaritalStatusRepository maritalStatusRepository;
-    @Autowired
-    private DocumentRepository documentRepository;
 
     @Autowired
-    private final EntityManager entityManager;
+    private final DocumentRepository documentRepository;
 
 
     @Override
@@ -325,8 +321,16 @@ public class ProfileServiceImpl implements ProfileService {
                                 log.info("User profile image upload failed");
                                 return ResponseEntity.ok().body(responseUtil.error(null, 1039, messageSource.getMessage(ResponseMessageUtil.PROFILE_IMAGE_UPLOAD_FAILED, null, locale)));
                             }
-                            user.setProfileImg(uploadedDocument);
-                            log.info("set image to profile image");
+
+                            if(profileImageUpdateRequestDTO.getType().equals(ProfileImageTypes.PROFILE.name())) {
+                                user.setProfileImg(uploadedDocument);
+                                log.info("set image to profile image");
+                            }else {
+                                user.getUserPersonalDetails().setBirthImg(uploadedDocument);
+                                log.info("set image to birth image");
+                            }
+
+                            log.info("set image");
                             applicationUserRepository.saveAndFlush(user);
                             log.info("User profile update successful {} ", user.getUsername());
                             DocumentDownloadResponseDTO documentDownloadResponseDTO = gson.fromJson(gson.toJson(uploadedDocument), DocumentDownloadResponseDTO.class);
@@ -550,6 +554,7 @@ public class ProfileServiceImpl implements ProfileService {
 
                 com.dtech.auth.model.MaritalStatus maritalStatus = new com.dtech.auth.model.MaritalStatus();
                 maritalStatus.setStatus(Workflow.UNDER_REVIEW);
+                maritalStatus.setApplicationUser(user);
                 log.info(uploadSupportingDocument.stream().toList());
                 maritalStatus.setDocuments(uploadSupportingDocument);
                 maritalStatus.setMaritalStatus(maritalStatusRequestDTO.getRequestType().equals(RequestType.MARRIED.name()) ? MaritalStatus.MARRIED : MaritalStatus.UNMARRIED);

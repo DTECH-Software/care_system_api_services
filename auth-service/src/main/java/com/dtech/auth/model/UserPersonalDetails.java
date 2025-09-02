@@ -89,4 +89,8 @@ public class UserPersonalDetails extends Audit implements Serializable {
     @Column(name = "temp_id")
     private String tempId;
 
+    @OneToOne(fetch = FetchType.EAGER,cascade = CascadeType.REFRESH,targetEntity = Document.class)
+    @JoinColumn(name = "birth_img",referencedColumnName = "id")
+    private Document birthImg;
+
 }

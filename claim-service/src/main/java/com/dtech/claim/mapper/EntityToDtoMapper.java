@@ -66,7 +66,24 @@ public class EntityToDtoMapper {
             DeathClaimRequestResponseDTO deathClaimRequestResponseDTO = modelMapper.map(deathClaimRequest, DeathClaimRequestResponseDTO.class);
             deathClaimRequestResponseDTO.setRequestStatusDescription(Workflow.valueOf(deathClaimRequestResponseDTO.getRequestStatus()).getDescription());
             deathClaimRequestResponseDTO.setPaymentTypeDescription(PaymentType.valueOf(deathClaimRequestResponseDTO.getPaymentType()).getDescription());
-            deathClaimRequestResponseDTO.getClaimsDependents().setRelationCategoryDescription(RelationCategory.valueOf(deathClaimRequestResponseDTO.getClaimsDependents().getRelationCategory().name()).getDescription());
+
+            if(deathClaimRequestResponseDTO.getClaimsDependents() != null){
+                deathClaimRequestResponseDTO.getClaimsDependents().setRelationCategoryDescription(RelationCategory.valueOf(deathClaimRequestResponseDTO.getClaimsDependents().getRelationCategory().name()).getDescription());
+
+            }
+
+            if(deathClaimRequest.getApprovalWorkFlows() != null) {
+
+                List<ApprovalWorkFlow> approvalWorkFlows = deathClaimRequest.getApprovalWorkFlows();
+
+                approvalWorkFlows.stream().filter(approvalWorkFlow -> approvalWorkFlow.getApprovalLevel().equals(deathClaimRequest.getApprovalLevel()))
+                        .forEach(val -> {
+                            deathClaimRequestResponseDTO.setRemark(val.getRejectedRemark());
+                            deathClaimRequestResponseDTO.setApprovedDateTime(val.getApprovedDate());
+                        });
+
+            }
+
 //            List<DocumentDownloadResponseDTO> collect = deathClaimRequest.getDocuments().stream().map((document -> {
 //                log.info("inside document mapper death history {} ",document);
 //                return new DocumentDownloadResponseDTO(String.valueOf(document.getType()), document.getFileName(), document.getFileType(),document.getDoc());
