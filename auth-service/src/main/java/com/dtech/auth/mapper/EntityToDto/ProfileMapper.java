@@ -119,6 +119,7 @@ public class ProfileMapper {
                 claimDependentDetailsResponseDTO.setRemark(dependents.getRemark());
                 claimDependentDetailsResponseDTO.setLiveStatus(dependents.getLiveStatus());
                 claimDependentDetailsResponseDTO.setEligibleFacility(ifNotOrEmpty(String.valueOf(dependents.getEligibleFacility())));
+                claimDependentDetailsResponseDTO.setEligibleFacilityDescription(ifNotOrEmpty(String.valueOf(dependents.getEligibleFacility().getDescription())));
                 log.info("claim dependent details call get image method");
                 List<DocumentDownloadResponseDTO> collect = dependents.getDocuments().stream().map((document -> {
                     log.info("inside document mapper {} ",document);

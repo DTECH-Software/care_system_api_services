@@ -3,7 +3,7 @@ package com.dtech.claim.enums;
 public enum ClaimType {
 
     MEDICAL("Medical"),
-    DEATH("Death donation fund");
+    DEATH("Death donation funds");
 
     private final String description;
 

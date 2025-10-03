@@ -35,6 +35,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
@@ -133,7 +134,7 @@ public class ProfileServiceImpl implements ProfileService {
 
                         for (ClaimDependentDetailsRequestDTO detailsRequestDTO : claimDependentRequestDTO.getDependents()) {
 
-                            if (applicationUser.getUserPersonalDetails().equals(MaritalStatus.UNMARRIED)) {
+                            if (applicationUser.getUserPersonalDetails().getMaritalStatus().equals(MaritalStatus.UNMARRIED)) {
                                 if (detailsRequestDTO.getRelationCategory().equalsIgnoreCase(RelationCategory.WIFE.name())
                                         || detailsRequestDTO.getRelationCategory().equalsIgnoreCase(RelationCategory.HUSBAND.name())
                                         || detailsRequestDTO.getRelationCategory().equalsIgnoreCase(RelationCategory.FATHER_IN_LAW.name())
@@ -571,5 +572,46 @@ public class ProfileServiceImpl implements ProfileService {
             throw e;
         }
     }
+
+    @Scheduled(fixedRate = 10000)
+    @Transactional
+    public void updateEligibleFacility() {
+        log.info("User profile update eligible facility schedule call");
+        List<ClaimsDependents> allByStatus = claimDependentsRepository.findAllByStatusIn(List.of(Workflow.APPROVED, Workflow.UNDER_REVIEW, Workflow.REJECTED));
+
+        allByStatus.forEach(de -> {
+
+            if(de.getRelationCategory().equals(RelationCategory.CHILD)){
+                int age = DateTimeUtil.getAge(String.valueOf(de.getDob()));
+                if(age > 25){
+                    de.setEligibleFacility(Facility.DEATH);
+                    claimDependentsRepository.saveAndFlush(de);
+                }
+            }
+
+            if(de.getApplicationUser().getUserPersonalDetails().getUserCompanyDetails()
+                    .getStaffCategories().getCode().equals("NS") &&
+                    de.getApplicationUser().getUserPersonalDetails().getMaritalStatus().equals(MaritalStatus.UNMARRIED)
+            && de.getDependentCategory().equals(DependentCategory.PARENTS)){
+                int age = DateTimeUtil.getAge(String.valueOf(de.getDob()));
+                if(age > 65){
+                    de.setEligibleFacility(Facility.DEATH);
+                    claimDependentsRepository.saveAndFlush(de);
+                }
+            }
+
+            if(!de.getApplicationUser().getUserPersonalDetails().getUserCompanyDetails()
+                    .getStaffCategories().getCode().equals("NS")){
+                int age = DateTimeUtil.getAge(String.valueOf(de.getDob()));
+                if(age > 70){
+                    de.setEligibleFacility(Facility.DEATH);
+                    claimDependentsRepository.saveAndFlush(de);
+                }
+            }
+
+        });
+
+    }
+
 
 }

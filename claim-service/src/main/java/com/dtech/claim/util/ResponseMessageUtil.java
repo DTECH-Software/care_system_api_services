@@ -84,4 +84,6 @@ public class ResponseMessageUtil {
     public final static String DASHBOARD_SUMMARY_SUCCESS  = "val.dashboard.summary.success";
     public final static String INSURANCE_CLAIMS_REQUEST_DETAILS_NOT_FOUND_BY_ID  = "val.insurance.claims.request.details.not.found.by.id";
     public final static String DEATH_CLAIMS_REQUEST_DETAILS_NOT_FOUND_BY_ID  = "val.death.claims.request.details.not.found.by.id";
+    public final static String SENIOR_STAFF_CANT_REQUEST_UP_TO_60_AGE = "val.senior.staff.cant.request.up.to60.age";
+    public final static String SENIOR_STAFF_CANT_REQUEST_UP_TO_70_AGE = "val.senior.staff.cant.request.up.to70.age";
 }
