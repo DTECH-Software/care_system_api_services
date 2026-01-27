@@ -311,7 +311,7 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
                                                 sumOfClaims = insuranceClaimsRequestRepository.
                                                         getSumRequestAmountByEmployeeAndTreatmentAndStatus(user,
                                                                 claimRequestDTO.getTreatment(),
-//                                                                insuranceYear.getId(),
+                                                                insuranceYear.getId(),
                                                                 List.of(Workflow.APPROVED));
 
                                                 log.info("Already claims {} sum of claims ", sumOfClaims);
@@ -480,7 +480,7 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
                                                                 getSumRequestAmountByEmployeeAndTreatmentAndTreatmentCategoryAndStatus(user,
                                                                         claimRequestDTO.getTreatment(),
                                                                         claimRequestDTO.getTreatmentCategory(),
-//                                                                        insuranceYear.getId(),
+                                                                        insuranceYear.getId(),
                                                                         List.of(Workflow.APPROVED));
 
                                                         if (sumOfClaimsCategory != null) {
@@ -729,12 +729,21 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
         try {
             log.info("Insurance ref {}", insuranceDetailsLimit.getId());
 
+            Set<String> processedCategories = new HashSet<>();
+            Date currentDate = DateTimeUtil.getCurrentDateTime();
+
             for (InsuranceQuarter insuranceQuarter : insuranceDetailsLimit.getInsuranceQuarters()) {
 
                 String category = insuranceQuarter.getTreatmentCategory().getCode();
+                if (!processedCategories.add(category)) {
+                    continue;
+                }
                 log.info("Insurance category {}", category);
                 String treatmentCode = insuranceDetailsLimit.getTreatment().getTreatmentCode();
                 Long insurancePeriod = insuranceDetailsLimit.getInsuranceStaffCategoryPeriod().getId();
+                InsuranceQuarter currentQuarter = insuranceQuarterRepository
+                        .findByDateWithinRangeAndCodeWithLimit(insuranceDetailsLimit, category, currentDate)
+                        .orElse(null);
 
                 int currentYear = DateTimeUtil.getCurrentYear();
                 log.info("Current year {}", currentYear);
@@ -757,6 +766,7 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
                     BigDecimal sum = insuranceClaimsRequestRepository.getSumRequestAmountByEmployeeAndTreatmentAndStatus(
                             applicationUser,
                             treatmentCode,
+                            insurancePeriod,
                             List.of(Workflow.APPROVED)
                     );
 
@@ -766,10 +776,7 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
                     if (insuranceDetailsLimit.getIsQuarter()) {
                         log.info("First request {} ", insuranceQuarter.getQuarterLimit());
 
-                        Date permentDateTime = applicationUser.getUserPersonalDetails().getUserCompanyDetails().getPermanentDate();
-
-                        InsuranceQuarter treatmentQuarter = insuranceQuarterRepository.
-                                findByDateWithinRangeAndCodeWithLimit(insuranceDetailsLimit, TreatmentCategory.OTHER.name(), permentDateTime).orElse(null);
+                        InsuranceQuarter treatmentQuarter = currentQuarter;
 
                         BigDecimal maxLimit = BigDecimal.valueOf(0.00);
 
@@ -827,21 +834,21 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
                             List.of(Workflow.APPROVED)
                     );
 
-                    Date permentDateTime = applicationUser.getUserPersonalDetails().getUserCompanyDetails().getPermanentDate();
-
                     InsuranceQuarter treatmentQuarter = insuranceQuarterRepository.
-                            findByDateWithinRangeAndCodeWithLimit(insuranceDetailsLimit, TreatmentCategory.OTHER.name(), permentDateTime).orElse(null);
+                            findByDateWithinRangeAndCodeWithLimit(insuranceDetailsLimit, TreatmentCategory.OTHER.name(), currentDate).orElse(null);
+
+                    InsuranceQuarter categoryQuarter = currentQuarter != null ? currentQuarter : insuranceQuarter;
 
                     if (treatmentQuarter != null) {
 
-                        BigDecimal maxLimit = insuranceQuarter.getQuarterLimit();
+                        BigDecimal maxLimit = categoryQuarter.getQuarterLimit();
 
-                        if (treatmentQuarter.getQuarterLimit().compareTo(insuranceQuarter.getQuarterLimit()) < 0) {
+                        if (treatmentQuarter.getQuarterLimit().compareTo(categoryQuarter.getQuarterLimit()) < 0) {
                             maxLimit = treatmentQuarter.getQuarterLimit();
                         }
 
                         if (gSum == null) {
-                            funLimit = treatmentQuarter.getQuarterLimit();
+                            funLimit = maxLimit;
                         } else {
                             log.info("Remaining amount insurance ref data {} {} ", gSum, maxLimit);
                             BigDecimal gFLimit = treatmentQuarter.getQuarterLimit();
@@ -853,8 +860,8 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
                                 BigDecimal sum = insuranceClaimsRequestRepository.getSumRequestAmountByEmployeeAndTreatmentAndTreatmentCategoryAndStatus(
                                         applicationUser,
                                         treatmentCode,
-                                        insuranceQuarter.getTreatmentCategory().getCode(),
-//                                        insurancePeriod,
+                                        categoryQuarter.getTreatmentCategory().getCode(),
+                                        insurancePeriod,
                                         List.of(Workflow.APPROVED)
                                 );
 
@@ -896,10 +903,10 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
 
 
                     } else {
-                        BigDecimal maxLimit = insuranceQuarter.getQuarterLimit();
+                        BigDecimal maxLimit = categoryQuarter.getQuarterLimit();
 
                         if (gSum == null) {
-                            funLimit = insuranceQuarter.getQuarterLimit();
+                            funLimit = categoryQuarter.getQuarterLimit();
                         } else {
                             log.info("Remaining amount insurance ref data {} {} ", gSum, maxLimit);
                             BigDecimal gFLimit = insuranceDetailsLimit.getGlobalLimit();
@@ -911,8 +918,8 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
                                 BigDecimal sum = insuranceClaimsRequestRepository.getSumRequestAmountByEmployeeAndTreatmentAndTreatmentCategoryAndStatus(
                                         applicationUser,
                                         treatmentCode,
-                                        insuranceQuarter.getTreatmentCategory().getCode(),
-//                                      insurancePeriod,
+                                        categoryQuarter.getTreatmentCategory().getCode(),
+                                        insurancePeriod,
                                         List.of(Workflow.APPROVED)
                                 );
 

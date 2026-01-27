@@ -27,7 +27,8 @@ public interface InsuranceClaimsRequestRepository extends JpaRepository<Insuranc
 
     @Query("SELECT SUM(ic.approvedAmount) FROM InsuranceClaimsRequest ic " +
             "LEFT OUTER JOIN InsuranceClaimsDetails icd ON ic.insuranceClaimsDetails.id = icd.id " +
-            "LEFT OUTER JOIN InsuranceStaffCategoryPeriod ip ON ic.insuranceClaimsDetails.insuranceStaffCategoryPeriod.id = ip.id " +
+            "LEFT OUTER JOIN InsuranceDetailsLimit idl ON idl.id = ic.insuranceDetailsLimit.id " +
+            "LEFT OUTER JOIN InsuranceStaffCategoryPeriod ip ON idl.insuranceStaffCategoryPeriod.id = ip.id " +
             "WHERE ic.employee = :employee " +
             "AND icd.treatment.treatmentCode = :treatment " +
             "AND ip.id = :insurancePeriod " +
@@ -66,20 +67,21 @@ public interface InsuranceClaimsRequestRepository extends JpaRepository<Insuranc
             @Param("company") String company,
             @Param("statuses") List<Workflow> statuses);
 
-//    @Query("SELECT SUM(ic.approvedAmount) FROM InsuranceClaimsRequest ic " +
-//            "LEFT OUTER JOIN InsuranceClaimsDetails icd ON ic.insuranceClaimsDetails.id = icd.id " +
-//            "LEFT OUTER JOIN InsuranceStaffCategoryPeriod ip ON ic.insuranceClaimsDetails.insuranceStaffCategoryPeriod.id = ip.id " +
-//            "WHERE ic.employee = :employee " +
-//            "AND icd.treatment.treatmentCode = :treatment " +
-//            "AND icd.treatmentCategory.code = :treatmentCategory " +
-//            "AND ip.id = :insurancePeriod " +
-//            "AND ic.requestStatus IN :statuses")
-//    BigDecimal getSumRequestAmountByEmployeeAndTreatmentAndTreatmentCategoryAndStatus(
-//            @Param("employee") ApplicationUser employee,
-//            @Param("treatment") String treatment,
-//            @Param("treatmentCategory") String treatmentCategory,
-//            @Param("insurancePeriod") Long insurancePeriod,
-//            @Param("statuses") List<Workflow> statuses);
+    @Query("SELECT SUM(ic.approvedAmount) FROM InsuranceClaimsRequest ic " +
+            "LEFT OUTER JOIN InsuranceClaimsDetails icd ON ic.insuranceClaimsDetails.id = icd.id " +
+            "LEFT OUTER JOIN InsuranceDetailsLimit idl ON idl.id = ic.insuranceDetailsLimit.id " +
+            "LEFT OUTER JOIN InsuranceStaffCategoryPeriod ip ON idl.insuranceStaffCategoryPeriod.id = ip.id " +
+            "WHERE ic.employee = :employee " +
+            "AND icd.treatment.treatmentCode = :treatment " +
+            "AND icd.treatmentCategory.code = :treatmentCategory " +
+            "AND ip.id = :insurancePeriod " +
+            "AND ic.requestStatus IN :statuses")
+    BigDecimal getSumRequestAmountByEmployeeAndTreatmentAndTreatmentCategoryAndStatus(
+            @Param("employee") ApplicationUser employee,
+            @Param("treatment") String treatment,
+            @Param("treatmentCategory") String treatmentCategory,
+            @Param("insurancePeriod") Long insurancePeriod,
+            @Param("statuses") List<Workflow> statuses);
 
 
         @Query("SELECT SUM(ic.approvedAmount) FROM InsuranceClaimsRequest ic " +
