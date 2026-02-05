@@ -96,6 +96,20 @@ public interface InsuranceClaimsRequestRepository extends JpaRepository<Insuranc
             @Param("treatmentCategory") String treatmentCategory,
             @Param("statuses") List<Workflow> statuses);
 
+    @Query("SELECT SUM(ic.approvedAmount) FROM InsuranceClaimsRequest ic " +
+            "LEFT OUTER JOIN InsuranceClaimsDetails icd ON ic.insuranceClaimsDetails.id = icd.id " +
+            "LEFT OUTER JOIN InsuranceDetailsLimit idl ON idl.id = ic.insuranceDetailsLimit.id " +
+            "LEFT OUTER JOIN InsuranceStaffCategoryPeriod ip ON idl.insuranceStaffCategoryPeriod.id = ip.id " +
+            "WHERE ic.employee = :employee " +
+            "AND icd.treatment.treatmentCode = :treatment " +
+            "AND ip.staffCategories.code = :staffCategory " +
+            "AND ic.requestStatus IN :statuses")
+    BigDecimal getSumApprovedAmountByEmployeeAndTreatmentAndStaffCategory(
+            @Param("employee") ApplicationUser employee,
+            @Param("treatment") String treatment,
+            @Param("staffCategory") String staffCategory,
+            @Param("statuses") List<Workflow> statuses);
+
     @Query(value = "SELECT " +
             "    COUNT(*) AS fullCount, " +
             "    COUNT(CASE WHEN ic.request_status = 'APPROVED' THEN 1 END) AS approvedCount, " +

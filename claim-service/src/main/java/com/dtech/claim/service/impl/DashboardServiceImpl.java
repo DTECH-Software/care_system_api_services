@@ -9,6 +9,8 @@
 package com.dtech.claim.service.impl;
 
 import com.dtech.claim.dto.AvailableInsuranceLimitDTO;
+import com.dtech.claim.dto.SimpleBaseDTO;
+import com.dtech.claim.dto.request.ChannelRequestDTO;
 import com.dtech.claim.dto.request.DashboardSummaryDTO;
 import com.dtech.claim.dto.response.*;
 import com.dtech.claim.enums.*;
@@ -30,6 +32,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.text.ParseException;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 @Log4j2
@@ -86,78 +89,13 @@ public class DashboardServiceImpl implements DashboardService {
                             .filter(period -> period.getStatus() == Status.ACTIVE)
                             .orElse(null);
 
-                    AmountResponseDTO indoor = insuranceClaimsRequestRepository.findSummaryByFacility(dashboardSummaryDTO, user.getId(),
-                            user.getUserPersonalDetails().getUserCompanyDetails().getInsurancePolicy().getCode(), TreatmentType.INDOOR.name());
-
-                    Optional<InsuranceDetailsLimit> insuranceDetailsLimits = insuranceDetailsLimitRepository
-                            .findByInsurancePolicyAndStatusAndInsuranceStaffCategoryPeriodAndTreatment_TreatmentCode(
-                                    user.getUserPersonalDetails().getUserCompanyDetails().getInsurancePolicy(),
-                                    Status.ACTIVE,
-                                    currentPeriodPolicy,
-                                    TreatmentType.INDOOR.name());
-
-                    if (insuranceDetailsLimits.isPresent()) {
-                        try {
-                            BigDecimal totalLimit = setLimitMap(insuranceDetailsLimits.get(), user);
-                            BigDecimal remaing = totalLimit.subtract(indoor.getSumOfUtilizeAmount());
-                            indoor.setTotalLimit(totalLimit);
-                            indoor.setRemainingAmount(remaing);
-                        } catch (ParseException e) {
-                            log.error(e.getMessage());
-                            throw new RuntimeException(e);
-                        }
-                    }
-
-
+                    AmountResponseDTO indoor = buildAmountSummary(user, currentPeriodPolicy, TreatmentType.INDOOR.name());
                     countOfInsurance.setIndoor(indoor);
 
-                    AmountResponseDTO outdoor = insuranceClaimsRequestRepository.findSummaryByFacility(dashboardSummaryDTO, user.getId(),
-                            user.getUserPersonalDetails().getUserCompanyDetails().getInsurancePolicy().getCode(), TreatmentType.OUTDOOR.name()
-                    );
-
-                    insuranceDetailsLimits = insuranceDetailsLimitRepository
-                            .findByInsurancePolicyAndStatusAndInsuranceStaffCategoryPeriodAndTreatment_TreatmentCode(
-                                    user.getUserPersonalDetails().getUserCompanyDetails().getInsurancePolicy(),
-                                    Status.ACTIVE,
-                                    currentPeriodPolicy,
-                                    TreatmentType.OUTDOOR.name());
-
-                    if (insuranceDetailsLimits.isPresent()) {
-                        try {
-                            BigDecimal totalLimit = setLimitMap(insuranceDetailsLimits.get(), user);
-                            log.info("insurance claims counts success {}",totalLimit);
-                            BigDecimal remaing = totalLimit.subtract(outdoor.getSumOfUtilizeAmount());
-                            outdoor.setTotalLimit(totalLimit);
-                            outdoor.setRemainingAmount(remaing);
-                        } catch (ParseException e) {
-                            log.error(e.getMessage());
-                            throw new RuntimeException(e);
-                        }
-                    }
-
+                    AmountResponseDTO outdoor = buildAmountSummary(user, currentPeriodPolicy, TreatmentType.OUTDOOR.name());
                     countOfInsurance.setOutdoor(outdoor);
 
-                    AmountResponseDTO critical = insuranceClaimsRequestRepository.findSummaryByFacility(dashboardSummaryDTO, user.getId(),
-                            user.getUserPersonalDetails().getUserCompanyDetails().getInsurancePolicy().getCode(), TreatmentType.CRIC.name());
-
-                    insuranceDetailsLimits = insuranceDetailsLimitRepository
-                            .findByInsurancePolicyAndStatusAndInsuranceStaffCategoryPeriodAndTreatment_TreatmentCode(
-                                    user.getUserPersonalDetails().getUserCompanyDetails().getInsurancePolicy(),
-                                    Status.ACTIVE,
-                                    currentPeriodPolicy,
-                                    TreatmentType.CRIC.name());
-
-                    if (insuranceDetailsLimits.isPresent()) {
-                        try {
-                            BigDecimal totalLimit = setLimitMap(insuranceDetailsLimits.get(), user);
-                            BigDecimal remaing = totalLimit.subtract(critical.getSumOfUtilizeAmount());
-                            critical.setTotalLimit(totalLimit);
-                            critical.setRemainingAmount(remaing);
-                        } catch (ParseException e) {
-                            log.error(e.getMessage());
-                            throw new RuntimeException(e);
-                        }
-                    }
+                    AmountResponseDTO critical = buildAmountSummary(user, currentPeriodPolicy, TreatmentType.CRIC.name());
 
                     int i = 0;
                     if (user.getUserPersonalDetails().getUserCompanyDetails().getStaffCategories().getCode().equals("NS")) {
@@ -215,13 +153,16 @@ public class DashboardServiceImpl implements DashboardService {
                 }
 
                 // get active period
-                Optional<InsuranceStaffCategoryPeriod> activeYear = insuranceStaffCategoryPeriodRepository.
-                        findByStaffCategories_CodeAndStatus(user.getUserPersonalDetails().getUserCompanyDetails().getStaffCategories().getCode(), Status.ACTIVE);
+                List<InsuranceStaffCategoryPeriod> activePeriods = insuranceStaffCategoryPeriodRepository
+                        .findAllByStaffCategories_CodeAndStatus(
+                                user.getUserPersonalDetails().getUserCompanyDetails().getStaffCategories().getCode(),
+                                Status.ACTIVE);
+                InsuranceStaffCategoryPeriod activeYear = resolvePeriodByYear(activePeriods, dashboardSummaryDTO.getYear());
 
                 //get latest updated death
                 list.put("insurance", insurance);
                 list.put("death", death);
-                list.put("activeYear", activeYear.isPresent() ? activeYear.get().getToDate() : 0);
+                list.put("activeYear", activeYear != null ? activeYear.getToDate() : 0);
                 return ResponseEntity.ok().body(responseUtil.success((Object) list, messageSource.getMessage(ResponseMessageUtil.DASHBOARD_SUMMARY_SUCCESS, null, locale)));
             }).orElseGet(() -> {
                 log.info("Dashboard summary request user not found {} ", dashboardSummaryDTO);
@@ -231,6 +172,85 @@ public class DashboardServiceImpl implements DashboardService {
             log.error(e);
             throw e;
         }
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public ResponseEntity<ApiResponse<Object>> dashboardReferenceData(ChannelRequestDTO channelRequestDTO, Locale locale) {
+        try {
+            log.info("Dashboard reference data {}", channelRequestDTO);
+            return applicationUserRepository.findByUsernameAndUserPersonalDetails_UserStatus(channelRequestDTO.getUsername().trim(), Status.ACTIVE)
+                    .map(user -> {
+                        Map<String, Object> response = new HashMap<>();
+
+                        String staffCode = user.getUserPersonalDetails().getUserCompanyDetails().getStaffCategories().getCode();
+                        List<InsuranceStaffCategoryPeriod> periods = insuranceStaffCategoryPeriodRepository
+                                .findAllByStaffCategories_CodeAndStatus(staffCode, Status.ACTIVE);
+
+                        List<SimpleBaseDTO> years = periods.stream()
+                                .map(InsuranceStaffCategoryPeriod::getFromDate)
+                                .filter(Objects::nonNull)
+                                .map(this::getYear)
+                                .distinct()
+                                .sorted()
+                                .map(year -> new SimpleBaseDTO(String.valueOf(year), String.valueOf(year)))
+                                .collect(Collectors.toList());
+
+                        response.put("years", years);
+                        return ResponseEntity.ok().body(responseUtil.success((Object) response,
+                                messageSource.getMessage(ResponseMessageUtil.DASHBOARD_SUMMARY_SUCCESS, null, locale)));
+                    })
+                    .orElseGet(() -> ResponseEntity.ok().body(responseUtil.error(null, 1014,
+                            messageSource.getMessage(ResponseMessageUtil.APPLICATION_USER_NOT_FOUND, null, locale))));
+        } catch (Exception e) {
+            log.error("Failed to load dashboard reference data", e);
+            throw e;
+        }
+    }
+
+    private InsuranceStaffCategoryPeriod resolvePeriodByYear(List<InsuranceStaffCategoryPeriod> periods, String yearValue) {
+        if (periods == null || periods.isEmpty()) {
+            return null;
+        }
+
+        Integer year = null;
+        if (yearValue != null && !yearValue.isBlank()) {
+            try {
+                year = Integer.parseInt(yearValue.trim());
+            } catch (NumberFormatException e) {
+                log.warn("Invalid year value '{}'", yearValue);
+            }
+        }
+
+        if (year != null) {
+            for (InsuranceStaffCategoryPeriod period : periods) {
+                Date fromDate = period != null ? period.getFromDate() : null;
+                if (fromDate != null && getYear(fromDate) == year) {
+                    return period;
+                }
+            }
+        }
+
+        Date now = DateTimeUtil.getCurrentDateTime();
+        for (InsuranceStaffCategoryPeriod period : periods) {
+            Date from = period.getFromDate();
+            Date to = period.getToDate();
+            if (from != null && to != null && !now.before(from) && !now.after(to)) {
+                return period;
+            }
+        }
+
+        return periods.stream()
+                .filter(Objects::nonNull)
+                .max(Comparator.comparing(InsuranceStaffCategoryPeriod::getFromDate,
+                        Comparator.nullsLast(Comparator.naturalOrder())))
+                .orElse(null);
+    }
+
+    private int getYear(Date date) {
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTime(date);
+        return calendar.get(Calendar.YEAR);
     }
 
 
@@ -280,4 +300,84 @@ public class DashboardServiceImpl implements DashboardService {
         }
     }
 
+    private AmountResponseDTO buildAmountSummary(ApplicationUser user,
+                                                 InsuranceStaffCategoryPeriod currentPeriod,
+                                                 String treatmentCode) {
+        AmountResponseDTO dto = new AmountResponseDTO(BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO);
+        if (user == null || currentPeriod == null) {
+            return dto;
+        }
+
+        Optional<InsuranceDetailsLimit> insuranceDetailsLimitOpt = insuranceDetailsLimitRepository
+                .findByInsurancePolicyAndStatusAndInsuranceStaffCategoryPeriodAndTreatment_TreatmentCode(
+                        user.getUserPersonalDetails().getUserCompanyDetails().getInsurancePolicy(),
+                        Status.ACTIVE,
+                        currentPeriod,
+                        treatmentCode);
+
+        if (insuranceDetailsLimitOpt.isEmpty()) {
+            return dto;
+        }
+
+        InsuranceDetailsLimit insuranceDetailsLimit = insuranceDetailsLimitOpt.get();
+        BigDecimal sum = insuranceClaimsRequestRepository.getSumRequestAmountByEmployeeAndTreatmentAndStatus(
+                user,
+                treatmentCode,
+                currentPeriod.getId(),
+                List.of(Workflow.APPROVED)
+        );
+        sum = sum != null ? sum : BigDecimal.ZERO;
+
+        InsuranceStaffCategoryPeriod prevPeriod = null;
+        if (currentPeriod.getFromDate() != null && currentPeriod.getStaffCategories() != null) {
+            prevPeriod = insuranceStaffCategoryPeriodRepository
+                    .findFirstByFromDateLessThanOrderByFromDateDesc(currentPeriod.getFromDate())
+                    .orElse(null);
+        }
+        if (prevPeriod != null
+                && prevPeriod.getStaffCategories() != null
+                && !prevPeriod.getStaffCategories().getCode()
+                .equals(currentPeriod.getStaffCategories().getCode())) {
+            BigDecimal prevSum = insuranceClaimsRequestRepository
+                    .getSumApprovedAmountByEmployeeAndTreatmentAndStaffCategory(
+                            user,
+                            treatmentCode,
+                            prevPeriod.getStaffCategories().getCode(),
+                            List.of(Workflow.APPROVED));
+            if (prevSum != null) {
+                sum = sum.add(prevSum);
+            }
+        }
+
+        Map<String, InsuranceQuarter> categoryQuarterMap = new HashMap<>();
+        Date currentDate = DateTimeUtil.getCurrentDateTime();
+        for (InsuranceQuarter quarter : insuranceDetailsLimit.getInsuranceQuarters()) {
+            String category = quarter.getTreatmentCategory().getCode();
+            if (categoryQuarterMap.containsKey(category)) {
+                continue;
+            }
+            InsuranceQuarter currentQuarter = insuranceQuarterRepository
+                    .findByDateWithinRangeAndCodeWithLimit(insuranceDetailsLimit, category, currentDate)
+                    .orElse(null);
+            categoryQuarterMap.put(category, currentQuarter != null ? currentQuarter : quarter);
+        }
+
+        BigDecimal maxFundLimit = categoryQuarterMap.values().stream()
+                .map(q -> insuranceDetailsLimit.getIsQuarter()
+                        ? (q.getQuarterLimit() != null ? q.getQuarterLimit() : insuranceDetailsLimit.getGlobalLimit())
+                        : insuranceDetailsLimit.getGlobalLimit())
+                .filter(Objects::nonNull)
+                .max(Comparator.naturalOrder())
+                .orElse(insuranceDetailsLimit.getGlobalLimit());
+
+        BigDecimal remaining = (maxFundLimit != null ? maxFundLimit : BigDecimal.ZERO).subtract(sum);
+        if (remaining.compareTo(BigDecimal.ZERO) < 0) {
+            remaining = BigDecimal.ZERO;
+        }
+
+        dto.setSumOfUtilizeAmount(sum);
+        dto.setTotalLimit(maxFundLimit != null ? maxFundLimit : BigDecimal.ZERO);
+        dto.setRemainingAmount(remaining);
+        return dto;
+    }
 }

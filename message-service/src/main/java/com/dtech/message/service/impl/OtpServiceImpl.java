@@ -95,7 +95,8 @@ public class OtpServiceImpl implements OtpService {
                                                     otpRequestDTO.getPrimaryMobile(), Status.ACTIVE);
                                     //check user's email already in use
                                     boolean existsEmail = applicationUserRepository
-                                            .existsByPrimaryEmailIgnoreCase(otpRequestDTO.getSignupOtp().getPrimaryEmail().trim());
+                                            .existsByPrimaryEmailIgnoreCaseAndUserPersonalDetails_UserStatus(
+                                                    otpRequestDTO.getSignupOtp().getPrimaryEmail().trim(), Status.ACTIVE);
 
                                     if (alreadyUser) {
                                         log.info("Signup request mobile already in use {} ", otpRequestDTO.getPrimaryMobile());

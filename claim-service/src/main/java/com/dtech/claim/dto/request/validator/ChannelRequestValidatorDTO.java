@@ -34,6 +34,7 @@ import lombok.Data;
                 "INSURANCE_CLAIM_FILTER_LIST",
                 "DEATH_CLAIM_FILTER_LIST",
                 "DASHBOARD_SUMMARY",
+                "DASHBOARD_SUMMARY_REF_DATA",
                 "FIND_CLAIMS_ATTACHMENTS"
         }, required = {"username"}, message = "Username is required.")
 public class ChannelRequestValidatorDTO {

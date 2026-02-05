@@ -7,7 +7,9 @@
 
 package com.dtech.claim.controller;
 
+import com.dtech.claim.dto.request.ChannelRequestDTO;
 import com.dtech.claim.dto.request.DashboardSummaryDTO;
+import com.dtech.claim.dto.request.validator.ChannelRequestValidatorDTO;
 import com.dtech.claim.dto.request.validator.DashboardSummaryValidatorDTO;
 import com.dtech.claim.dto.response.ApiResponse;
 import com.dtech.claim.service.DashboardService;
@@ -43,6 +45,13 @@ public class DashboardController {
     public ResponseEntity<ApiResponse<Object>> dashboardSummary(@RequestBody @Valid DashboardSummaryValidatorDTO dashboardSummaryValidatorDTO, Locale locale) {
         log.info("Dashboard summary request reference data controller {} ", dashboardSummaryValidatorDTO);
         return dashboardService.dashboardSummary(gson.fromJson(gson.toJson(dashboardSummaryValidatorDTO), DashboardSummaryDTO.class), locale);
+    }
+
+    @PostMapping(path = "/reference-data", produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.APPLICATION_JSON_VALUE)
+    @ApiOperation(value = "Handle dashboard reference data request ",notes = "Dashboard reference data request success or failed")
+    public ResponseEntity<ApiResponse<Object>> dashboardReferenceData(@RequestBody @Valid ChannelRequestValidatorDTO channelRequestValidatorDTO, Locale locale) {
+        log.info("Dashboard reference data request controller {} ", channelRequestValidatorDTO);
+        return dashboardService.dashboardReferenceData(gson.fromJson(gson.toJson(channelRequestValidatorDTO), ChannelRequestDTO.class), locale);
     }
 
 }

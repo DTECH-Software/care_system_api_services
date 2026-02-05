@@ -8,6 +8,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.Date;
+import java.util.List;
 import java.util.Optional;
 
 @Repository
@@ -17,4 +18,8 @@ public interface InsuranceStaffCategoryPeriodRepository extends JpaRepository<In
     Optional<InsuranceStaffCategoryPeriod> findByDateWithinRange(@Param("inputDate") Date inputDate,@Param("staff") String staff);
 
     Optional<InsuranceStaffCategoryPeriod> findByStaffCategories_CodeAndStatus(String staffCategories, Status status);
+
+    List<InsuranceStaffCategoryPeriod> findAllByStaffCategories_CodeAndStatus(String staffCategories, Status status);
+
+    Optional<InsuranceStaffCategoryPeriod> findFirstByFromDateLessThanOrderByFromDateDesc(Date currentFromDate);
 }
