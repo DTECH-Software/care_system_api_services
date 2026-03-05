@@ -48,6 +48,10 @@ public class UserCompanyDetails extends Audit implements Serializable {
     @Temporal(TemporalType.TIMESTAMP)
     private Date permanentDate;
 
+    @Column(name = "previous_permanent_date")
+    @Temporal(TemporalType.DATE)
+    private Date previousPermanentDate;
+
     @Column(name = "terminate_date")
     @Temporal(TemporalType.TIMESTAMP)
     private Date terminateDate;

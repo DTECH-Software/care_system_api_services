@@ -54,7 +54,6 @@ public class DateTimeUtil {
     }
 
     public static int getAge(String date) {
-        log.info("get age");
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
         LocalDate givenDate = LocalDate.parse(date, formatter);
         LocalDate currentDate = LocalDate.now();

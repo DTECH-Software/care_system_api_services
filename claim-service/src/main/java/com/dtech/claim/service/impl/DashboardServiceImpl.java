@@ -69,6 +69,12 @@ public class DashboardServiceImpl implements DashboardService {
             return applicationUserRepository.findByUsernameAndUserPersonalDetails_UserStatus(dashboardSummaryDTO.getUsername().trim(), Status.ACTIVE).map((user) -> {
 
                 HashMap<String, Object> list = new HashMap<>();
+                List<InsuranceStaffCategoryPeriod> activePeriods = insuranceStaffCategoryPeriodRepository
+                        .findAllByStaffCategories_CodeAndStatus(
+                                user.getUserPersonalDetails().getUserCompanyDetails().getStaffCategories().getCode(),
+                                Status.ACTIVE);
+                InsuranceStaffCategoryPeriod selectedPolicyPeriod = resolvePeriodByYear(activePeriods, dashboardSummaryDTO.getYear());
+                Long selectedPolicyPeriodId = selectedPolicyPeriod != null ? selectedPolicyPeriod.getId() : null;
 
                 /*Insurance*/
                 log.info("insurance claims");
@@ -81,32 +87,27 @@ public class DashboardServiceImpl implements DashboardService {
                 if (user.getUserPersonalDetails().getUserCompanyDetails().getFacility().name().equals(Facility.INSURANCE.name()) ||
                         user.getUserPersonalDetails().getUserCompanyDetails().getFacility().name().equals(Facility.BOTH.name())) {
                     CountTypeResponseDTO countOfInsurance = insuranceClaimsRequestRepository.
-                            findSummary(dashboardSummaryDTO, user.getId(), user.getUserPersonalDetails().getUserCompanyDetails().getInsurancePolicy().getCode());
+                            findSummary(dashboardSummaryDTO, user.getId(), selectedPolicyPeriodId);
                     log.info("insurance claims counts success");
 
-                    InsuranceStaffCategoryPeriod currentPeriodPolicy = insuranceStaffCategoryPeriodRepository
-                            .findByDateWithinRange(DateTimeUtil.getCurrentDateTime(), user.getUserPersonalDetails().getUserCompanyDetails().getStaffCategories().getCode())
-                            .filter(period -> period.getStatus() == Status.ACTIVE)
-                            .orElse(null);
-
-                    AmountResponseDTO indoor = buildAmountSummary(user, currentPeriodPolicy, TreatmentType.INDOOR.name());
+                    AmountResponseDTO indoor = buildAmountSummary(user, selectedPolicyPeriod, TreatmentType.INDOOR.name());
                     countOfInsurance.setIndoor(indoor);
 
-                    AmountResponseDTO outdoor = buildAmountSummary(user, currentPeriodPolicy, TreatmentType.OUTDOOR.name());
+                    AmountResponseDTO outdoor = buildAmountSummary(user, selectedPolicyPeriod, TreatmentType.OUTDOOR.name());
                     countOfInsurance.setOutdoor(outdoor);
 
-                    AmountResponseDTO critical = buildAmountSummary(user, currentPeriodPolicy, TreatmentType.CRIC.name());
+                    AmountResponseDTO critical = buildAmountSummary(user, selectedPolicyPeriod, TreatmentType.CRIC.name());
 
                     int i = 0;
                     if (user.getUserPersonalDetails().getUserCompanyDetails().getStaffCategories().getCode().equals("NS")) {
                         countOfInsurance.setCritical(null);
                         int requestApprovedCount = insuranceClaimsRequestRepository.findApprovedRequestCountByTreatment(dashboardSummaryDTO,
-                                user.getUserPersonalDetails().getUserCompanyDetails().getInsurancePolicy().getCode(), TreatmentType.CRIC.name());
+                                selectedPolicyPeriodId, TreatmentType.CRIC.name());
                         i = 4 - requestApprovedCount;
                         i = Math.max(i, 0);
                     } else if (user.getUserPersonalDetails().getUserCompanyDetails().getStaffCategories().getCode().equals("SNR")) {
                         int requestApprovedCount = insuranceClaimsRequestRepository.findApprovedRequestCountByTreatmentSNR(dashboardSummaryDTO, user.getId(),
-                                user.getUserPersonalDetails().getUserCompanyDetails().getInsurancePolicy().getCode(), TreatmentType.CRIC.name());
+                                selectedPolicyPeriodId, TreatmentType.CRIC.name());
                         i = 4 - requestApprovedCount;
                         i = Math.max(i, 0);
                         countOfInsurance.setCritical(critical);
@@ -115,9 +116,9 @@ public class DashboardServiceImpl implements DashboardService {
                     }
 
                     //get latest updated insurance
-                    approved = insuranceClaimsRequestRepository.getLatestUpdatedRecordSummary(user.getId(), Workflow.APPROVED.name());
-                    rejected = insuranceClaimsRequestRepository.getLatestUpdatedRecordSummary(user.getId(), Workflow.REJECTED.name());
-                    underReview = insuranceClaimsRequestRepository.getLatestUpdatedRecordSummary(user.getId(), Workflow.UNDER_REVIEW.name());
+                    approved = insuranceClaimsRequestRepository.getLatestUpdatedRecordSummary(user.getId(), Workflow.APPROVED.name(), selectedPolicyPeriodId);
+                    rejected = insuranceClaimsRequestRepository.getLatestUpdatedRecordSummary(user.getId(), Workflow.REJECTED.name(), selectedPolicyPeriodId);
+                    underReview = insuranceClaimsRequestRepository.getLatestUpdatedRecordSummary(user.getId(), Workflow.UNDER_REVIEW.name(), selectedPolicyPeriodId);
                     log.info("insurance claims list success");
                     insurance = CountResponseDTO.builder()
                             .approved(approved)
@@ -152,17 +153,10 @@ public class DashboardServiceImpl implements DashboardService {
                     log.info("death claims set dto success");
                 }
 
-                // get active period
-                List<InsuranceStaffCategoryPeriod> activePeriods = insuranceStaffCategoryPeriodRepository
-                        .findAllByStaffCategories_CodeAndStatus(
-                                user.getUserPersonalDetails().getUserCompanyDetails().getStaffCategories().getCode(),
-                                Status.ACTIVE);
-                InsuranceStaffCategoryPeriod activeYear = resolvePeriodByYear(activePeriods, dashboardSummaryDTO.getYear());
-
                 //get latest updated death
                 list.put("insurance", insurance);
                 list.put("death", death);
-                list.put("activeYear", activeYear != null ? activeYear.getToDate() : 0);
+                list.put("activeYear", selectedPolicyPeriod != null ? selectedPolicyPeriod.getToDate() : 0);
                 return ResponseEntity.ok().body(responseUtil.success((Object) list, messageSource.getMessage(ResponseMessageUtil.DASHBOARD_SUMMARY_SUCCESS, null, locale)));
             }).orElseGet(() -> {
                 log.info("Dashboard summary request user not found {} ", dashboardSummaryDTO);
@@ -328,21 +322,30 @@ public class DashboardServiceImpl implements DashboardService {
         );
         sum = sum != null ? sum : BigDecimal.ZERO;
 
+        Date previousPermanentDate = user.getUserPersonalDetails()
+                .getUserCompanyDetails()
+                .getPreviousPermanentDate();
+        Date changeDate = previousPermanentDate != null
+                ? user.getUserPersonalDetails().getUserCompanyDetails().getPermanentDate()
+                : null;
         InsuranceStaffCategoryPeriod prevPeriod = null;
-        if (currentPeriod.getFromDate() != null && currentPeriod.getStaffCategories() != null) {
+        if (changeDate != null
+                && currentPeriod.getStaffCategories() != null) {
             prevPeriod = insuranceStaffCategoryPeriodRepository
-                    .findFirstByFromDateLessThanOrderByFromDateDesc(currentPeriod.getFromDate())
+                    .findByDateWithinRangeAnyStaff(changeDate)
+                    .stream()
+                    .filter(p -> p.getStaffCategories() != null)
+                    .filter(p -> !p.getStaffCategories().getCode()
+                            .equals(currentPeriod.getStaffCategories().getCode()))
+                    .findFirst()
                     .orElse(null);
         }
-        if (prevPeriod != null
-                && prevPeriod.getStaffCategories() != null
-                && !prevPeriod.getStaffCategories().getCode()
-                .equals(currentPeriod.getStaffCategories().getCode())) {
+        if (prevPeriod != null) {
             BigDecimal prevSum = insuranceClaimsRequestRepository
-                    .getSumApprovedAmountByEmployeeAndTreatmentAndStaffCategory(
+                    .getSumRequestAmountByEmployeeAndTreatmentAndStatus(
                             user,
                             treatmentCode,
-                            prevPeriod.getStaffCategories().getCode(),
+                            prevPeriod.getId(),
                             List.of(Workflow.APPROVED));
             if (prevSum != null) {
                 sum = sum.add(prevSum);
@@ -350,21 +353,24 @@ public class DashboardServiceImpl implements DashboardService {
         }
 
         Map<String, InsuranceQuarter> categoryQuarterMap = new HashMap<>();
-        Date currentDate = DateTimeUtil.getCurrentDateTime();
+        Date permanentDate = user.getUserPersonalDetails()
+                .getUserCompanyDetails()
+                .getPermanentDate();
+        Date quarterLookupDate = permanentDate != null ? permanentDate : DateTimeUtil.getCurrentDateTime();
         for (InsuranceQuarter quarter : insuranceDetailsLimit.getInsuranceQuarters()) {
             String category = quarter.getTreatmentCategory().getCode();
             if (categoryQuarterMap.containsKey(category)) {
                 continue;
             }
-            InsuranceQuarter currentQuarter = insuranceQuarterRepository
-                    .findByDateWithinRangeAndCodeWithLimit(insuranceDetailsLimit, category, currentDate)
+            InsuranceQuarter matchingQuarter = insuranceQuarterRepository
+                    .findByDateWithinRangeAndCodeWithLimit(insuranceDetailsLimit, category, quarterLookupDate)
                     .orElse(null);
-            categoryQuarterMap.put(category, currentQuarter != null ? currentQuarter : quarter);
+            categoryQuarterMap.put(category, matchingQuarter);
         }
 
         BigDecimal maxFundLimit = categoryQuarterMap.values().stream()
                 .map(q -> insuranceDetailsLimit.getIsQuarter()
-                        ? (q.getQuarterLimit() != null ? q.getQuarterLimit() : insuranceDetailsLimit.getGlobalLimit())
+                        ? (q != null && q.getQuarterLimit() != null ? q.getQuarterLimit() : insuranceDetailsLimit.getGlobalLimit())
                         : insuranceDetailsLimit.getGlobalLimit())
                 .filter(Objects::nonNull)
                 .max(Comparator.naturalOrder())

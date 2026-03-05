@@ -117,14 +117,12 @@ public interface InsuranceClaimsRequestRepository extends JpaRepository<Insuranc
             "    COUNT(CASE WHEN ic.request_status = 'UNDER_REVIEW' THEN 1 END) AS underReviewCount " +
             "FROM claims_request ic " +
             "LEFT JOIN application_user ap ON ic.employee = ap.id " +
-            "LEFT JOIN user_personal_details up ON ap.user_personal_details = up.id " +
-            "LEFT JOIN user_company_details uc ON up.user_company_details = uc.id " +
-            "LEFT JOIN insurance_policy p ON uc.insurance_policy = p.id " +
+            "LEFT JOIN insurance_details_limit idl ON ic.insurance_details_limit_id = idl.id " +
             "LEFT JOIN claims_dependents cd ON ic.dependent = cd.id " +
             "LEFT JOIN insurance_claims_details icd ON ic.insurance_claims_details = icd.id " +
             "LEFT JOIN treatment tr ON icd.treatment = tr.code " +
             "WHERE ap.id = :userId  " +
-            "AND YEAR(ic.created_date) = :#{#dashboardSummaryDTO.year} " +
+            "AND (:policyPeriodId IS NULL OR idl.insurance_staff_category_period = :policyPeriodId) " +
             "AND (:#{#dashboardSummaryDTO.month} IS NULL OR MONTH(ic.created_date) = :#{#dashboardSummaryDTO.month}) " +
             "AND (:#{#dashboardSummaryDTO.relationCategory} IS NULL OR cd.relation_category = :#{#dashboardSummaryDTO.relationCategory}) " +
             "AND (:#{#dashboardSummaryDTO.claimDependentId} IS NULL OR cd.id = :#{#dashboardSummaryDTO.claimDependentId}) " +
@@ -132,7 +130,7 @@ public interface InsuranceClaimsRequestRepository extends JpaRepository<Insuranc
             nativeQuery = true)
     CountTypeResponseDTO findSummary(@Param("dashboardSummaryDTO") DashboardSummaryDTO dashboardSummaryDTO,
                                      @Param("userId") Long userId,
-                                     @Param("policy") String policy);
+                                     @Param("policyPeriodId") Long policyPeriodId);
 
 //    @Query(value = """
 //    SELECT
@@ -450,18 +448,18 @@ LEFT JOIN claims_dependents cd ON ic.dependent = cd.id
 LEFT JOIN user_personal_details upd ON ap.user_personal_details = upd.id
 JOIN insurance_claims_details icd ON ic.insurance_claims_details = icd.id
 JOIN treatment tr ON icd.treatment = tr.code
-LEFT JOIN insurance_details_limit idl ON idl.insurance_policy = :policy AND idl.treatment = :treatment
+LEFT JOIN insurance_details_limit idl ON ic.insurance_details_limit_id = idl.id
 WHERE tr.code = :treatment
   AND cp.staff_category = 'NS'
   AND ic.request_status = 'APPROVED'
-  AND YEAR(ic.created_date) = :#{#dashboardSummaryDTO.year}
+  AND (:policyPeriodId IS NULL OR idl.insurance_staff_category_period = :policyPeriodId)
   AND (:#{#dashboardSummaryDTO.month} IS NULL OR MONTH(ic.created_date) = :#{#dashboardSummaryDTO.month})
   AND (:#{#dashboardSummaryDTO.relationCategory} IS NULL OR cd.relation_category = :#{#dashboardSummaryDTO.relationCategory})
   AND (:#{#dashboardSummaryDTO.claimDependentId} IS NULL OR cd.id = :#{#dashboardSummaryDTO.claimDependentId})
   AND (:#{#dashboardSummaryDTO.treatmentType} IS NULL OR tr.code = :#{#dashboardSummaryDTO.treatmentType})
 """, nativeQuery = true)
     int findApprovedRequestCountByTreatment(@Param("dashboardSummaryDTO") DashboardSummaryDTO dashboardSummaryDTO,
-                                            @Param("policy") String policy,
+                                            @Param("policyPeriodId") Long policyPeriodId,
                                             @Param("treatment") String treatment);
 
     @Query(value = """
@@ -474,11 +472,11 @@ WHERE tr.code = :treatment
     LEFT JOIN user_personal_details upd ON ap.user_personal_details = upd.id
     LEFT JOIN user_company_details ucd ON upd.user_company_details = ucd.id
     JOIN treatment tr ON icd.treatment = tr.code
-    LEFT JOIN insurance_details_limit idl ON idl.insurance_policy = :policy AND idl.treatment = :treatment
+    LEFT JOIN insurance_details_limit idl ON ic.insurance_details_limit_id = idl.id
     WHERE tr.code = :treatment 
       AND ap.id = :userId 
       AND ucd.staff_category = 'SNR'
-      AND YEAR(ic.created_date) = :#{#dashboardSummaryDTO.year}
+      AND (:policyPeriodId IS NULL OR idl.insurance_staff_category_period = :policyPeriodId)
       AND (:#{#dashboardSummaryDTO.month} IS NULL OR MONTH(ic.created_date) = :#{#dashboardSummaryDTO.month})
       AND (:#{#dashboardSummaryDTO.relationCategory} IS NULL OR cd.relation_category = :#{#dashboardSummaryDTO.relationCategory})
       AND (:#{#dashboardSummaryDTO.claimDependentId} IS NULL OR cd.id = :#{#dashboardSummaryDTO.claimDependentId})
@@ -487,7 +485,7 @@ WHERE tr.code = :treatment
     int findApprovedRequestCountByTreatmentSNR(
             @Param("dashboardSummaryDTO") DashboardSummaryDTO dashboardSummaryDTO,
             @Param("userId") Long userId,
-            @Param("policy") String policy,
+            @Param("policyPeriodId") Long policyPeriodId,
             @Param("treatment") String treatment
     );
 
@@ -502,12 +500,16 @@ WHERE tr.code = :treatment
             "ic.created_date AS requestDate " +
             "FROM claims_request ic " +
             "LEFT OUTER JOIN application_user ap ON ic.employee = ap.id " +
+            "LEFT OUTER JOIN insurance_details_limit idl ON ic.insurance_details_limit_id = idl.id " +
             "LEFT OUTER JOIN claims_dependents cd ON ic.dependent = cd.id " +
             "LEFT OUTER JOIN insurance_claims_details icd ON ic.insurance_claims_details = icd.id  " +
             "LEFT OUTER JOIN treatment tr ON icd.treatment = tr.code " +
             "WHERE ap.id = :userId AND ic.request_status = :requestStatus " +
+            "AND (:policyPeriodId IS NULL OR idl.insurance_staff_category_period = :policyPeriodId) " +
             "ORDER BY ic.last_modified_date DESC LIMIT 7 ", nativeQuery = true)
-    List<LatestUpdatedResponseDTO> getLatestUpdatedRecordSummary(@Param("userId") Long userId, @Param("requestStatus") String requestStatus);
+    List<LatestUpdatedResponseDTO> getLatestUpdatedRecordSummary(@Param("userId") Long userId,
+                                                                 @Param("requestStatus") String requestStatus,
+                                                                 @Param("policyPeriodId") Long policyPeriodId);
 
     int countByInsuranceClaimsDetails_Treatment_TreatmentCodeAndRequestStatusIn(String treatmentCode, List<Workflow> workflow);
     int countByInsuranceClaimsDetails_Treatment_TreatmentCodeAndRequestStatusInAndEmployee(String treatmentCode, List<Workflow> workflow,ApplicationUser applicationUser);

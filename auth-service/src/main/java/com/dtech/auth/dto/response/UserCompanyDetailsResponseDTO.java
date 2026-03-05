@@ -22,6 +22,8 @@ public class UserCompanyDetailsResponseDTO {
     private SimpleBaseDTO staffTypes;
     @JsonFormat(pattern = "yyyy-MM-dd", timezone = "Asia/Colombo")
     private Date permanentDate;
+    @JsonFormat(pattern = "yyyy-MM-dd", timezone = "Asia/Colombo")
+    private Date previousPermanentDate;
     private Date terminateDate;
     private String designation;
     private SimpleBaseDTO insurancePolicy;
