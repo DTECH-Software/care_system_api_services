@@ -318,8 +318,8 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
 
                                                 //   if (currentYear == year) {
                                                 log.info("Request fund limit exceeded with ent limit");
-                                                Date permentDateTime = user.getUserPersonalDetails().getUserCompanyDetails().getPermanentDate();
-                                                log.info("User month per {}", permentDateTime);
+                                                Date quarterLookupDate = DateTimeUtil.getCurrentDateTime();
+                                                log.info("Claim quarter lookup date {}", quarterLookupDate);
                                                 InsuranceDetailsLimit insuranceDetailsLimit = insuranceDetailsLimitRepository.findByInsurancePolicyAndStatusAndInsuranceStaffCategoryPeriodAndTreatment(
                                                         user.getUserPersonalDetails().getUserCompanyDetails().getInsurancePolicy(), Status.ACTIVE, insuranceYear, treatment).orElse(null);
 
@@ -333,7 +333,7 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
                                                     BigDecimal limit = null;
                                                     InsuranceQuarter treatmentQuarter = null;
                                                     if (insuranceDetailsLimit.getIsQuarter()) {
-                                                        treatmentQuarter = insuranceQuarterRepository.findByDateWithinRangeAndCodeWithLimit(insuranceDetailsLimit, TreatmentCategory.OTHER.name(), permentDateTime).orElse(null);
+                                                        treatmentQuarter = insuranceQuarterRepository.findByDateWithinRangeAndCodeWithLimit(insuranceDetailsLimit, TreatmentCategory.OTHER.name(), quarterLookupDate).orElse(null);
                                                         if (treatmentQuarter == null) {
                                                             limit = insuranceDetailsLimit.getGlobalLimit();
                                                         } else {
@@ -466,7 +466,7 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
                                                             .findByDateWithinRangeAndCodeWithLimit(
                                                                     insuranceDetailsLimit,
                                                                     claimRequestDTO.getTreatmentCategory(),
-                                                                    permentDateTime
+                                                                    quarterLookupDate
                                                             ).orElse(null);
 
                                                     if (treatmentQuarter == null) {
