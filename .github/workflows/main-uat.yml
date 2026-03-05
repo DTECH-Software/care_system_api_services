@@ -115,16 +115,19 @@ jobs:
             DEPLOY_DIR="${{ secrets.UAT_DEPLOY_DIR }}/${{ matrix.service }}"
             cd "$DEPLOY_DIR"
 
-            LATEST_JAR="$(ls -t *.jar | head -n 1)"
-            if [ -z "$LATEST_JAR" ]; then
+            # scp-action can preserve local folder structure; locate jar recursively
+            LATEST_JAR_PATH="$(find "$DEPLOY_DIR" -type f -name "*.jar" | sort | tail -n 1)"
+            if [ -z "$LATEST_JAR_PATH" ]; then
               echo "No jar found in $DEPLOY_DIR"
+              find "$DEPLOY_DIR" -maxdepth 5 -type f | head -n 200 || true
               exit 1
             fi
+            LATEST_JAR="$(basename "$LATEST_JAR_PATH")"
 
             # Stop old process if running
             pkill -f "java -jar .*(${SERVICE}|${SERVICE_UNDERSCORE}).*" || true
             sleep 2
 
             # Always enforce UAT profile
-            nohup java -jar "$DEPLOY_DIR/$LATEST_JAR" --spring.profiles.active=uat > "$DEPLOY_DIR/${SERVICE}.log" 2>&1 &
+            nohup java -jar "$LATEST_JAR_PATH" --spring.profiles.active=uat > "$DEPLOY_DIR/${SERVICE}.log" 2>&1 &
             echo "Started ${SERVICE} using $LATEST_JAR with profile=uat"
