@@ -13,7 +13,7 @@ on:
       - "notification-service/**"
       - "registry-service/**"
       - "token-service/**"
-      - ".github/workflows/claim-service-uat.yml"
+      - ".github/workflows/main-uat.yml"
   workflow_dispatch:
 
 jobs:
@@ -37,11 +37,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup JDK 17
+      - name: Setup JDK 21
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: "17"
+          java-version: "21"
           cache: maven
 
       - name: Build ${{ matrix.service }}
