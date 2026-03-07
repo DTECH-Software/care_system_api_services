@@ -255,38 +255,21 @@ public class DashboardServiceImpl implements DashboardService {
         try {
             log.info("Insurance ref {}", insuranceDetailsLimit.getId());
 
-            BigDecimal totalFund = BigDecimal.ZERO;
-
             log.info("Claims limit {} ", "test");
 
             Date permentDateTime = applicationUser.getUserPersonalDetails().getUserCompanyDetails().getPermanentDate();
+            Date quarterLookupDate = permentDateTime != null ? permentDateTime : DateTimeUtil.getCurrentDateTime();
+            InsuranceQuarter treatmentQuarter = resolveApplicableQuarter(insuranceDetailsLimit,
+                    TreatmentCategory.OTHER.name(),
+                    quarterLookupDate);
 
-            if (permentDateTime.after(DateTimeUtil.getCurrentDateTime())) {
-                log.info("Pre Year");
-                BigDecimal maxLimit = BigDecimal.valueOf(0.00);
-
-                return insuranceDetailsLimit.getGlobalLimit();
-                //  totalFund = totalFund.add(maxLimit);
-
-
-            } else {
-
-                log.info("Post Year");
-
-                //   BigDecimal maxLimit = BigDecimal.valueOf(0.00);
-
-                InsuranceQuarter treatmentQuarter = insuranceQuarterRepository.findByDateWithinRangeAndCodeWithLimit(insuranceDetailsLimit,
-                        TreatmentCategory.OTHER.name(), permentDateTime).orElse(null);
-
-                if (treatmentQuarter != null) {
-                    return treatmentQuarter.getQuarterLimit();
-                } else {
-                    return insuranceDetailsLimit.getGlobalLimit();
-                }
-
-                //  totalFund = totalFund.add(maxLimit);
-
+            if (treatmentQuarter != null) {
+                return treatmentQuarter.getQuarterLimit();
             }
+            if (insuranceDetailsLimit.getIsQuarter()) {
+                return BigDecimal.ZERO;
+            }
+            return insuranceDetailsLimit.getGlobalLimit();
 
         } catch (Exception e) {
             log.error("Error calculating insurance limits", e);
@@ -362,19 +345,15 @@ public class DashboardServiceImpl implements DashboardService {
             if (categoryQuarterMap.containsKey(category)) {
                 continue;
             }
-            InsuranceQuarter matchingQuarter = insuranceQuarterRepository
-                    .findByDateWithinRangeAndCodeWithLimit(insuranceDetailsLimit, category, quarterLookupDate)
-                    .orElse(null);
+            InsuranceQuarter matchingQuarter = resolveApplicableQuarter(insuranceDetailsLimit, category, quarterLookupDate);
             categoryQuarterMap.put(category, matchingQuarter);
         }
 
         BigDecimal maxFundLimit = categoryQuarterMap.values().stream()
-                .map(q -> insuranceDetailsLimit.getIsQuarter()
-                        ? (q != null && q.getQuarterLimit() != null ? q.getQuarterLimit() : insuranceDetailsLimit.getGlobalLimit())
-                        : insuranceDetailsLimit.getGlobalLimit())
+                .map(q -> resolveCategoryFundLimit(insuranceDetailsLimit, q))
                 .filter(Objects::nonNull)
                 .max(Comparator.naturalOrder())
-                .orElse(insuranceDetailsLimit.getGlobalLimit());
+                .orElse(insuranceDetailsLimit.getIsQuarter() ? BigDecimal.ZERO : insuranceDetailsLimit.getGlobalLimit());
 
         BigDecimal remaining = (maxFundLimit != null ? maxFundLimit : BigDecimal.ZERO).subtract(sum);
         if (remaining.compareTo(BigDecimal.ZERO) < 0) {
@@ -385,5 +364,35 @@ public class DashboardServiceImpl implements DashboardService {
         dto.setTotalLimit(maxFundLimit != null ? maxFundLimit : BigDecimal.ZERO);
         dto.setRemainingAmount(remaining);
         return dto;
+    }
+
+    private InsuranceQuarter resolveApplicableQuarter(InsuranceDetailsLimit insuranceDetailsLimit,
+                                                      String categoryCode,
+                                                      Date lookupDate) {
+        InsuranceQuarter matchingQuarter = insuranceQuarterRepository
+                .findByDateWithinRangeAndCodeWithLimit(insuranceDetailsLimit, categoryCode, lookupDate)
+                .orElse(null);
+        if (matchingQuarter != null) {
+            return matchingQuarter;
+        }
+
+        InsuranceQuarter firstQuarter = insuranceQuarterRepository
+                .findFirstByInsuranceDetailsLimitAndTreatmentCategory_CodeOrderByFromDateAsc(
+                        insuranceDetailsLimit,
+                        categoryCode
+                ).orElse(null);
+        if (firstQuarter == null || lookupDate == null || firstQuarter.getFromDate() == null) {
+            return null;
+        }
+
+        return lookupDate.before(firstQuarter.getFromDate()) ? firstQuarter : null;
+    }
+
+    private BigDecimal resolveCategoryFundLimit(InsuranceDetailsLimit insuranceDetailsLimit,
+                                                InsuranceQuarter insuranceQuarter) {
+        if (!insuranceDetailsLimit.getIsQuarter()) {
+            return insuranceDetailsLimit.getGlobalLimit();
+        }
+        return insuranceQuarter != null ? insuranceQuarter.getQuarterLimit() : null;
     }
 }

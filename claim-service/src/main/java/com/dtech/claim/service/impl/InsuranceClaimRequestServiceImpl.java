@@ -318,7 +318,10 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
 
                                                 //   if (currentYear == year) {
                                                 log.info("Request fund limit exceeded with ent limit");
-                                                Date quarterLookupDate = DateTimeUtil.getCurrentDateTime();
+                                                Date permanentDate = user.getUserPersonalDetails()
+                                                        .getUserCompanyDetails()
+                                                        .getPermanentDate();
+                                                Date quarterLookupDate = permanentDate != null ? permanentDate : DateTimeUtil.getCurrentDateTime();
                                                 log.info("Claim quarter lookup date {}", quarterLookupDate);
                                                 InsuranceDetailsLimit insuranceDetailsLimit = insuranceDetailsLimitRepository.findByInsurancePolicyAndStatusAndInsuranceStaffCategoryPeriodAndTreatment(
                                                         user.getUserPersonalDetails().getUserCompanyDetails().getInsurancePolicy(), Status.ACTIVE, insuranceYear, treatment).orElse(null);
@@ -333,9 +336,10 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
                                                     BigDecimal limit = null;
                                                     InsuranceQuarter treatmentQuarter = null;
                                                     if (insuranceDetailsLimit.getIsQuarter()) {
-                                                        treatmentQuarter = insuranceQuarterRepository.findByDateWithinRangeAndCodeWithLimit(insuranceDetailsLimit, TreatmentCategory.OTHER.name(), quarterLookupDate).orElse(null);
+                                                        treatmentQuarter = resolveApplicableQuarter(insuranceDetailsLimit, TreatmentCategory.OTHER.name(), quarterLookupDate);
                                                         if (treatmentQuarter == null) {
-                                                            limit = insuranceDetailsLimit.getGlobalLimit();
+                                                            log.info("Insurance detail quarter is null for category OTHER");
+                                                            return ResponseEntity.ok().body(responseUtil.error(null, 1030, messageSource.getMessage(ResponseMessageUtil.INSURANCE_POLICY_NOT_FOUND, null, locale)));
                                                         } else {
                                                             limit = treatmentQuarter.getQuarterLimit();
                                                         }
@@ -462,15 +466,14 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
 
                                                 } else {
 
-                                                    InsuranceQuarter treatmentQuarter = insuranceQuarterRepository
-                                                            .findByDateWithinRangeAndCodeWithLimit(
-                                                                    insuranceDetailsLimit,
-                                                                    claimRequestDTO.getTreatmentCategory(),
-                                                                    quarterLookupDate
-                                                            ).orElse(null);
+                                                    InsuranceQuarter treatmentQuarter = resolveApplicableQuarter(
+                                                            insuranceDetailsLimit,
+                                                            claimRequestDTO.getTreatmentCategory(),
+                                                            quarterLookupDate
+                                                    );
 
-                                                    BigDecimal categoryLimit = treatmentQuarter != null
-                                                            ? treatmentQuarter.getQuarterLimit()
+                                                    BigDecimal categoryLimit = insuranceDetailsLimit.getIsQuarter()
+                                                            ? (treatmentQuarter != null ? treatmentQuarter.getQuarterLimit() : null)
                                                             : insuranceDetailsLimit.getGlobalLimit();
                                                     if (categoryLimit == null) {
                                                         log.info("Insurance detail quarter/global limit is null");
@@ -788,69 +791,27 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
                 if (categoryQuarterMap.containsKey(category)) {
                     continue;
                 }
-                InsuranceQuarter matchingQuarter = insuranceQuarterRepository
-                        .findByDateWithinRangeAndCodeWithLimit(insuranceDetailsLimit, category, quarterLookupDate)
-                        .orElse(null);
+                InsuranceQuarter matchingQuarter = resolveApplicableQuarter(insuranceDetailsLimit, category, quarterLookupDate);
                 categoryQuarterMap.put(category, matchingQuarter);
             }
 
-            BigDecimal sumTotal = BigDecimal.ZERO;
-            BigDecimal currentSum = insuranceClaimsRequestRepository
-                    .getSumRequestAmountByEmployeeAndTreatmentAndStatus(
-                            applicationUser,
-                            treatmentCode,
-                            insurancePeriod,
-                            List.of(Workflow.APPROVED));
-            if (currentSum != null) {
-                sumTotal = currentSum;
-            }
-            if (prevPeriod != null) {
-                BigDecimal prevSum = insuranceClaimsRequestRepository
-                        .getSumRequestAmountByEmployeeAndTreatmentAndStatus(
-                                applicationUser,
-                                treatmentCode,
-                                prevPeriod.getId(),
-                                List.of(Workflow.APPROVED));
-                if (prevSum != null) {
-                    sumTotal = sumTotal.add(prevSum);
-                }
-            }
-
-            Map<String, BigDecimal> categoryFundLimitMap = new HashMap<>();
-            BigDecimal maxFundLimit = null;
             for (Map.Entry<String, InsuranceQuarter> entry : categoryQuarterMap.entrySet()) {
+                String categoryCode = entry.getKey();
                 InsuranceQuarter categoryQuarter = entry.getValue();
-                BigDecimal categoryFundLimit = insuranceDetailsLimit.getIsQuarter()
-                        ? (categoryQuarter != null && categoryQuarter.getQuarterLimit() != null
-                            ? categoryQuarter.getQuarterLimit()
-                            : insuranceDetailsLimit.getGlobalLimit())
-                        : insuranceDetailsLimit.getGlobalLimit();
+                BigDecimal categoryFundLimit = resolveCategoryFundLimit(insuranceDetailsLimit, categoryQuarter);
                 if (categoryFundLimit == null) {
                     continue;
                 }
-                categoryFundLimitMap.put(entry.getKey(), categoryFundLimit);
-                if (maxFundLimit == null || categoryFundLimit.compareTo(maxFundLimit) > 0) {
-                    maxFundLimit = categoryFundLimit;
-                }
-            }
 
-            BigDecimal treatmentRemaining = (maxFundLimit != null ? maxFundLimit : BigDecimal.ZERO).subtract(sumTotal);
-            if (treatmentRemaining.compareTo(BigDecimal.ZERO) < 0) {
-                treatmentRemaining = BigDecimal.ZERO;
-            }
-
-            for (Map.Entry<String, InsuranceQuarter> entry : categoryQuarterMap.entrySet()) {
-                BigDecimal categoryFundLimit = categoryFundLimitMap.get(entry.getKey());
-                if (categoryFundLimit == null) {
-                    continue;
-                }
-                BigDecimal available = treatmentRemaining.min(categoryFundLimit);
+                BigDecimal available = categoryFundLimit.subtract(
+                        getCategoryApprovedAmount(applicationUser, treatmentCode, categoryCode, insurancePeriod, prevPeriod)
+                );
                 if (available.compareTo(BigDecimal.ZERO) < 0) {
                     available = BigDecimal.ZERO;
                 }
                 limitMap
                         .computeIfAbsent(treatmentCode, k -> new HashMap<>())
-                        .merge(entry.getKey(), new AvailableInsuranceLimitDTO(available, categoryFundLimit),
+                        .merge(categoryCode, new AvailableInsuranceLimitDTO(available, categoryFundLimit),
                                 (existing, newDetails) -> new AvailableInsuranceLimitDTO(
                                         newDetails.getAvailableLimit(),
                                         newDetails.getFundLimit()
@@ -860,6 +821,65 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
             log.error(e);
             throw e;
         }
+    }
+
+    private BigDecimal getCategoryApprovedAmount(ApplicationUser applicationUser,
+                                                 String treatmentCode,
+                                                 String categoryCode,
+                                                 Long insurancePeriod,
+                                                 InsuranceStaffCategoryPeriod prevPeriod) {
+        BigDecimal currentSum = insuranceClaimsRequestRepository
+                .getSumRequestAmountByEmployeeAndTreatmentAndTreatmentCategoryAndStatus(
+                        applicationUser,
+                        treatmentCode,
+                        categoryCode,
+                        insurancePeriod,
+                        List.of(Workflow.APPROVED));
+
+        BigDecimal total = currentSum != null ? currentSum : BigDecimal.ZERO;
+        if (prevPeriod == null) {
+            return total;
+        }
+
+        BigDecimal prevSum = insuranceClaimsRequestRepository
+                .getSumRequestAmountByEmployeeAndTreatmentAndTreatmentCategoryAndStatus(
+                        applicationUser,
+                        treatmentCode,
+                        categoryCode,
+                        prevPeriod.getId(),
+                        List.of(Workflow.APPROVED));
+
+        return prevSum != null ? total.add(prevSum) : total;
+    }
+
+    private InsuranceQuarter resolveApplicableQuarter(InsuranceDetailsLimit insuranceDetailsLimit,
+                                                      String categoryCode,
+                                                      Date lookupDate) {
+        InsuranceQuarter matchingQuarter = insuranceQuarterRepository
+                .findByDateWithinRangeAndCodeWithLimit(insuranceDetailsLimit, categoryCode, lookupDate)
+                .orElse(null);
+        if (matchingQuarter != null) {
+            return matchingQuarter;
+        }
+
+        InsuranceQuarter firstQuarter = insuranceQuarterRepository
+                .findFirstByInsuranceDetailsLimitAndTreatmentCategory_CodeOrderByFromDateAsc(
+                        insuranceDetailsLimit,
+                        categoryCode
+                ).orElse(null);
+        if (firstQuarter == null || lookupDate == null || firstQuarter.getFromDate() == null) {
+            return null;
+        }
+
+        return lookupDate.before(firstQuarter.getFromDate()) ? firstQuarter : null;
+    }
+
+    private BigDecimal resolveCategoryFundLimit(InsuranceDetailsLimit insuranceDetailsLimit,
+                                                InsuranceQuarter insuranceQuarter) {
+        if (!insuranceDetailsLimit.getIsQuarter()) {
+            return insuranceDetailsLimit.getGlobalLimit();
+        }
+        return insuranceQuarter != null ? insuranceQuarter.getQuarterLimit() : null;
     }
 
     private void addIfNotPresent(List<SimpleBaseDTO> tCategoryList, InsuranceDetailsLimit insuranceDetailsLimit) {
