@@ -184,6 +184,7 @@ public class LoginServiceImpl implements LoginService {
                     && applicationUserDetailsResponseDTO.getUserPersonalDetails().getUserCompanyDetails().getPreviousPermanentDate() == null) {
                 applicationUserDetailsResponseDTO.getUserPersonalDetails().getUserCompanyDetails()
                         .setPreviousPermanentDate(applicationUserDetailsResponseDTO.getUserPersonalDetails().getUserCompanyDetails().getPermanentDate());
+                applicationUserDetailsResponseDTO.getUserPersonalDetails().getUserCompanyDetails().setPermanentDate(null);
             }
             log.info("Profile load status {}", applicationUserDetailsResponseDTO);
             return applicationUserDetailsResponseDTO;
