@@ -179,6 +179,12 @@ public class LoginServiceImpl implements LoginService {
             Object objectApiResponse = ExtractApiResponseUtil.extractApiResponse(profileDetailsResponse);
             log.info("After message mapper response {}", objectApiResponse);
             ApplicationUserDetailsResponseDTO applicationUserDetailsResponseDTO = modelMapper.map(objectApiResponse, ApplicationUserDetailsResponseDTO.class);
+            if (applicationUserDetailsResponseDTO.getUserPersonalDetails() != null
+                    && applicationUserDetailsResponseDTO.getUserPersonalDetails().getUserCompanyDetails() != null
+                    && applicationUserDetailsResponseDTO.getUserPersonalDetails().getUserCompanyDetails().getPreviousPermanentDate() == null) {
+                applicationUserDetailsResponseDTO.getUserPersonalDetails().getUserCompanyDetails()
+                        .setPreviousPermanentDate(applicationUserDetailsResponseDTO.getUserPersonalDetails().getUserCompanyDetails().getPermanentDate());
+            }
             log.info("Profile load status {}", applicationUserDetailsResponseDTO);
             return applicationUserDetailsResponseDTO;
         }catch (Exception e) {
