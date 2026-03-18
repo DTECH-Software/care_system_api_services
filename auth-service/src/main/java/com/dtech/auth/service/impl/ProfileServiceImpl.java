@@ -17,6 +17,7 @@ import com.dtech.auth.mapper.EntityToDto.ProfileMapper;
 import com.dtech.auth.model.*;
 import com.dtech.auth.model.DocumentStore;
 import com.dtech.auth.repository.*;
+import com.dtech.auth.service.EmailNotificationService;
 import com.dtech.auth.service.ProfileService;
 import com.dtech.auth.util.*;
 import com.google.gson.Gson;
@@ -31,6 +32,7 @@ import org.springframework.core.io.Resource;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -53,6 +55,10 @@ import java.util.stream.Collectors;
 @Log4j2
 @RequiredArgsConstructor
 public class ProfileServiceImpl implements ProfileService {
+
+    private static final List<String> HR_TEAM_ROLE_CODES = List.of(
+            "HRADMIN", "DevTest", "SUPERADMIN", "APPROVER", "ADMIN", "CLAIMS_APPROVER", "W_CSA", "HR_ADMIN"
+    );
 
     @Autowired
     private final ApplicationUserRepository applicationUserRepository;
@@ -86,6 +92,12 @@ public class ProfileServiceImpl implements ProfileService {
 
     @Autowired
     private final DocumentRepository documentRepository;
+
+    @Autowired
+    private final JdbcTemplate jdbcTemplate;
+
+    @Autowired
+    private final EmailNotificationService emailNotificationService;
 
 
     @Override
@@ -265,7 +277,8 @@ public class ProfileServiceImpl implements ProfileService {
                                 }
                             }
                         }
-                        saveDependent(claimDependentRequestDTO.getDependents(), applicationUser, locale);
+                        List<ClaimsDependents> savedDependents = saveDependent(claimDependentRequestDTO.getDependents(), applicationUser, locale);
+                        notifyHrTeamOnDependentPendingApproval(applicationUser, savedDependents);
                         return ResponseEntity.ok().body(responseUtil.success(null, messageSource.getMessage(ResponseMessageUtil.CLAIM_DEPENDENT_ADDED_SUCCESS, null, locale)));
                     })
                     .orElseGet(() -> {
@@ -417,9 +430,10 @@ public class ProfileServiceImpl implements ProfileService {
     }
 
     @Transactional
-    protected void saveDependent(List<ClaimDependentDetailsRequestDTO> dependents, ApplicationUser applicationUser, Locale locale) {
+    protected List<ClaimsDependents> saveDependent(List<ClaimDependentDetailsRequestDTO> dependents, ApplicationUser applicationUser, Locale locale) {
         try {
             log.info("User claim dependent save {} ", dependents);
+            List<ClaimsDependents> savedDependents = new ArrayList<>();
             dependents.forEach(claimDependentDetailsRequestDTO -> {
 
                 Married married = null;
@@ -473,13 +487,64 @@ public class ProfileServiceImpl implements ProfileService {
                 );
                 log.info("User claim dependent attachment  save {} ", claimDependentDetailsRequestDTO);
                 claimDependentsRepository.saveAndFlush(claimsDependents);
+                savedDependents.add(claimsDependents);
             });
             applicationUser.setExpectingDependentsRegister(false);
             applicationUserRepository.saveAndFlush(applicationUser);
+            return savedDependents;
         } catch (Exception e) {
             log.error(e);
             throw e;
         }
+    }
+
+    private void notifyHrTeamOnDependentPendingApproval(ApplicationUser applicationUser, List<ClaimsDependents> savedDependents) {
+        String companyCode = applicationUser != null
+                && applicationUser.getUserPersonalDetails() != null
+                && applicationUser.getUserPersonalDetails().getUserCompanyDetails() != null
+                && applicationUser.getUserPersonalDetails().getUserCompanyDetails().getCompanyTypes() != null
+                ? applicationUser.getUserPersonalDetails().getUserCompanyDetails().getCompanyTypes().getCode()
+                : null;
+
+        if (companyCode == null || savedDependents == null || savedDependents.isEmpty()) {
+            log.info("Skipping dependent pending approval email. Company or dependent data missing");
+            return;
+        }
+
+        List<String> recipientEmails = findHrTeamEmailsByCompany(companyCode);
+        emailNotificationService.notifyHrTeamOnDependentPendingApproval(recipientEmails, applicationUser, savedDependents);
+    }
+
+    private List<String> findHrTeamEmailsByCompany(String companyCode) {
+        if (companyCode == null || companyCode.isBlank()) {
+            return List.of();
+        }
+
+        String placeholders = String.join(",", Collections.nCopies(HR_TEAM_ROLE_CODES.size(), "?"));
+        String sql = """
+                SELECT DISTINCT wu.email
+                FROM web_user wu
+                JOIN web_user_role wur ON wu.user_role = wur.code
+                JOIN web_user_company wuc ON wu.id = wuc.web_user_id
+                JOIN company_types ct ON wuc.company_id = ct.id
+                WHERE wu.status = 'ACTIVE'
+                  AND wur.status = 'ACTIVE'
+                  AND ct.status = 'ACTIVE'
+                  AND ct.code = ?
+                  AND UPPER(wur.code) IN (%s)
+                  AND wu.email IS NOT NULL
+                  AND TRIM(wu.email) <> ''
+                """.formatted(placeholders);
+
+        List<Object> params = new ArrayList<>();
+        params.add(companyCode);
+        HR_TEAM_ROLE_CODES.forEach(role -> params.add(role.toUpperCase(Locale.ROOT)));
+
+        return jdbcTemplate.query(
+                sql,
+                params.toArray(),
+                (rs, rowNum) -> rs.getString("email")
+        );
     }
 
     @Override
