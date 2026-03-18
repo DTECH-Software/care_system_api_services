@@ -547,6 +547,56 @@ public class ProfileServiceImpl implements ProfileService {
         );
     }
 
+    private void notifyHrTeamOnCivilStatusPendingApproval(ApplicationUser applicationUser,
+                                                          MaritalStatusRequestDTO maritalStatusRequestDTO) {
+        if (applicationUser == null
+                || maritalStatusRequestDTO == null
+                || !RequestType.MARRIED.name().equalsIgnoreCase(maritalStatusRequestDTO.getRequestType())) {
+            return;
+        }
+
+        String companyCode = applicationUser.getUserPersonalDetails() != null
+                && applicationUser.getUserPersonalDetails().getUserCompanyDetails() != null
+                && applicationUser.getUserPersonalDetails().getUserCompanyDetails().getCompanyTypes() != null
+                ? applicationUser.getUserPersonalDetails().getUserCompanyDetails().getCompanyTypes().getCode()
+                : null;
+
+        if (companyCode == null || companyCode.isBlank()) {
+            log.info("Skipping civil status pending approval email. Company missing");
+            return;
+        }
+
+        List<String> recipientEmails = findHrTeamEmailsByCompany(companyCode);
+        emailNotificationService.notifyHrTeamOnCivilStatusPendingApproval(
+                recipientEmails,
+                applicationUser,
+                getMarriageRelatedDependents(applicationUser)
+        );
+    }
+
+    private List<ClaimsDependents> getMarriageRelatedDependents(ApplicationUser applicationUser) {
+        if (applicationUser == null || applicationUser.getClaimsDependents() == null) {
+            return List.of();
+        }
+
+        Set<RelationCategory> relationCategories = EnumSet.of(
+                RelationCategory.WIFE,
+                RelationCategory.HUSBAND,
+                RelationCategory.FATHER_IN_LAW,
+                RelationCategory.MOTHER_IN_LAW
+        );
+
+        return applicationUser.getClaimsDependents().stream()
+                .filter(Objects::nonNull)
+                .filter(dependent -> Boolean.TRUE.equals(dependent.getLiveStatus()))
+                .filter(dependent -> dependent.getRelationCategory() != null)
+                .filter(dependent -> relationCategories.contains(dependent.getRelationCategory()))
+                .sorted(Comparator
+                        .comparing((ClaimsDependents dependent) -> dependent.getRelationCategory().ordinal())
+                        .thenComparing(ClaimsDependents::getDob, Comparator.nullsLast(Comparator.naturalOrder())))
+                .toList();
+    }
+
     @Override
     @Transactional(readOnly = true)
     public ResponseEntity<Resource> policyDocument(PolicyDocumentRequestDTO policyDocumentRequestDTO) {
@@ -626,6 +676,7 @@ public class ProfileServiceImpl implements ProfileService {
                 maritalStatus.setMaritalStatus(maritalStatusRequestDTO.getRequestType().equals(RequestType.MARRIED.name()) ? MaritalStatus.MARRIED : MaritalStatus.UNMARRIED);
                 user.setMaritalStatus(maritalStatus);
                 applicationUserRepository.saveAndFlush(user);
+                notifyHrTeamOnCivilStatusPendingApproval(user, maritalStatusRequestDTO);
 
                 return ResponseEntity.ok().body(responseUtil.success(null, messageSource.getMessage(ResponseMessageUtil.APPLICATION_USER_DETAILS_UPDATE_SUCCESS, null, locale)));
             }).orElseGet(() -> {

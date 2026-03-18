@@ -43,9 +43,23 @@ public class EmailNotificationService {
             return;
         }
 
-        String subject = "Dependent Approval Required";
-        String body = buildDependentPendingApprovalBody(employee, dependents);
+        sendNotificationEmails(recipientEmails, "Dependent Approval Required",
+                buildDependentPendingApprovalBody(employee, dependents));
+    }
 
+    public void notifyHrTeamOnCivilStatusPendingApproval(List<String> recipientEmails,
+                                                         ApplicationUser employee,
+                                                         List<ClaimsDependents> dependents) {
+        if (CollectionUtils.isEmpty(recipientEmails) || employee == null) {
+            log.info("Skipping civil status pending approval email - recipients or employee missing");
+            return;
+        }
+
+        sendNotificationEmails(recipientEmails, "Civil Status Approval Required",
+                buildCivilStatusPendingApprovalBody(employee, dependents));
+    }
+
+    private void sendNotificationEmails(List<String> recipientEmails, String subject, String body) {
         Set<String> processedEmails = new HashSet<>();
         for (String recipientEmail : recipientEmails) {
             sendHtmlMail(recipientEmail, subject, body, processedEmails);
@@ -79,45 +93,15 @@ public class EmailNotificationService {
     }
 
     private String buildDependentPendingApprovalBody(ApplicationUser employee, List<ClaimsDependents> dependents) {
-        UserPersonalDetails personalDetails = employee.getUserPersonalDetails();
-        UserCompanyDetails companyDetails = personalDetails != null ? personalDetails.getUserCompanyDetails() : null;
-        CompanyTypes company = companyDetails != null ? companyDetails.getCompanyTypes() : null;
-        StaffCategories staffCategory = companyDetails != null ? companyDetails.getStaffCategories() : null;
-
         return """
                 <html>
                 <body style="font-family: Arial, sans-serif; color: #222;">
                     <p>Dear HR team,</p>
                     <p>A dependent has been added by the following employee and is pending your approval. The details are as follows:</p>
                     <p><strong>Employee details</strong></p>
-                    <table style="border-collapse: collapse; width: 100%%; max-width: 700px; margin-bottom: 16px;">
-                        <tr>
-                            <td style="border: 1px solid #d9d9d9; padding: 8px; font-weight: bold; width: 35%%;">Employee name</td>
-                            <td style="border: 1px solid #d9d9d9; padding: 8px;">%s</td>
-                        </tr>
-                        <tr>
-                            <td style="border: 1px solid #d9d9d9; padding: 8px; font-weight: bold;">Company</td>
-                            <td style="border: 1px solid #d9d9d9; padding: 8px;">%s</td>
-                        </tr>
-                        <tr>
-                            <td style="border: 1px solid #d9d9d9; padding: 8px; font-weight: bold;">EPF number</td>
-                            <td style="border: 1px solid #d9d9d9; padding: 8px;">%s</td>
-                        </tr>
-                        <tr>
-                            <td style="border: 1px solid #d9d9d9; padding: 8px; font-weight: bold;">Staff category</td>
-                            <td style="border: 1px solid #d9d9d9; padding: 8px;">%s</td>
-                        </tr>
-                    </table>
+                    %s
                     <p><strong>Dependent details</strong></p>
-                    <table style="border-collapse: collapse; width: 100%%; max-width: 700px; margin-bottom: 16px;">
-                        <tr>
-                            <th style="border: 1px solid #d9d9d9; padding: 8px; text-align: left;">Relationship</th>
-                            <th style="border: 1px solid #d9d9d9; padding: 8px; text-align: left;">Dependent name</th>
-                            <th style="border: 1px solid #d9d9d9; padding: 8px; text-align: left;">Date of Birth</th>
-                            <th style="border: 1px solid #d9d9d9; padding: 8px; text-align: left;">NIC (Above 16 years)</th>
-                        </tr>
-                        %s
-                    </table>
+                    %s
                     <p>Please login to the WeCare system to continue the approval process.<br/>
                     <a href="https://wecare-admin.dsi.lk/care-admin">https://wecare-admin.dsi.lk/care-admin</a></p>
                     <p>This is an automated notification. Please do not reply to this email.</p>
@@ -125,15 +109,92 @@ public class EmailNotificationService {
                 </body>
                 </html>
                 """.formatted(
-                escapeHtml(getEmployeeName(personalDetails)),
-                escapeHtml(safeValue(company != null ? company.getDescription() : null)),
-                escapeHtml(safeValue(personalDetails != null ? personalDetails.getEpfNo() : null)),
-                escapeHtml(safeValue(staffCategory != null ? staffCategory.getDescription() : null)),
-                buildDependentRows(dependents)
+                buildEmployeeDetailsTable(employee),
+                buildDependentDetailsTable(dependents)
         );
     }
 
+    private String buildCivilStatusPendingApprovalBody(ApplicationUser employee, List<ClaimsDependents> dependents) {
+        return """
+                <html>
+                <body style="font-family: Arial, sans-serif; color: #222;">
+                    <p>Dear HR team,</p>
+                    <p>A marriage certificate has been added by the following employee and is pending your approval. The details are as follows:</p>
+                    <p><strong>Employee details</strong></p>
+                    %s
+                    <p><strong>Dependent details</strong></p>
+                    %s
+                    <p>Please login to the WeCare system to continue the approval process.<br/>
+                    <a href="https://wecare-admin.dsi.lk/care-admin">https://wecare-admin.dsi.lk/care-admin</a></p>
+                    <p>This is an automated notification. Please do not reply to this email.</p>
+                    <p>Regards,<br/>WeCare system<br/>Automated Notification</p>
+                </body>
+                </html>
+                """.formatted(
+                buildEmployeeDetailsTable(employee),
+                buildDependentDetailsTable(dependents)
+        );
+    }
+
+    private String buildEmployeeDetailsTable(ApplicationUser employee) {
+        UserPersonalDetails personalDetails = employee.getUserPersonalDetails();
+        UserCompanyDetails companyDetails = personalDetails != null ? personalDetails.getUserCompanyDetails() : null;
+        CompanyTypes company = companyDetails != null ? companyDetails.getCompanyTypes() : null;
+        StaffCategories staffCategory = companyDetails != null ? companyDetails.getStaffCategories() : null;
+
+        return """
+                <table style="border-collapse: collapse; width: 100%%; max-width: 700px; margin-bottom: 16px;">
+                    <tr>
+                        <td style="border: 1px solid #d9d9d9; padding: 8px; font-weight: bold; width: 35%%;">Employee name</td>
+                        <td style="border: 1px solid #d9d9d9; padding: 8px;">%s</td>
+                    </tr>
+                    <tr>
+                        <td style="border: 1px solid #d9d9d9; padding: 8px; font-weight: bold;">Company</td>
+                        <td style="border: 1px solid #d9d9d9; padding: 8px;">%s</td>
+                    </tr>
+                    <tr>
+                        <td style="border: 1px solid #d9d9d9; padding: 8px; font-weight: bold;">EPF number</td>
+                        <td style="border: 1px solid #d9d9d9; padding: 8px;">%s</td>
+                    </tr>
+                    <tr>
+                        <td style="border: 1px solid #d9d9d9; padding: 8px; font-weight: bold;">Staff category</td>
+                        <td style="border: 1px solid #d9d9d9; padding: 8px;">%s</td>
+                    </tr>
+                </table>
+                """.formatted(
+                escapeHtml(getEmployeeName(personalDetails)),
+                escapeHtml(safeValue(company != null ? company.getDescription() : null)),
+                escapeHtml(safeValue(personalDetails != null ? personalDetails.getEpfNo() : null)),
+                escapeHtml(safeValue(staffCategory != null ? staffCategory.getDescription() : null))
+        );
+    }
+
+    private String buildDependentDetailsTable(List<ClaimsDependents> dependents) {
+        return """
+                <table style="border-collapse: collapse; width: 100%%; max-width: 700px; margin-bottom: 16px;">
+                    <tr>
+                        <th style="border: 1px solid #d9d9d9; padding: 8px; text-align: left;">Relationship</th>
+                        <th style="border: 1px solid #d9d9d9; padding: 8px; text-align: left;">Dependent name</th>
+                        <th style="border: 1px solid #d9d9d9; padding: 8px; text-align: left;">Date of Birth</th>
+                        <th style="border: 1px solid #d9d9d9; padding: 8px; text-align: left;">NIC (Above 16 years)</th>
+                    </tr>
+                    %s
+                </table>
+                """.formatted(buildDependentRows(dependents));
+    }
+
     private String buildDependentRows(List<ClaimsDependents> dependents) {
+        if (CollectionUtils.isEmpty(dependents)) {
+            return """
+                    <tr>
+                        <td style="border: 1px solid #d9d9d9; padding: 8px;">-</td>
+                        <td style="border: 1px solid #d9d9d9; padding: 8px;">-</td>
+                        <td style="border: 1px solid #d9d9d9; padding: 8px;">-</td>
+                        <td style="border: 1px solid #d9d9d9; padding: 8px;">-</td>
+                    </tr>
+                    """;
+        }
+
         StringBuilder rows = new StringBuilder();
         for (ClaimsDependents dependent : dependents) {
             rows.append("""
