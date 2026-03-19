@@ -422,6 +422,10 @@ public class ProfileServiceImpl implements ProfileService {
             log.info("Update profile details {} ", applicationUser);
             applicationUser.setPrimaryEmail(email);
             applicationUser.setPrimaryMobile(mobile);
+            if (applicationUser.getUserPersonalDetails() != null) {
+                applicationUser.getUserPersonalDetails().setEmail(email);
+                applicationUser.getUserPersonalDetails().setMobileNo(mobile);
+            }
             applicationUserRepository.saveAndFlush(applicationUser);
         } catch (Exception e) {
             log.error(e);
