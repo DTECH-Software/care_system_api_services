@@ -25,7 +25,7 @@ public class SecurityConfig {
         log.info("Security filter chain {}",http);
         http
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/v1/login/**", "/api/v1/password/**")
+                        .requestMatchers("/api/v1/login/**", "/api/v1/password/**", "/api/v1/biometric/**")
                         .permitAll()
                         .anyRequest().authenticated()
                 )

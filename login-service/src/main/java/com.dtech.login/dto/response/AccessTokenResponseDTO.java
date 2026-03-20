@@ -13,4 +13,6 @@ import lombok.Data;
 @Data
 public class AccessTokenResponseDTO {
     private String accessToken;
+    private String refreshToken;
+    private Long tokenExpiresIn;
 }

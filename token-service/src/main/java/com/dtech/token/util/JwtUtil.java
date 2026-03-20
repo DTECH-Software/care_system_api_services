@@ -27,17 +27,31 @@ public class JwtUtil {
     @Value("${jwt.token.exp.time}")
     private long EXP_TIME;
 
+    @Value("${jwt.refresh.token.exp.time:${jwt.token.exp.time}}")
+    private long REFRESH_EXP_TIME;
+
     //generate token
     public String generateToken(String username) {
         log.info("Generate token {}", username);
+        return generateToken(username, EXP_TIME);
+    }
 
+    public String generateRefreshToken(String username) {
+        log.info("Generate refresh token {}", username);
+        return generateToken(username, REFRESH_EXP_TIME);
+    }
+
+    public long getTokenExpiresInSeconds() {
+        return EXP_TIME / 1000;
+    }
+
+    private String generateToken(String username, long expTime) {
         return Jwts.builder()
                 .subject(username)
                 .issuedAt(new Date(System.currentTimeMillis()))
-                .expiration(new Date(System.currentTimeMillis() + EXP_TIME))
+                .expiration(new Date(System.currentTimeMillis() + expTime))
                 .signWith(getSignInKey())
                 .compact();
-
     }
 
     public String extractUsername(String token) {

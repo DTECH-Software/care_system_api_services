@@ -63,11 +63,17 @@ public class TokenServiceImpl implements TokenService {
             if (userOptional.isPresent()) {
                 ApplicationUser user = userOptional.get();
                 String token = jwtUtil.generateToken(user.getUsername());
-                log.info("Generated token: {}", token);
+                String refreshToken = jwtUtil.generateRefreshToken(user.getUsername());
+                long tokenExpiresIn = jwtUtil.getTokenExpiresInSeconds();
+                log.info("Generated token for user {}", user.getUsername());
 
                 return ResponseEntity.ok().body(
                         responseUtil.success(
-                                Map.of("accessToken", token),
+                                Map.of(
+                                        "accessToken", token,
+                                        "refreshToken", refreshToken,
+                                        "tokenExpiresIn", tokenExpiresIn
+                                ),
                                 messageSource.getMessage(ResponseMessageUtil.TOKEN_GENERATE_SUCCESS, null, locale)
                         )
                 );
