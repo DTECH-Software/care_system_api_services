@@ -10,11 +10,14 @@ import lombok.Data;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class BiometricEnableDataResponseDTO {
 
+    @JsonProperty("username")
+    private String username;
+
+    @JsonProperty("enable")
+    private boolean enable;
+
     @JsonProperty("uniqueCode")
     private String uniqueCode;
-
-    @JsonProperty("userName")
-    private String userName;
 
     @JsonProperty("mobileNo")
     private String mobileNo;

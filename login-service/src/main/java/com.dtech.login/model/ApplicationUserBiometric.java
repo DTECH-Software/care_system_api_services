@@ -24,7 +24,7 @@ public class ApplicationUserBiometric extends Audit implements Serializable {
     @JoinColumn(name = "user_id", nullable = false, referencedColumnName = "id")
     private ApplicationUser applicationUser;
 
-    @Column(name = "unique_code", nullable = false, length = 2048)
+    @Column(name = "unique_code", length = 2048)
     private String uniqueCode;
 
     @Column(name = "app_id", length = 255)

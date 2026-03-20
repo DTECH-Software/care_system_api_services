@@ -1,7 +1,7 @@
 package com.dtech.auth.controller;
 
 import com.dtech.auth.dto.request.BiometricEnableRequestDTO;
-import com.dtech.auth.dto.response.BiometricEnableResponseDTO;
+import com.dtech.auth.dto.response.ApiResponse;
 import com.dtech.auth.service.BiometricService;
 import io.swagger.annotations.ApiOperation;
 import lombok.RequiredArgsConstructor;
@@ -25,8 +25,7 @@ public class BiometricController {
 
     @PostMapping(produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.APPLICATION_JSON_VALUE)
     @ApiOperation(value = "Handle biometric enable request", notes = "Enable biometric request success or failed")
-    public ResponseEntity<BiometricEnableResponseDTO> enableBiometric(@RequestBody BiometricEnableRequestDTO biometricEnableRequestDTO,
-                                                                      Locale locale) {
+    public ResponseEntity<ApiResponse<Object>> enableBiometric(@RequestBody BiometricEnableRequestDTO biometricEnableRequestDTO, Locale locale) {
         log.info("Biometric enable request controller {}", biometricEnableRequestDTO);
         return biometricService.enableBiometric(biometricEnableRequestDTO, locale);
     }

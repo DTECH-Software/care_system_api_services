@@ -1,7 +1,7 @@
 CREATE TABLE IF NOT EXISTS application_user_biometrics (
     id BIGINT NOT NULL AUTO_INCREMENT,
     user_id BIGINT NOT NULL,
-    unique_code VARCHAR(2048) NOT NULL,
+    unique_code VARCHAR(2048) NULL,
     app_id VARCHAR(255) NULL,
     enabled BIT(1) NOT NULL DEFAULT b'1',
     last_used_date DATETIME NULL,
@@ -12,3 +12,6 @@ CREATE TABLE IF NOT EXISTS application_user_biometrics (
     CONSTRAINT fk_application_user_biometrics_user
         FOREIGN KEY (user_id) REFERENCES application_user (id)
 );
+
+ALTER TABLE application_user_biometrics
+    MODIFY COLUMN unique_code VARCHAR(2048) NULL;
