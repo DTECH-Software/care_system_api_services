@@ -114,6 +114,9 @@ public class BiometricServiceImpl implements BiometricService {
             if (deviceDetails == null || !StringUtils.hasText(deviceDetails.getDeviceId())) {
                 return ResponseEntity.ok(errorResponse(biometricLoginRequestDTO, INVALID_REQUEST_CODE, "Invalid deviceInfo"));
             }
+            if (!matchesRegisteredDevice(applicationUser, deviceDetails.getDeviceId())) {
+                return ResponseEntity.ok(errorResponse(biometricLoginRequestDTO, BIOMETRIC_NOT_ENABLED_CODE, "Biometric is not enabled for this device"));
+            }
 
             AccessTokenResponseDTO tokenResponse = issueToken(username, deviceDetails);
             if (tokenResponse == null || !StringUtils.hasText(tokenResponse.getAccessToken())) {
@@ -221,6 +224,12 @@ public class BiometricServiceImpl implements BiometricService {
         return jsonObject != null && jsonObject.has(key) && !jsonObject.get(key).isJsonNull()
                 ? jsonObject.get(key).getAsString()
                 : null;
+    }
+
+    private boolean matchesRegisteredDevice(ApplicationUser applicationUser, String deviceId) {
+        return applicationUser.getApplicationUserDeviceDetails() != null
+                && StringUtils.hasText(applicationUser.getApplicationUserDeviceDetails().getDeviceId())
+                && applicationUser.getApplicationUserDeviceDetails().getDeviceId().trim().equals(deviceId.trim());
     }
 
     private AccessTokenResponseDTO issueToken(String username, ChannelMbDeviceDetailsDTO deviceDetails) {
