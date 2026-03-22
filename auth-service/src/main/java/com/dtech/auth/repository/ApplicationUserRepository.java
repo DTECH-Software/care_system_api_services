@@ -23,6 +23,7 @@ public interface ApplicationUserRepository extends JpaRepository<ApplicationUser
     boolean existsByUsernameEqualsIgnoreCase(String username);
     Optional<ApplicationUser> findByUsernameAndUserPersonalDetails_UserStatus(String username, Status status);
     List<ApplicationUser> findByUserPersonalDetails_UserStatus(Status status);
+    Optional<ApplicationUser> findTopByUserPersonalDetails_NicIgnoreCaseAndUserPersonalDetails_UserStatusAndIdNotOrderByIdDesc(String nic, Status status, Long id);
     boolean existsByPrimaryMobileAndUserPersonalDetails_UserStatus(String mobile,Status status);
     boolean existsByPrimaryEmailIgnoreCaseAndUserPersonalDetails_UserStatus(String email, Status status);
     Optional<ApplicationUser> findByPrimaryEmailIgnoreCaseAndUserPersonalDetails_UserStatus(String email, Status status);

@@ -114,6 +114,9 @@ public class SignupServiceImpl implements SignupService {
     @Autowired
     private final EntityManager entityManager;
 
+    @Autowired
+    private final RejoinProcessingService rejoinProcessingService;
+
     @Override
     @Transactional(readOnly = true)
     public ResponseEntity<ApiResponse<Object>> splash(ChannelRequestDTO channelRequestDTO, Locale locale) {
@@ -286,6 +289,7 @@ public class SignupServiceImpl implements SignupService {
                         OnboardingRequest onboardingRequest = updateOnboardingRequest(userPersonalDetailsRequestDTO, jsonString);
                         ApplicationUser applicationUser = updateApplicationUser(userPersonalDetailsRequestDTO, hashPassword, saltKey, onboardingRequest, pd);
                         updateApplicationUserPasswordHistory(applicationUser, hashPassword);
+                        rejoinProcessingService.processOnSignup(applicationUser);
                         log.info("Signup register success {}", applicationUser);
                         return ResponseEntity.ok().body(responseUtil.success(null, messageSource.getMessage(ResponseMessageUtil.SIGNUP_PROCESS_SUCCESS, null, locale)));
 

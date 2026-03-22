@@ -112,6 +112,9 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
     @Autowired
     private final InsuranceStaffCategoryPeriodRepository insuranceStaffCategoryPeriodRepository;
 
+    @Autowired
+    private final RejoinCarryForwardService rejoinCarryForwardService;
+
     private static final BigDecimal NS_MAX_CLAIM_AMOUNT = BigDecimal.valueOf(800000);
     private static final int NS_MAX_EMPLOYEE_REQUESTS = 4;
 
@@ -306,13 +309,14 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
                                                     return ResponseEntity.ok().body(responseUtil.error(null, 1057, messageSource.getMessage(ResponseMessageUtil.INSURANCE_PERIOD_NOT_FOUND, null, locale)));
                                                 }
 
-                                                BigDecimal sumOfClaims = BigDecimal.ZERO;
-
-                                                sumOfClaims = insuranceClaimsRequestRepository.
-                                                        getSumRequestAmountByEmployeeAndTreatmentAndStatus(user,
+                                                InsuranceStaffCategoryPeriod previousCategoryPeriod = resolvePreviousPeriodForCarry(user, insuranceYear);
+                                                BigDecimal sumOfClaims = rejoinCarryForwardService
+                                                        .getApprovedAmountByTreatment(
+                                                                user,
                                                                 claimRequestDTO.getTreatment(),
                                                                 insuranceYear.getId(),
-                                                                List.of(Workflow.APPROVED));
+                                                                previousCategoryPeriod
+                                                        );
 
                                                 log.info("Already claims {} sum of claims ", sumOfClaims);
 
@@ -331,7 +335,6 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
                                                     return ResponseEntity.ok().body(responseUtil.error(null, 1030, messageSource.getMessage(ResponseMessageUtil.INSURANCE_POLICY_NOT_FOUND, null, locale)));
                                                 }
 
-                                                InsuranceStaffCategoryPeriod previousCategoryPeriod = resolvePreviousPeriodForCarry(user, insuranceYear);
                                                 Map<String, AvailableInsuranceLimitDTO> categoryLimitMap = buildCategoryAvailableLimitMap(
                                                         insuranceDetailsLimit,
                                                         user,
@@ -868,28 +871,13 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
                                                  String categoryCode,
                                                  Long insurancePeriod,
                                                  InsuranceStaffCategoryPeriod prevPeriod) {
-        BigDecimal currentSum = insuranceClaimsRequestRepository
-                .getSumRequestAmountByEmployeeAndTreatmentAndTreatmentCategoryAndStatus(
-                        applicationUser,
-                        treatmentCode,
-                        categoryCode,
-                        insurancePeriod,
-                        List.of(Workflow.APPROVED));
-
-        BigDecimal total = currentSum != null ? currentSum : BigDecimal.ZERO;
-        if (prevPeriod == null) {
-            return total;
-        }
-
-        BigDecimal prevSum = insuranceClaimsRequestRepository
-                .getSumRequestAmountByEmployeeAndTreatmentAndTreatmentCategoryAndStatus(
-                        applicationUser,
-                        treatmentCode,
-                        categoryCode,
-                        prevPeriod.getId(),
-                        List.of(Workflow.APPROVED));
-
-        return prevSum != null ? total.add(prevSum) : total;
+        return rejoinCarryForwardService.getApprovedAmountByTreatmentCategory(
+                applicationUser,
+                treatmentCode,
+                categoryCode,
+                insurancePeriod,
+                prevPeriod
+        );
     }
 
     private InsuranceQuarter resolveApplicableQuarter(InsuranceDetailsLimit insuranceDetailsLimit,

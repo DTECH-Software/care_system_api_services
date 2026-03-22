@@ -61,6 +61,9 @@ public class DashboardServiceImpl implements DashboardService {
     @Autowired
     private InsuranceQuarterRepository insuranceQuarterRepository;
 
+    @Autowired
+    private final RejoinCarryForwardService rejoinCarryForwardService;
+
     @Override
     @Transactional(readOnly = true)
     public ResponseEntity<ApiResponse<Object>> dashboardSummary(DashboardSummaryDTO dashboardSummaryDTO, Locale locale) {
@@ -297,14 +300,6 @@ public class DashboardServiceImpl implements DashboardService {
         }
 
         InsuranceDetailsLimit insuranceDetailsLimit = insuranceDetailsLimitOpt.get();
-        BigDecimal sum = insuranceClaimsRequestRepository.getSumRequestAmountByEmployeeAndTreatmentAndStatus(
-                user,
-                treatmentCode,
-                currentPeriod.getId(),
-                List.of(Workflow.APPROVED)
-        );
-        sum = sum != null ? sum : BigDecimal.ZERO;
-
         Date previousPermanentDate = user.getUserPersonalDetails()
                 .getUserCompanyDetails()
                 .getPreviousPermanentDate();
@@ -324,16 +319,15 @@ public class DashboardServiceImpl implements DashboardService {
                     .orElse(null);
         }
         if (prevPeriod != null) {
-            BigDecimal prevSum = insuranceClaimsRequestRepository
-                    .getSumRequestAmountByEmployeeAndTreatmentAndStatus(
-                            user,
-                            treatmentCode,
-                            prevPeriod.getId(),
-                            List.of(Workflow.APPROVED));
-            if (prevSum != null) {
-                sum = sum.add(prevSum);
-            }
+            log.info("Dashboard carry-forward also considers previous period {}", prevPeriod.getId());
         }
+
+        BigDecimal sum = rejoinCarryForwardService.getApprovedAmountByTreatment(
+                user,
+                treatmentCode,
+                currentPeriod.getId(),
+                prevPeriod
+        );
 
         Map<String, InsuranceQuarter> categoryQuarterMap = new HashMap<>();
         Date permanentDate = user.getUserPersonalDetails()
