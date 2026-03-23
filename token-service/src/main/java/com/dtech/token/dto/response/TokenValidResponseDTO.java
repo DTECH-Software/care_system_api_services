@@ -14,5 +14,5 @@ import lombok.Data;
 @AllArgsConstructor
 public class TokenValidResponseDTO {
     private boolean valid;
-   // private String username;
+    private String username;
 }
