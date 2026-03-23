@@ -133,9 +133,17 @@ public class BiometricServiceImpl implements BiometricService {
     }
 
     private ApplicationUserDeviceDetails upsertUserDeviceDetails(ChannelMbDeviceDetailsDTO deviceDetails) {
-        ApplicationUserDeviceDetails applicationUserDeviceDetails = applicationUserDeviceDetailsRepository
-                .findByDeviceId(deviceDetails.getDeviceId())
-                .orElseGet(ApplicationUserDeviceDetails::new);
+        var existingDevices = applicationUserDeviceDetailsRepository
+                .findAllByDeviceIdOrderByIdAsc(deviceDetails.getDeviceId());
+
+        if (existingDevices.size() > 1) {
+            log.warn("Duplicate device rows found for deviceId {}. Reusing the oldest row with id {}",
+                    deviceDetails.getDeviceId(), existingDevices.get(0).getId());
+        }
+
+        ApplicationUserDeviceDetails applicationUserDeviceDetails = existingDevices.isEmpty()
+                ? new ApplicationUserDeviceDetails()
+                : existingDevices.get(0);
 
         applicationUserDeviceDetails.setDeviceId(deviceDetails.getDeviceId());
         applicationUserDeviceDetails.setDeviceModel(StringUtils.hasText(deviceDetails.getDeviceModel()) ? deviceDetails.getDeviceModel() : "UNKNOWN");
