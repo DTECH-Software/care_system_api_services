@@ -821,49 +821,53 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
             return Collections.emptyMap();
         }
 
-        List<BigDecimal> bucketLimits = categoryContextMap.values().stream()
-                .map(CategoryLimitContext::getFundLimit)
-                .distinct()
-                .sorted()
-                .toList();
-
-        Map<BigDecimal, BigDecimal> bucketRemainingMap = new LinkedHashMap<>();
-        for (BigDecimal bucketLimit : bucketLimits) {
-            BigDecimal consumedAmount = BigDecimal.ZERO;
-            for (CategoryLimitContext context : categoryContextMap.values()) {
-                if (context.getFundLimit().compareTo(bucketLimit) <= 0) {
-                    consumedAmount = consumedAmount.add(context.getApprovedAmount());
-                }
-            }
-            BigDecimal remainingAmount = bucketLimit.subtract(consumedAmount);
-            if (remainingAmount.compareTo(BigDecimal.ZERO) < 0) {
-                remainingAmount = BigDecimal.ZERO;
-            }
-            bucketRemainingMap.put(bucketLimit, remainingAmount);
-        }
+        BigDecimal treatmentFundLimit = resolveTreatmentFundLimit(insuranceDetailsLimit, categoryContextMap);
+        BigDecimal treatmentApprovedAmount = rejoinCarryForwardService.getApprovedAmountByTreatment(
+                applicationUser,
+                treatmentCode,
+                insurancePeriod,
+                prevPeriod
+        );
+        BigDecimal treatmentRemainingAmount = subtractToZero(treatmentFundLimit, treatmentApprovedAmount);
 
         Map<String, AvailableInsuranceLimitDTO> availableLimitMap = new LinkedHashMap<>();
         for (Map.Entry<String, CategoryLimitContext> entry : categoryContextMap.entrySet()) {
-            BigDecimal availableAmount = null;
-            for (Map.Entry<BigDecimal, BigDecimal> bucketEntry : bucketRemainingMap.entrySet()) {
-                if (bucketEntry.getKey().compareTo(entry.getValue().getFundLimit()) < 0) {
-                    continue;
-                }
-                if (availableAmount == null || bucketEntry.getValue().compareTo(availableAmount) < 0) {
-                    availableAmount = bucketEntry.getValue();
-                }
-            }
+            BigDecimal categoryRemainingAmount = subtractToZero(
+                    entry.getValue().getFundLimit(),
+                    entry.getValue().getApprovedAmount()
+            );
+            BigDecimal availableAmount = treatmentRemainingAmount.min(categoryRemainingAmount);
 
             availableLimitMap.put(
                     entry.getKey(),
                     new AvailableInsuranceLimitDTO(
-                            availableAmount != null ? availableAmount : BigDecimal.ZERO,
+                            availableAmount,
                             entry.getValue().getFundLimit()
                     )
             );
         }
 
         return availableLimitMap;
+    }
+
+    private BigDecimal resolveTreatmentFundLimit(InsuranceDetailsLimit insuranceDetailsLimit,
+                                                 Map<String, CategoryLimitContext> categoryContextMap) {
+        if (insuranceDetailsLimit.getGlobalLimit() != null) {
+            return insuranceDetailsLimit.getGlobalLimit();
+        }
+
+        return categoryContextMap.values().stream()
+                .map(CategoryLimitContext::getFundLimit)
+                .filter(Objects::nonNull)
+                .max(BigDecimal::compareTo)
+                .orElse(BigDecimal.ZERO);
+    }
+
+    private BigDecimal subtractToZero(BigDecimal fundLimit, BigDecimal usedAmount) {
+        BigDecimal safeFundLimit = fundLimit != null ? fundLimit : BigDecimal.ZERO;
+        BigDecimal safeUsedAmount = usedAmount != null ? usedAmount : BigDecimal.ZERO;
+        BigDecimal remainingAmount = safeFundLimit.subtract(safeUsedAmount);
+        return remainingAmount.compareTo(BigDecimal.ZERO) < 0 ? BigDecimal.ZERO : remainingAmount;
     }
 
     private BigDecimal getCategoryApprovedAmount(ApplicationUser applicationUser,
