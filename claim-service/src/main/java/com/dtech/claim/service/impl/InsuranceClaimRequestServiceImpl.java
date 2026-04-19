@@ -317,6 +317,7 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
                                                                 insuranceYear.getId(),
                                                                 previousCategoryPeriod
                                                         );
+                                                Long currentPolicyId = policy.getId();
 
                                                 log.info("Already claims {} sum of claims ", sumOfClaims);
 
@@ -363,12 +364,19 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
                                                     if (isCRIC && "NS".equals(staffCategoryCode)) {
                                                         log.info("Dependent eligible due to CRIC {} ", sumOfClaims);
                                                         int requestEmp = insuranceClaimsRequestRepository.
-                                                                countByInsuranceClaimsDetails_Treatment_TreatmentCodeAndRequestStatusIn(TreatmentType.CRIC.name(), List.of(Workflow.APPROVED));
+                                                                countByInsuranceClaimsDetails_Treatment_TreatmentCodeAndInsuranceClaimsDetails_InsuranceStaffCategoryPeriod_IdAndInsuranceDetailsLimit_InsurancePolicy_IdAndRequestStatusIn(
+                                                                        TreatmentType.CRIC.name(),
+                                                                        insuranceYear.getId(),
+                                                                        currentPolicyId,
+                                                                        List.of(Workflow.APPROVED));
                                                         log.info("Dependent not eligible due to CRIC {} {}", sumOfClaims, requestEmp);
 
                                                         boolean exists = insuranceClaimsRequestRepository.
-                                                                existsByEmployeeAndInsuranceClaimsDetails_Treatment_TreatmentCodeAndRequestStatus(user,
+                                                                existsByEmployeeAndInsuranceClaimsDetails_Treatment_TreatmentCodeAndInsuranceClaimsDetails_InsuranceStaffCategoryPeriod_IdAndInsuranceDetailsLimit_InsurancePolicy_IdAndRequestStatus(
+                                                                        user,
                                                                         TreatmentType.CRIC.name(),
+                                                                        insuranceYear.getId(),
+                                                                        currentPolicyId,
                                                                         Workflow.APPROVED);
 
                                                         if (requestEmp > NS_MAX_EMPLOYEE_REQUESTS
@@ -399,7 +407,12 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
                                                         }
 
                                                         int requestEmp = insuranceClaimsRequestRepository.
-                                                                countByInsuranceClaimsDetails_Treatment_TreatmentCodeAndRequestStatusInAndEmployee(TreatmentType.CRIC.name(), List.of(Workflow.APPROVED), user);
+                                                                countByInsuranceClaimsDetails_Treatment_TreatmentCodeAndInsuranceClaimsDetails_InsuranceStaffCategoryPeriod_IdAndInsuranceDetailsLimit_InsurancePolicy_IdAndRequestStatusInAndEmployee(
+                                                                        TreatmentType.CRIC.name(),
+                                                                        insuranceYear.getId(),
+                                                                        currentPolicyId,
+                                                                        List.of(Workflow.APPROVED),
+                                                                        user);
                                                         log.info("Dependent not eligible due to CRIC {} {}", sumOfClaims, requestEmp);
 
                                                         BigDecimal safeSumOfClaims = sumOfClaims == null ? BigDecimal.ZERO : sumOfClaims;
@@ -497,12 +510,19 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
                                                     if (isCRIC && "NS".equals(staffCategoryCode)) {
                                                         log.info("Dependent eligible due to CRIC {} ", sumOfClaims);
                                                         int requestEmp = insuranceClaimsRequestRepository.
-                                                                countByInsuranceClaimsDetails_Treatment_TreatmentCodeAndRequestStatusIn(TreatmentType.CRIC.name(), List.of(Workflow.APPROVED));
+                                                                countByInsuranceClaimsDetails_Treatment_TreatmentCodeAndInsuranceClaimsDetails_InsuranceStaffCategoryPeriod_IdAndInsuranceDetailsLimit_InsurancePolicy_IdAndRequestStatusIn(
+                                                                        TreatmentType.CRIC.name(),
+                                                                        insuranceYear.getId(),
+                                                                        currentPolicyId,
+                                                                        List.of(Workflow.APPROVED));
                                                         log.info("Dependent not eligible due to CRIC {} {}", sumOfClaims, requestEmp);
 
                                                         boolean exists = insuranceClaimsRequestRepository.
-                                                                existsByEmployeeAndInsuranceClaimsDetails_Treatment_TreatmentCodeAndRequestStatus(user,
+                                                                existsByEmployeeAndInsuranceClaimsDetails_Treatment_TreatmentCodeAndInsuranceClaimsDetails_InsuranceStaffCategoryPeriod_IdAndInsuranceDetailsLimit_InsurancePolicy_IdAndRequestStatus(
+                                                                        user,
                                                                         TreatmentType.CRIC.name(),
+                                                                        insuranceYear.getId(),
+                                                                        currentPolicyId,
                                                                         Workflow.APPROVED);
 
                                                         if (requestEmp > NS_MAX_EMPLOYEE_REQUESTS

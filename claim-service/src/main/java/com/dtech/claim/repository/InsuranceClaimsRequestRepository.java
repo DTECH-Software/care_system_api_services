@@ -513,6 +513,12 @@ WHERE tr.code = :treatment
 
     int countByInsuranceClaimsDetails_Treatment_TreatmentCodeAndRequestStatusIn(String treatmentCode, List<Workflow> workflow);
     int countByInsuranceClaimsDetails_Treatment_TreatmentCodeAndRequestStatusInAndEmployee(String treatmentCode, List<Workflow> workflow,ApplicationUser applicationUser);
+    int countByInsuranceClaimsDetails_Treatment_TreatmentCodeAndInsuranceClaimsDetails_InsuranceStaffCategoryPeriod_IdAndInsuranceDetailsLimit_InsurancePolicy_IdAndRequestStatusIn(
+            String treatmentCode, Long insuranceStaffCategoryPeriodId, Long insurancePolicyId, List<Workflow> workflow);
+    int countByInsuranceClaimsDetails_Treatment_TreatmentCodeAndInsuranceClaimsDetails_InsuranceStaffCategoryPeriod_IdAndInsuranceDetailsLimit_InsurancePolicy_IdAndRequestStatusInAndEmployee(
+            String treatmentCode, Long insuranceStaffCategoryPeriodId, Long insurancePolicyId, List<Workflow> workflow, ApplicationUser applicationUser);
+    boolean existsByEmployeeAndInsuranceClaimsDetails_Treatment_TreatmentCodeAndInsuranceClaimsDetails_InsuranceStaffCategoryPeriod_IdAndInsuranceDetailsLimit_InsurancePolicy_IdAndRequestStatus(
+            ApplicationUser employee, String code, Long insuranceStaffCategoryPeriodId, Long insurancePolicyId, Workflow requestStatus);
 
 }
 
