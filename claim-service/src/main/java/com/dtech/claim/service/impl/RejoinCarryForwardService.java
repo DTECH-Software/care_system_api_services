@@ -1,6 +1,7 @@
 package com.dtech.claim.service.impl;
 
 import com.dtech.claim.enums.Status;
+import com.dtech.claim.enums.TreatmentType;
 import com.dtech.claim.enums.Workflow;
 import com.dtech.claim.model.ApplicationUser;
 import com.dtech.claim.model.InsurancePolicy;
@@ -124,7 +125,9 @@ public class RejoinCarryForwardService {
                 java.util.List.of(Workflow.APPROVED)
         ));
 
-        Long previousPeriodId = previousPeriod != null ? previousPeriod.getId() : null;
+        Long previousPeriodId = shouldApplyPromotionCarryForward(treatmentCode) && previousPeriod != null
+                ? previousPeriod.getId()
+                : null;
         if (previousPeriodId != null && !previousPeriodId.equals(insurancePeriodId)) {
             total = total.add(safeSum(insuranceClaimsRequestRepository.getSumRequestAmountByEmployeeAndTreatmentAndStatus(
                     user,
@@ -149,7 +152,9 @@ public class RejoinCarryForwardService {
                 java.util.List.of(Workflow.APPROVED)
         ));
 
-        Long previousPeriodId = previousPeriod != null ? previousPeriod.getId() : null;
+        Long previousPeriodId = shouldApplyPromotionCarryForward(treatmentCode) && previousPeriod != null
+                ? previousPeriod.getId()
+                : null;
         if (previousPeriodId != null && !previousPeriodId.equals(insurancePeriodId)) {
             total = total.add(safeSum(insuranceClaimsRequestRepository.getSumRequestAmountByEmployeeAndTreatmentAndTreatmentCategoryAndStatus(
                     user,
@@ -164,6 +169,10 @@ public class RejoinCarryForwardService {
 
     private BigDecimal safeSum(BigDecimal value) {
         return value != null ? value : BigDecimal.ZERO;
+    }
+
+    private boolean shouldApplyPromotionCarryForward(String treatmentCode) {
+        return TreatmentType.OUTDOOR.name().equalsIgnoreCase(normalize(treatmentCode));
     }
 
     private String normalize(String value) {
