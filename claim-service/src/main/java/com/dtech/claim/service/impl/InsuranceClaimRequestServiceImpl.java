@@ -323,9 +323,8 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
 
                                                 //   if (currentYear == year) {
                                                 log.info("Request fund limit exceeded with ent limit");
-                                                Date permanentDate = user.getUserPersonalDetails()
-                                                        .getUserCompanyDetails()
-                                                        .getPermanentDate();
+                                                Date permanentDate = rejoinCarryForwardService
+                                                        .resolveEffectivePermanentDateForLimit(user);
                                                 Date quarterLookupDate = permanentDate != null ? permanentDate : DateTimeUtil.getCurrentDateTime();
                                                 log.info("Claim quarter lookup date {}", quarterLookupDate);
                                                 InsuranceDetailsLimit insuranceDetailsLimit = insuranceDetailsLimitRepository.findByInsurancePolicyAndStatusAndInsuranceStaffCategoryPeriodAndTreatment(
@@ -747,9 +746,7 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
             String treatmentCode = insuranceDetailsLimit.getTreatment().getTreatmentCode();
             Long insurancePeriod = insuranceDetailsLimit.getInsuranceStaffCategoryPeriod().getId();
             Date currentDate = DateTimeUtil.getCurrentDateTime();
-            Date permanentDate = applicationUser.getUserPersonalDetails()
-                    .getUserCompanyDetails()
-                    .getPermanentDate();
+            Date permanentDate = rejoinCarryForwardService.resolveEffectivePermanentDateForLimit(applicationUser);
             Date quarterLookupDate = permanentDate != null ? permanentDate : currentDate;
 
             InsuranceStaffCategoryPeriod currentPeriod = insuranceDetailsLimit.getInsuranceStaffCategoryPeriod();

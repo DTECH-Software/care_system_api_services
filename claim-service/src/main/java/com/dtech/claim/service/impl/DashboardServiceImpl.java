@@ -260,7 +260,7 @@ public class DashboardServiceImpl implements DashboardService {
 
             log.info("Claims limit {} ", "test");
 
-            Date permentDateTime = applicationUser.getUserPersonalDetails().getUserCompanyDetails().getPermanentDate();
+            Date permentDateTime = rejoinCarryForwardService.resolveEffectivePermanentDateForLimit(applicationUser);
             Date quarterLookupDate = permentDateTime != null ? permentDateTime : DateTimeUtil.getCurrentDateTime();
             InsuranceQuarter treatmentQuarter = resolveApplicableQuarter(insuranceDetailsLimit,
                     TreatmentCategory.OTHER.name(),
@@ -330,9 +330,7 @@ public class DashboardServiceImpl implements DashboardService {
         );
 
         Map<String, InsuranceQuarter> categoryQuarterMap = new HashMap<>();
-        Date permanentDate = user.getUserPersonalDetails()
-                .getUserCompanyDetails()
-                .getPermanentDate();
+        Date permanentDate = rejoinCarryForwardService.resolveEffectivePermanentDateForLimit(user);
         Date quarterLookupDate = permanentDate != null ? permanentDate : DateTimeUtil.getCurrentDateTime();
         for (InsuranceQuarter quarter : insuranceDetailsLimit.getInsuranceQuarters()) {
             String category = quarter.getTreatmentCategory().getCode();
