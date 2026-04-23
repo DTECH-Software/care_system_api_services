@@ -35,10 +35,15 @@ public class BiometricServiceImpl implements BiometricService {
 
     private static final String SUCCESS_MESSAGE = "Biometric updated successfully";
     private static final String BIOMETRIC_ENABLE_MESSAGE = "BIOMETRIC_ENABLE";
-    private static final String INVALID_REQUEST_CODE = "dbp-351";
-    private static final String USER_NOT_FOUND_CODE = "dbp-352";
-    private static final String USER_MISMATCH_CODE = "dbp-365";
-    private static final String INTERNAL_ERROR_CODE = "dbp-500";
+    private static final int INVALID_REQUEST_CODE = 3501;
+    private static final int MISSING_REQUIRED_FIELD_CODE = 3502;
+    private static final int INVALID_CHANNEL_CODE = 3503;
+    private static final int INVALID_MESSAGE_CODE = 3504;
+    private static final int DEVICE_ID_REQUIRED_CODE = 3505;
+    private static final int AUTHENTICATED_USER_REQUIRED_CODE = 3601;
+    private static final int USER_MISMATCH_CODE = 3602;
+    private static final int USER_NOT_FOUND_CODE = 3603;
+    private static final int BIOMETRIC_ENABLE_FAILED_CODE = 3604;
 
     @Autowired
     private final ApplicationUserRepository applicationUserRepository;
@@ -56,31 +61,31 @@ public class BiometricServiceImpl implements BiometricService {
     @Transactional
     public ResponseEntity<ApiResponse<Object>> enableBiometric(BiometricEnableRequestDTO biometricEnableRequestDTO, Locale locale) {
         try {
-            String validationError = validateRequest(biometricEnableRequestDTO);
-            if (validationError != null) {
-                return ResponseEntity.ok(responseUtil.error(null, parseErrorCode(INVALID_REQUEST_CODE), validationError));
+            ValidationFailure validationFailure = validateRequest(biometricEnableRequestDTO);
+            if (validationFailure != null) {
+                return ResponseEntity.ok(responseUtil.error(null, validationFailure.errorCode(), validationFailure.message()));
             }
 
             String authenticatedUsername = authenticatedUsername();
             if (!StringUtils.hasText(authenticatedUsername)) {
-                return ResponseEntity.ok(responseUtil.error(null, parseErrorCode(USER_MISMATCH_CODE), "Authenticated user is required"));
+                return ResponseEntity.ok(responseUtil.error(null, AUTHENTICATED_USER_REQUIRED_CODE, "Authenticated user is required"));
             }
 
             String requestUsername = biometricEnableRequestDTO.getUsername().trim();
             if (!authenticatedUsername.equalsIgnoreCase(requestUsername)) {
-                return ResponseEntity.ok(responseUtil.error(null, parseErrorCode(USER_MISMATCH_CODE), "Authenticated user does not match username"));
+                return ResponseEntity.ok(responseUtil.error(null, USER_MISMATCH_CODE, "Authenticated user does not match username"));
             }
 
             Optional<ApplicationUser> userOptional = applicationUserRepository
                     .findByUsernameAndUserPersonalDetails_UserStatus(requestUsername, Status.ACTIVE);
             if (userOptional.isEmpty()) {
-                return ResponseEntity.ok(responseUtil.error(null, parseErrorCode(USER_NOT_FOUND_CODE), "User not found"));
+                return ResponseEntity.ok(responseUtil.error(null, USER_NOT_FOUND_CODE, "User not found"));
             }
 
             ApplicationUser applicationUser = userOptional.get();
             ChannelMbDeviceDetailsDTO deviceDetails = biometricEnableRequestDTO.getDeviceDetails();
             if (deviceDetails == null || !StringUtils.hasText(deviceDetails.getDeviceId())) {
-                return ResponseEntity.ok(responseUtil.error(null, parseErrorCode(INVALID_REQUEST_CODE), "deviceDetails.deviceId is required"));
+                return ResponseEntity.ok(responseUtil.error(null, DEVICE_ID_REQUIRED_CODE, "deviceDetails.deviceId is required"));
             }
 
             ApplicationUserDeviceDetails applicationUserDeviceDetails = upsertUserDeviceDetails(deviceDetails);
@@ -92,37 +97,40 @@ public class BiometricServiceImpl implements BiometricService {
             return ResponseEntity.ok(responseUtil.success(successResponse(applicationUser, enableBiometric, uniqueCode), SUCCESS_MESSAGE));
         } catch (Exception e) {
             log.error("Biometric enable failed", e);
-            return ResponseEntity.ok(responseUtil.error(null, parseErrorCode(INTERNAL_ERROR_CODE), "Something went wrong. Please try again later"));
+            return ResponseEntity.ok(responseUtil.error(null, BIOMETRIC_ENABLE_FAILED_CODE, "Something went wrong. Please try again later"));
         }
     }
 
-    private String validateRequest(BiometricEnableRequestDTO request) {
+    private ValidationFailure validateRequest(BiometricEnableRequestDTO request) {
         if (request == null) {
-            return "Request body is required";
+            return new ValidationFailure(INVALID_REQUEST_CODE, "Request body is required");
         }
         if (!StringUtils.hasText(request.getUsername())) {
-            return "username is required";
+            return new ValidationFailure(MISSING_REQUIRED_FIELD_CODE, "username is required");
         }
         if (request.getEnable() == null) {
-            return "enable is required";
+            return new ValidationFailure(MISSING_REQUIRED_FIELD_CODE, "enable is required");
         }
         if (!StringUtils.hasText(request.getChannel())) {
-            return "channel is required";
+            return new ValidationFailure(MISSING_REQUIRED_FIELD_CODE, "channel is required");
         }
         if (!Channel.MB.name().equalsIgnoreCase(request.getChannel().trim())) {
-            return "channel must be MB";
+            return new ValidationFailure(INVALID_CHANNEL_CODE, "channel must be MB");
         }
         if (!StringUtils.hasText(request.getMessage())) {
-            return "message is required";
+            return new ValidationFailure(MISSING_REQUIRED_FIELD_CODE, "message is required");
         }
         if (!BIOMETRIC_ENABLE_MESSAGE.equalsIgnoreCase(request.getMessage().trim())) {
-            return "message must be BIOMETRIC_ENABLE";
+            return new ValidationFailure(INVALID_MESSAGE_CODE, "message must be BIOMETRIC_ENABLE");
         }
         if (!StringUtils.hasText(request.getIp())) {
-            return "ip is required";
+            return new ValidationFailure(MISSING_REQUIRED_FIELD_CODE, "ip is required");
         }
         if (request.getDeviceDetails() == null) {
-            return "deviceDetails is required";
+            return new ValidationFailure(MISSING_REQUIRED_FIELD_CODE, "deviceDetails is required");
+        }
+        if (!StringUtils.hasText(request.getDeviceDetails().getDeviceId())) {
+            return new ValidationFailure(DEVICE_ID_REQUIRED_CODE, "deviceDetails.deviceId is required");
         }
         return null;
     }
@@ -206,7 +214,6 @@ public class BiometricServiceImpl implements BiometricService {
         return StringUtils.hasText(fullName) ? fullName : null;
     }
 
-    private int parseErrorCode(String code) {
-        return Integer.parseInt(code.replace("dbp-", ""));
+    private record ValidationFailure(int errorCode, String message) {
     }
 }

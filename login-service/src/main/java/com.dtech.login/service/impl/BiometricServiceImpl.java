@@ -44,6 +44,18 @@ import java.util.Optional;
 public class BiometricServiceImpl implements BiometricService {
 
     private static final String BIOMETRIC_LOGIN_MESSAGE = "BIOMETRIC_LOGIN";
+    private static final int INVALID_REQUEST_CODE = 3501;
+    private static final int MISSING_REQUIRED_FIELD_CODE = 3502;
+    private static final int INVALID_CHANNEL_CODE = 3503;
+    private static final int INVALID_MESSAGE_CODE = 3504;
+    private static final int DEVICE_ID_REQUIRED_CODE = 3505;
+    private static final int USER_NOT_FOUND_CODE = 3701;
+    private static final int BIOMETRIC_NOT_ENABLED_OR_CODE_INVALID_CODE = 3702;
+    private static final int BIOMETRIC_DEVICE_NOT_ENABLED_CODE = 3703;
+    private static final int USER_INACTIVE_OR_RESET_REQUIRED_CODE = 3704;
+    private static final int PASSWORD_EXPIRED_CODE = 3705;
+    private static final int TOKEN_ISSUE_FAILED_CODE = 3706;
+    private static final int BIOMETRIC_LOGIN_FAILED_CODE = 3707;
 
     @Autowired
     private final ApplicationUserRepository applicationUserRepository;
@@ -79,45 +91,45 @@ public class BiometricServiceImpl implements BiometricService {
     @Transactional
     public ResponseEntity<ApiResponse<Object>> biometricLogin(BiometricLoginRequestDTO biometricLoginRequestDTO, Locale locale) {
         try {
-            String validationError = validateRequest(biometricLoginRequestDTO);
-            if (validationError != null) {
-                return ResponseEntity.ok(responseUtil.error(null, 351, validationError));
+            ValidationFailure validationFailure = validateRequest(biometricLoginRequestDTO);
+            if (validationFailure != null) {
+                return ResponseEntity.ok(responseUtil.error(null, validationFailure.errorCode(), validationFailure.message()));
             }
 
             String username = biometricLoginRequestDTO.getUsername().trim();
             Optional<ApplicationUser> userOptional = applicationUserRepository.findByUsernameAndUserPersonalDetails_UserStatus(username, Status.ACTIVE);
             if (userOptional.isEmpty()) {
-                return ResponseEntity.ok(responseUtil.error(null, 352, "User not found"));
+                return ResponseEntity.ok(responseUtil.error(null, USER_NOT_FOUND_CODE, "User not found"));
             }
 
             ApplicationUser applicationUser = userOptional.get();
             Optional<ApplicationUserBiometric> biometricOptional = applicationUserBiometricRepository
                     .findByApplicationUser_UsernameAndUniqueCodeAndEnabledTrue(username, biometricLoginRequestDTO.getUniqueCode().trim());
             if (biometricOptional.isEmpty()) {
-                return ResponseEntity.ok(responseUtil.error(null, 353, "Biometric is not enabled or unique code is invalid"));
+                return ResponseEntity.ok(responseUtil.error(null, BIOMETRIC_NOT_ENABLED_OR_CODE_INVALID_CODE, "Biometric is not enabled or unique code is invalid"));
             }
 
             if (applicationUser.isReset() || applicationUser.getLoginStatus() == Status.INACTIVE) {
-                return ResponseEntity.ok(responseUtil.error(null, 354, "User is inactive or reset is required"));
+                return ResponseEntity.ok(responseUtil.error(null, USER_INACTIVE_OR_RESET_REQUIRED_CODE, "User is inactive or reset is required"));
             }
 
             if (applicationUser.getPasswordExpiredDate() != null
                     && applicationUser.getPasswordExpiredDate().before(DateTimeUtil.getCurrentDateTime())) {
                 updatePasswordExpireLogin(applicationUser);
-                return ResponseEntity.ok(responseUtil.error(null, 355, "Password expired"));
+                return ResponseEntity.ok(responseUtil.error(null, PASSWORD_EXPIRED_CODE, "Password expired"));
             }
 
             ChannelMbDeviceDetailsDTO deviceDetails = biometricLoginRequestDTO.getDeviceDetails();
             if (deviceDetails == null || !StringUtils.hasText(deviceDetails.getDeviceId())) {
-                return ResponseEntity.ok(responseUtil.error(null, 351, "deviceDetails.deviceId is required"));
+                return ResponseEntity.ok(responseUtil.error(null, DEVICE_ID_REQUIRED_CODE, "deviceDetails.deviceId is required"));
             }
             if (!matchesRegisteredDevice(applicationUser, deviceDetails.getDeviceId())) {
-                return ResponseEntity.ok(responseUtil.error(null, 353, "Biometric is not enabled for this device"));
+                return ResponseEntity.ok(responseUtil.error(null, BIOMETRIC_DEVICE_NOT_ENABLED_CODE, "Biometric is not enabled for this device"));
             }
 
             AccessTokenResponseDTO tokenResponse = issueToken(biometricLoginRequestDTO, deviceDetails);
             if (tokenResponse == null || !StringUtils.hasText(tokenResponse.getAccessToken())) {
-                return ResponseEntity.ok(responseUtil.error(null, 500, "Failed to issue token"));
+                return ResponseEntity.ok(responseUtil.error(null, TOKEN_ISSUE_FAILED_CODE, "Failed to issue token"));
             }
 
             ApplicationUserDeviceDetails applicationUserDeviceDetails = upsertUserDeviceDetails(deviceDetails);
@@ -136,37 +148,40 @@ public class BiometricServiceImpl implements BiometricService {
                     messageSource.getMessage(ResponseMessageUtil.AUTHENTICATION_SUCCESS, null, locale)));
         } catch (Exception e) {
             log.error("Biometric login failed", e);
-            return ResponseEntity.ok(responseUtil.error(null, 500, "Something went wrong. Please try again later"));
+            return ResponseEntity.ok(responseUtil.error(null, BIOMETRIC_LOGIN_FAILED_CODE, "Something went wrong. Please try again later"));
         }
     }
 
-    private String validateRequest(BiometricLoginRequestDTO request) {
+    private ValidationFailure validateRequest(BiometricLoginRequestDTO request) {
         if (request == null) {
-            return "Request body is required";
+            return new ValidationFailure(INVALID_REQUEST_CODE, "Request body is required");
         }
         if (!StringUtils.hasText(request.getUsername())) {
-            return "username is required";
+            return new ValidationFailure(MISSING_REQUIRED_FIELD_CODE, "username is required");
         }
         if (!StringUtils.hasText(request.getUniqueCode())) {
-            return "uniqueCode is required";
+            return new ValidationFailure(MISSING_REQUIRED_FIELD_CODE, "uniqueCode is required");
         }
         if (!StringUtils.hasText(request.getChannel())) {
-            return "channel is required";
+            return new ValidationFailure(MISSING_REQUIRED_FIELD_CODE, "channel is required");
         }
         if (!Channel.MB.name().equalsIgnoreCase(request.getChannel().trim())) {
-            return "channel must be MB";
+            return new ValidationFailure(INVALID_CHANNEL_CODE, "channel must be MB");
         }
         if (!StringUtils.hasText(request.getMessage())) {
-            return "message is required";
+            return new ValidationFailure(MISSING_REQUIRED_FIELD_CODE, "message is required");
         }
         if (!BIOMETRIC_LOGIN_MESSAGE.equalsIgnoreCase(request.getMessage().trim())) {
-            return "message must be BIOMETRIC_LOGIN";
+            return new ValidationFailure(INVALID_MESSAGE_CODE, "message must be BIOMETRIC_LOGIN");
         }
         if (!StringUtils.hasText(request.getIp())) {
-            return "ip is required";
+            return new ValidationFailure(MISSING_REQUIRED_FIELD_CODE, "ip is required");
         }
         if (request.getDeviceDetails() == null) {
-            return "deviceDetails is required";
+            return new ValidationFailure(MISSING_REQUIRED_FIELD_CODE, "deviceDetails is required");
+        }
+        if (!StringUtils.hasText(request.getDeviceDetails().getDeviceId())) {
+            return new ValidationFailure(DEVICE_ID_REQUIRED_CODE, "deviceDetails.deviceId is required");
         }
         return null;
     }
@@ -276,5 +291,8 @@ public class BiometricServiceImpl implements BiometricService {
         applicationUser.setLoginStatus(Status.INACTIVE);
         applicationUser.setReset(true);
         applicationUserRepository.saveAndFlush(applicationUser);
+    }
+
+    private record ValidationFailure(int errorCode, String message) {
     }
 }
