@@ -321,12 +321,13 @@ public class DashboardServiceImpl implements DashboardService {
         if (prevPeriod != null) {
             log.info("Dashboard carry-forward also considers previous period {}", prevPeriod.getId());
         }
+        final InsuranceStaffCategoryPeriod finalPrevPeriod = prevPeriod;
 
         BigDecimal sum = rejoinCarryForwardService.getApprovedAmountByTreatment(
                 user,
                 treatmentCode,
                 currentPeriod.getId(),
-                prevPeriod
+                finalPrevPeriod
         );
 
         Map<String, InsuranceQuarter> categoryQuarterMap = new HashMap<>();
@@ -347,7 +348,7 @@ public class DashboardServiceImpl implements DashboardService {
                         treatmentCode,
                         categoryCode,
                         currentPeriod.getId(),
-                        prevPeriod
+                        finalPrevPeriod
                 ))
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
         if (categoryApprovedTotal.compareTo(sum) > 0) {
