@@ -327,13 +327,23 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
                                                         .resolveEffectivePermanentDateForLimit(user);
                                                 Date quarterLookupDate = permanentDate != null ? permanentDate : DateTimeUtil.getCurrentDateTime();
                                                 log.info("Claim quarter lookup date {}", quarterLookupDate);
-                                                InsuranceDetailsLimit insuranceDetailsLimit = insuranceDetailsLimitRepository.findByInsurancePolicyAndStatusAndInsuranceStaffCategoryPeriodAndTreatment(
-                                                        user.getUserPersonalDetails().getUserCompanyDetails().getInsurancePolicy(), Status.ACTIVE, insuranceYear, treatment).orElse(null);
+                                                 List<InsuranceDetailsLimit> insuranceDetailsLimits = insuranceDetailsLimitRepository
+                                                         .findAllByInsurancePolicyAndStatusAndInsuranceStaffCategoryPeriodAndTreatment_TreatmentCode(
+                                                                 user.getUserPersonalDetails().getUserCompanyDetails().getInsurancePolicy(),
+                                                                 Status.ACTIVE,
+                                                                 insuranceYear,
+                                                                 treatment.getTreatmentCode()
+                                                         );
+                                                 InsuranceDetailsLimit insuranceDetailsLimit = resolveInsuranceDetailsLimitForCategory(
+                                                         insuranceDetailsLimits,
+                                                         claimRequestDTO.getTreatmentCategory(),
+                                                         quarterLookupDate
+                                                 );
 
-                                                if (insuranceDetailsLimit == null) {
-                                                    log.info("Insurance detail is null");
-                                                    return ResponseEntity.ok().body(responseUtil.error(null, 1030, messageSource.getMessage(ResponseMessageUtil.INSURANCE_POLICY_NOT_FOUND, null, locale)));
-                                                }
+                                                 if (insuranceDetailsLimit == null) {
+                                                     log.info("Insurance detail is null");
+                                                     return ResponseEntity.ok().body(responseUtil.error(null, 1030, messageSource.getMessage(ResponseMessageUtil.INSURANCE_POLICY_NOT_FOUND, null, locale)));
+                                                 }
 
                                                 Map<String, AvailableInsuranceLimitDTO> categoryLimitMap = buildCategoryAvailableLimitMap(
                                                         insuranceDetailsLimit,
@@ -821,10 +831,21 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
                                                                                     String requiredCategoryCode) {
         Map<String, CategoryLimitContext> categoryContextMap = new LinkedHashMap<>();
         String treatmentCode = insuranceDetailsLimit.getTreatment().getTreatmentCode();
+        List<InsuranceDetailsLimit> matchingDetailsLimits = resolveMatchingInsuranceDetailsLimits(insuranceDetailsLimit);
+        Set<String> treatmentCategoryCodes = collectCategoryCodes(matchingDetailsLimits, requiredCategoryCode);
 
-        for (String categoryCode : collectCategoryCodes(insuranceDetailsLimit, requiredCategoryCode)) {
-            InsuranceQuarter categoryQuarter = resolveApplicableQuarter(insuranceDetailsLimit, categoryCode, quarterLookupDate);
-            BigDecimal fundLimit = resolveCategoryFundLimit(insuranceDetailsLimit, categoryQuarter);
+        for (String categoryCode : treatmentCategoryCodes) {
+            InsuranceDetailsLimit categoryLimitSource = resolveInsuranceDetailsLimitForCategory(
+                    matchingDetailsLimits,
+                    categoryCode,
+                    quarterLookupDate
+            );
+            if (categoryLimitSource == null) {
+                continue;
+            }
+
+            InsuranceQuarter categoryQuarter = resolveApplicableQuarter(categoryLimitSource, categoryCode, quarterLookupDate);
+            BigDecimal fundLimit = resolveCategoryFundLimit(categoryLimitSource, categoryQuarter);
             if (fundLimit == null) {
                 continue;
             }
@@ -850,8 +871,14 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
                 insurancePeriod,
                 prevPeriod
         );
-        BigDecimal categoryApprovedTotal = categoryContextMap.values().stream()
-                .map(CategoryLimitContext::getApprovedAmount)
+        BigDecimal categoryApprovedTotal = treatmentCategoryCodes.stream()
+                .map(categoryCode -> getCategoryApprovedAmount(
+                        applicationUser,
+                        treatmentCode,
+                        categoryCode,
+                        insurancePeriod,
+                        prevPeriod
+                ))
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
         BigDecimal treatmentApprovedAmount = directTreatmentApprovedAmount.max(categoryApprovedTotal);
         if (categoryApprovedTotal.compareTo(directTreatmentApprovedAmount) > 0) {
@@ -859,6 +886,16 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
                     treatmentCode, directTreatmentApprovedAmount, categoryApprovedTotal);
         }
         BigDecimal treatmentRemainingAmount = subtractToZero(treatmentFundLimit, treatmentApprovedAmount);
+        log.info("CLAIM_REF_DEBUG user={}, treatment={}, periodId={}, prevPeriodId={}, directTreatmentApproved={}, categoryApprovedTotal={}, treatmentApproved={}, treatmentFundLimit={}, treatmentRemaining={}",
+                applicationUser != null ? applicationUser.getUsername() : null,
+                treatmentCode,
+                insurancePeriod,
+                prevPeriod != null ? prevPeriod.getId() : null,
+                directTreatmentApprovedAmount,
+                categoryApprovedTotal,
+                treatmentApprovedAmount,
+                treatmentFundLimit,
+                treatmentRemainingAmount);
 
         Map<String, AvailableInsuranceLimitDTO> availableLimitMap = new LinkedHashMap<>();
         for (Map.Entry<String, CategoryLimitContext> entry : categoryContextMap.entrySet()) {
@@ -867,6 +904,14 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
                     entry.getValue().getApprovedAmount()
             );
             BigDecimal availableAmount = treatmentRemainingAmount.min(categoryRemainingAmount);
+            log.info("CLAIM_REF_DEBUG_CATEGORY user={}, treatment={}, category={}, categoryFundLimit={}, categoryApproved={}, categoryRemaining={}, available={}",
+                    applicationUser != null ? applicationUser.getUsername() : null,
+                    treatmentCode,
+                    entry.getKey(),
+                    entry.getValue().getFundLimit(),
+                    entry.getValue().getApprovedAmount(),
+                    categoryRemainingAmount,
+                    availableAmount);
 
             availableLimitMap.put(
                     entry.getKey(),
@@ -978,11 +1023,65 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
                 .orElse(null);
     }
 
-    private Set<String> collectCategoryCodes(InsuranceDetailsLimit insuranceDetailsLimit,
+    private List<InsuranceDetailsLimit> resolveMatchingInsuranceDetailsLimits(InsuranceDetailsLimit insuranceDetailsLimit) {
+        List<InsuranceDetailsLimit> matchingDetailsLimits = insuranceDetailsLimitRepository
+                .findAllByInsurancePolicyAndStatusAndInsuranceStaffCategoryPeriodAndTreatment_TreatmentCode(
+                        insuranceDetailsLimit.getInsurancePolicy(),
+                        Status.ACTIVE,
+                        insuranceDetailsLimit.getInsuranceStaffCategoryPeriod(),
+                        insuranceDetailsLimit.getTreatment().getTreatmentCode()
+                );
+        if (matchingDetailsLimits == null || matchingDetailsLimits.isEmpty()) {
+            return List.of(insuranceDetailsLimit);
+        }
+        return matchingDetailsLimits;
+    }
+
+    private InsuranceDetailsLimit resolveInsuranceDetailsLimitForCategory(List<InsuranceDetailsLimit> insuranceDetailsLimits,
+                                                                          String categoryCode,
+                                                                          Date lookupDate) {
+        if (insuranceDetailsLimits == null || insuranceDetailsLimits.isEmpty()) {
+            return null;
+        }
+
+        if (categoryCode != null && !categoryCode.isBlank()) {
+            for (InsuranceDetailsLimit insuranceDetailsLimit : insuranceDetailsLimits) {
+                InsuranceQuarter quarter = resolveApplicableQuarter(insuranceDetailsLimit, categoryCode, lookupDate);
+                if (quarter != null) {
+                    return insuranceDetailsLimit;
+                }
+            }
+
+            for (InsuranceDetailsLimit insuranceDetailsLimit : insuranceDetailsLimits) {
+                boolean categoryExists = insuranceDetailsLimit.getInsuranceQuarters() != null
+                        && insuranceDetailsLimit.getInsuranceQuarters().stream()
+                        .filter(Objects::nonNull)
+                        .filter(quarter -> quarter.getTreatmentCategory() != null)
+                        .anyMatch(quarter -> categoryCode.equalsIgnoreCase(quarter.getTreatmentCategory().getCode()));
+                if (categoryExists) {
+                    return insuranceDetailsLimit;
+                }
+            }
+        }
+
+        return insuranceDetailsLimits.get(0);
+    }
+
+    private Set<String> collectCategoryCodes(List<InsuranceDetailsLimit> insuranceDetailsLimits,
                                              String requiredCategoryCode) {
         Set<String> categoryCodes = new LinkedHashSet<>();
-        for (InsuranceQuarter insuranceQuarter : insuranceDetailsLimit.getInsuranceQuarters()) {
-            categoryCodes.add(insuranceQuarter.getTreatmentCategory().getCode());
+        if (insuranceDetailsLimits != null) {
+            for (InsuranceDetailsLimit insuranceDetailsLimit : insuranceDetailsLimits) {
+                if (insuranceDetailsLimit.getInsuranceQuarters() == null) {
+                    continue;
+                }
+                for (InsuranceQuarter insuranceQuarter : insuranceDetailsLimit.getInsuranceQuarters()) {
+                    if (insuranceQuarter == null || insuranceQuarter.getTreatmentCategory() == null) {
+                        continue;
+                    }
+                    categoryCodes.add(insuranceQuarter.getTreatmentCategory().getCode());
+                }
+            }
         }
         if (requiredCategoryCode != null && !requiredCategoryCode.isBlank()) {
             categoryCodes.add(requiredCategoryCode);

@@ -323,12 +323,13 @@ public class DashboardServiceImpl implements DashboardService {
         }
         final InsuranceStaffCategoryPeriod finalPrevPeriod = prevPeriod;
 
-        BigDecimal sum = rejoinCarryForwardService.getApprovedAmountByTreatment(
+        BigDecimal directTreatmentApprovedSum = rejoinCarryForwardService.getApprovedAmountByTreatment(
                 user,
                 treatmentCode,
                 currentPeriod.getId(),
                 finalPrevPeriod
         );
+        BigDecimal sum = directTreatmentApprovedSum;
 
         Map<String, InsuranceQuarter> categoryQuarterMap = new HashMap<>();
         Date permanentDate = rejoinCarryForwardService.resolveEffectivePermanentDateForLimit(user);
@@ -367,6 +368,17 @@ public class DashboardServiceImpl implements DashboardService {
         if (remaining.compareTo(BigDecimal.ZERO) < 0) {
             remaining = BigDecimal.ZERO;
         }
+
+        log.info("DASHBOARD_LIMIT_DEBUG user={}, treatment={}, periodId={}, prevPeriodId={}, directTreatmentApproved={}, categoryApprovedTotal={}, appliedTreatmentApproved={}, totalLimit={}, remaining={}",
+                user.getUsername(),
+                treatmentCode,
+                currentPeriod.getId(),
+                finalPrevPeriod != null ? finalPrevPeriod.getId() : null,
+                directTreatmentApprovedSum,
+                categoryApprovedTotal,
+                sum,
+                maxFundLimit,
+                remaining);
 
         dto.setSumOfUtilizeAmount(sum);
         dto.setTotalLimit(maxFundLimit != null ? maxFundLimit : BigDecimal.ZERO);
