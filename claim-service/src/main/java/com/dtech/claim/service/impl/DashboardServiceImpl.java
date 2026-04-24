@@ -341,6 +341,21 @@ public class DashboardServiceImpl implements DashboardService {
             categoryQuarterMap.put(category, matchingQuarter);
         }
 
+        BigDecimal categoryApprovedTotal = categoryQuarterMap.keySet().stream()
+                .map(categoryCode -> rejoinCarryForwardService.getApprovedAmountByTreatmentCategory(
+                        user,
+                        treatmentCode,
+                        categoryCode,
+                        currentPeriod.getId(),
+                        prevPeriod
+                ))
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        if (categoryApprovedTotal.compareTo(sum) > 0) {
+            log.info("Dashboard using category aggregate for treatment {}. direct={}, categoryTotal={}",
+                    treatmentCode, sum, categoryApprovedTotal);
+            sum = categoryApprovedTotal;
+        }
+
         BigDecimal maxFundLimit = categoryQuarterMap.values().stream()
                 .map(q -> resolveCategoryFundLimit(insuranceDetailsLimit, q))
                 .filter(Objects::nonNull)

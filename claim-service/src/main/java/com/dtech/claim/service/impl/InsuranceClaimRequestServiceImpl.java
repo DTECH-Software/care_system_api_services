@@ -839,12 +839,20 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
         }
 
         BigDecimal treatmentFundLimit = resolveTreatmentFundLimit(insuranceDetailsLimit, categoryContextMap);
-        BigDecimal treatmentApprovedAmount = rejoinCarryForwardService.getApprovedAmountByTreatment(
+        BigDecimal directTreatmentApprovedAmount = rejoinCarryForwardService.getApprovedAmountByTreatment(
                 applicationUser,
                 treatmentCode,
                 insurancePeriod,
                 prevPeriod
         );
+        BigDecimal categoryApprovedTotal = categoryContextMap.values().stream()
+                .map(CategoryLimitContext::getApprovedAmount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        BigDecimal treatmentApprovedAmount = directTreatmentApprovedAmount.max(categoryApprovedTotal);
+        if (categoryApprovedTotal.compareTo(directTreatmentApprovedAmount) > 0) {
+            log.info("CLAIM_REF_LIMIT using category aggregate for treatment {}. direct={}, categoryTotal={}",
+                    treatmentCode, directTreatmentApprovedAmount, categoryApprovedTotal);
+        }
         BigDecimal treatmentRemainingAmount = subtractToZero(treatmentFundLimit, treatmentApprovedAmount);
 
         Map<String, AvailableInsuranceLimitDTO> availableLimitMap = new LinkedHashMap<>();
