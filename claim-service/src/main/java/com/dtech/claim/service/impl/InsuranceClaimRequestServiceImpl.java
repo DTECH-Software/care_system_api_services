@@ -927,7 +927,8 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
 
     private BigDecimal resolveTreatmentFundLimit(InsuranceDetailsLimit insuranceDetailsLimit,
                                                  Map<String, CategoryLimitContext> categoryContextMap) {
-        if (insuranceDetailsLimit.getGlobalLimit() != null) {
+        if (!Boolean.TRUE.equals(insuranceDetailsLimit.getIsQuarter())
+                && insuranceDetailsLimit.getGlobalLimit() != null) {
             return insuranceDetailsLimit.getGlobalLimit();
         }
 
