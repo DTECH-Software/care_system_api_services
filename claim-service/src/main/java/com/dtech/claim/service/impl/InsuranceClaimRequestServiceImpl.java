@@ -695,10 +695,15 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
 //                                    user.getUserPersonalDetails().getUserCompanyDetails().getInsurancePolicy(),
 //                                    Status.ACTIVE, period);
 
-                    List<InsuranceDetailsLimit> insuranceDetailsLimits = insuranceDetailsLimitRepository.
-                            findByInsurancePolicyAndStatusAndInsuranceStaffCategoryPeriodStatusAndInsuranceStaffCategoryPeriodFromDateLessThanEqualAndInsuranceStaffCategoryPeriodToDateGreaterThanEqualAndInsuranceStaffCategoryPeriodStaffCategoriesCode(
+                    List<InsuranceDetailsLimit> insuranceDetailsLimits = insuranceDetailsLimitRepository
+                            .findByInsurancePolicyAndStatusAndInsuranceStaffCategoryPeriod(
                                     user.getUserPersonalDetails().getUserCompanyDetails().getInsurancePolicy(),
-                                    Status.ACTIVE, Status.ACTIVE, DateTimeUtil.getCurrentDateTime(), DateTimeUtil.getCurrentDateTime(), user.getUserPersonalDetails().getUserCompanyDetails().getStaffCategories().getCode());
+                                    Status.ACTIVE,
+                                    period
+                            );
+                    log.info("Insurance claim reference data periodId={}, limitCount={}",
+                            period.getId(),
+                            insuranceDetailsLimits.size());
 
                     insuranceDetailsLimits.forEach(in -> {
                         log.info("Add treatment");
@@ -794,12 +799,12 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
             );
 
             for (Map.Entry<String, AvailableInsuranceLimitDTO> entry : categoryLimitMap.entrySet()) {
-                limitMap
+                        limitMap
                         .computeIfAbsent(treatmentCode, k -> new HashMap<>())
                         .merge(entry.getKey(), entry.getValue(),
                                 (existing, newDetails) -> new AvailableInsuranceLimitDTO(
-                                        newDetails.getAvailableLimit(),
-                                        newDetails.getFundLimit()
+                                        minAmount(existing.getAvailableLimit(), newDetails.getAvailableLimit()),
+                                        minAmount(existing.getFundLimit(), newDetails.getFundLimit())
                                 ));
             }
         } catch (Exception e) {
@@ -893,6 +898,16 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
         BigDecimal safeUsedAmount = usedAmount != null ? usedAmount : BigDecimal.ZERO;
         BigDecimal remainingAmount = safeFundLimit.subtract(safeUsedAmount);
         return remainingAmount.compareTo(BigDecimal.ZERO) < 0 ? BigDecimal.ZERO : remainingAmount;
+    }
+
+    private BigDecimal minAmount(BigDecimal first, BigDecimal second) {
+        if (first == null) {
+            return second;
+        }
+        if (second == null) {
+            return first;
+        }
+        return first.min(second);
     }
 
     private BigDecimal getCategoryApprovedAmount(ApplicationUser applicationUser,
