@@ -1,11 +1,10 @@
-FROM alpine/java:21
+FROM eclipse-temurin:21-jre-alpine
 
-LABEL maintainer="himalj@dtechlk.com" authors="himal_j"
+WORKDIR /app
 
 ARG JAR_FILE=target/*.jar
-
-ADD ${JAR_FILE} login_service.jar
-
-ENTRYPOINT ["java" ,"-jar","/login_service.jar"]
+COPY ${JAR_FILE} /app/login-service.jar
 
 EXPOSE 8083
+
+ENTRYPOINT ["java", "-jar", "/app/login-service.jar"]

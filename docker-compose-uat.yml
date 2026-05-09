@@ -1,0 +1,199 @@
+services:
+  registry-service:
+    build:
+      context: ./registry-service
+    image: care/registry-service:uat
+    container_name: registry-service
+    ports:
+      - "8081:8081"
+    environment:
+      SPRING_PROFILES_ACTIVE: uat
+      JAVA_TOOL_OPTIONS: "-Xms128m -Xmx512m"
+    restart: unless-stopped
+    networks:
+      - care-api-network
+
+  token-service:
+    build:
+      context: ./token-service
+    image: care/token-service:uat
+    container_name: token-service
+    ports:
+      - "8082:8082"
+    environment:
+      SPRING_PROFILES_ACTIVE: uat
+      JAVA_TOOL_OPTIONS: "-Xms128m -Xmx384m"
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: "http://registry-service:8081/eureka/"
+      EUREKA_INSTANCE_HOSTNAME: token-service
+      SPRING_DATASOURCE_URL: "jdbc:mysql://host.docker.internal:3306/caresystem?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      - registry-service
+    restart: unless-stopped
+    networks:
+      - care-api-network
+
+  message-service:
+    build:
+      context: ./message-service
+    image: care/message-service:uat
+    container_name: message-service
+    ports:
+      - "8084:8084"
+    environment:
+      SPRING_PROFILES_ACTIVE: uat
+      JAVA_TOOL_OPTIONS: "-Xms128m -Xmx384m"
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: "http://registry-service:8081/eureka/"
+      EUREKA_INSTANCE_HOSTNAME: message-service
+      SPRING_DATASOURCE_URL: "jdbc:mysql://host.docker.internal:3306/caresystem?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      - registry-service
+    restart: unless-stopped
+    networks:
+      - care-api-network
+
+  document-service:
+    build:
+      context: ./document-service
+    image: care/document-service:uat
+    container_name: document-service
+    ports:
+      - "8086:8086"
+    environment:
+      SPRING_PROFILES_ACTIVE: uat
+      JAVA_TOOL_OPTIONS: "-Xms128m -Xmx384m"
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: "http://registry-service:8081/eureka/"
+      EUREKA_INSTANCE_HOSTNAME: document-service
+      SPRING_DATASOURCE_URL: "jdbc:mysql://host.docker.internal:3306/caresystem?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      - registry-service
+    restart: unless-stopped
+    networks:
+      - care-api-network
+
+  notification-service:
+    build:
+      context: ./notification-service
+    image: care/notification-service:uat
+    container_name: notification-service
+    ports:
+      - "8088:8088"
+    environment:
+      SPRING_PROFILES_ACTIVE: uat
+      JAVA_TOOL_OPTIONS: "-Xms128m -Xmx384m"
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: "http://registry-service:8081/eureka/"
+      EUREKA_INSTANCE_HOSTNAME: notification-service
+      SPRING_DATASOURCE_URL: "jdbc:mysql://host.docker.internal:3306/caresystem?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      - registry-service
+      - token-service
+    restart: unless-stopped
+    networks:
+      - care-api-network
+
+  auth-service:
+    build:
+      context: ./auth-service
+    image: care/auth-service:uat
+    container_name: auth-service
+    ports:
+      - "8085:8085"
+    environment:
+      SPRING_PROFILES_ACTIVE: uat
+      JAVA_TOOL_OPTIONS: "-Xms256m -Xmx768m"
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: "http://registry-service:8081/eureka/"
+      EUREKA_INSTANCE_HOSTNAME: auth-service
+      SPRING_DATASOURCE_URL: "jdbc:mysql://host.docker.internal:3306/caresystem?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      - registry-service
+      - token-service
+      - message-service
+      - document-service
+    restart: unless-stopped
+    networks:
+      - care-api-network
+
+  login-service:
+    build:
+      context: ./login-service
+    image: care/login-service:uat
+    container_name: login-service
+    ports:
+      - "8083:8083"
+    environment:
+      SPRING_PROFILES_ACTIVE: uat
+      JAVA_TOOL_OPTIONS: "-Xms128m -Xmx384m"
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: "http://registry-service:8081/eureka/"
+      EUREKA_INSTANCE_HOSTNAME: login-service
+      SPRING_DATASOURCE_URL: "jdbc:mysql://host.docker.internal:3306/caresystem?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      - registry-service
+      - token-service
+      - auth-service
+    restart: unless-stopped
+    networks:
+      - care-api-network
+
+  claim-service:
+    build:
+      context: ./claim-service
+    image: care/claim-service:uat
+    container_name: claim-service
+    ports:
+      - "8087:8087"
+    environment:
+      SPRING_PROFILES_ACTIVE: uat
+      JAVA_TOOL_OPTIONS: "-Xms256m -Xmx512m"
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: "http://registry-service:8081/eureka/"
+      EUREKA_INSTANCE_HOSTNAME: claim-service
+      SPRING_DATASOURCE_URL: "jdbc:mysql://host.docker.internal:3306/caresystem?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      - registry-service
+      - token-service
+      - message-service
+      - document-service
+    restart: unless-stopped
+    networks:
+      - care-api-network
+
+  cloud-service:
+    build:
+      context: ./cloud-service
+    image: care/cloud-service:uat
+    container_name: cloud-service
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_PROFILES_ACTIVE: uat
+      JAVA_TOOL_OPTIONS: "-Xms128m -Xmx384m"
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: "http://registry-service:8081/eureka/"
+      EUREKA_INSTANCE_HOSTNAME: cloud-service
+    depends_on:
+      - registry-service
+      - token-service
+      - message-service
+      - document-service
+      - notification-service
+      - auth-service
+      - login-service
+      - claim-service
+    restart: unless-stopped
+    networks:
+      - care-api-network
+
+networks:
+  care-api-network:
+    driver: bridge

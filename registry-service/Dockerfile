@@ -1,11 +1,10 @@
-FROM alpine/java:21
+FROM eclipse-temurin:21-jre-alpine
 
-LABEL maintainer="himalj@dtechlk.com" authors="himal_j"
+WORKDIR /app
 
 ARG JAR_FILE=target/*.jar
-
-ADD ${JAR_FILE} registry_service.jar
-
-ENTRYPOINT ["java" ,"-jar","/registry_service.jar"]
+COPY ${JAR_FILE} /app/registry-service.jar
 
 EXPOSE 8081
+
+ENTRYPOINT ["java", "-jar", "/app/registry-service.jar"]
