@@ -262,6 +262,27 @@ jobs:
               return 1
             }
 
+            heap_opts_for_service() {
+              service="$1"
+              case "$service" in
+                auth-service)
+                  echo "-Xms256m -Xmx768m"
+                  ;;
+                claim-service)
+                  echo "-Xms256m -Xmx512m"
+                  ;;
+                registry-service)
+                  echo "-Xms128m -Xmx512m"
+                  ;;
+                token-service|login-service|message-service|document-service|notification-service|cloud-service)
+                  echo "-Xms128m -Xmx384m"
+                  ;;
+                *)
+                  echo "-Xms128m -Xmx384m"
+                  ;;
+              esac
+            }
+
             restart_service() {
               service="$1"
               port="$2"
@@ -288,9 +309,10 @@ jobs:
               pkill -f "$latest_jar_path" || true
               sleep 3
 
-              nohup java -jar "$latest_jar_path" --spring.profiles.active=uat > "${deploy_dir}/${service}.log" 2>&1 &
+              java_heap_opts="$(heap_opts_for_service "$service")"
+              nohup java $java_heap_opts -jar "$latest_jar_path" --spring.profiles.active=uat > "${deploy_dir}/${service}.log" 2>&1 &
               echo $! > "$pid_file"
-              echo "Started $service using $(basename "$latest_jar_path")"
+              echo "Started $service using $(basename "$latest_jar_path") with ${java_heap_opts}"
 
               wait_for_http "http://127.0.0.1:${port}" "$service"
               if [ -n "$eureka_name" ]; then
