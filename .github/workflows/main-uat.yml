@@ -294,14 +294,29 @@ jobs:
               if [ -f "$pid_file" ]; then
                 old_pid="$(cat "$pid_file" 2>/dev/null || true)"
                 if [ -n "$old_pid" ] && kill -0 "$old_pid" 2>/dev/null; then
-                  echo "Stopping old java process for $service: $old_pid"
-                  kill "$old_pid" || true
-                  sleep 5
+                  old_cmd="$(ps -p "$old_pid" -o args= 2>/dev/null || true)"
+                  if echo "$old_cmd" | grep -Eq "java .*\.jar"; then
+                    echo "Stopping old java process for $service: $old_pid"
+                    kill "$old_pid" || true
+                    sleep 5
+                  else
+                    echo "Skipping stale pid file for $service: $old_pid is not a java jar process"
+                  fi
                 fi
                 rm -f "$pid_file"
               fi
-              pkill -f "${deploy_dir}/.*\.jar" || true
-              pkill -f "${service}-0.0.1.jar" || true
+              pgrep -f "java .*${deploy_dir}/.*\.jar" | while read -r pid; do
+                if [ "$pid" != "$$" ]; then
+                  echo "Stopping matching java process for $service: $pid"
+                  kill "$pid" || true
+                fi
+              done || true
+              pgrep -f "java .*${service}-0.0.1.jar" | while read -r pid; do
+                if [ "$pid" != "$$" ]; then
+                  echo "Stopping matching jar process for $service: $pid"
+                  kill "$pid" || true
+                fi
+              done || true
             }
 
             compose_up_service() {
