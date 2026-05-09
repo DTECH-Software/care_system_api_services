@@ -13,6 +13,7 @@ on:
       - "notification-service/**"
       - "registry-service/**"
       - "token-service/**"
+      - "docker-compose-uat.yml"
       - ".github/workflows/main-uat.yml"
   workflow_dispatch:
 
@@ -63,6 +64,9 @@ jobs:
     needs: ci
     if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master' || github.ref == 'refs/heads/develop'
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
       - name: Download registry-service Artifact
         uses: actions/download-artifact@v4
         with:
@@ -127,7 +131,8 @@ jobs:
             set -e
             DEPLOY_BASE="${{ secrets.UAT_DEPLOY_DIR }}"
             for service in registry-service token-service message-service document-service notification-service auth-service login-service claim-service cloud-service; do
-              mkdir -p "${DEPLOY_BASE}/${service}"
+              rm -rf "${DEPLOY_BASE}/${service}/target"
+              mkdir -p "${DEPLOY_BASE}/${service}/target"
             done
 
       - name: Copy registry-service Jar to UAT
@@ -137,7 +142,8 @@ jobs:
           username: ${{ secrets.UAT_USER }}
           key: ${{ secrets.UAT_SSH_KEY }}
           source: "./artifact/registry-service/*.jar"
-          target: "${{ secrets.UAT_DEPLOY_DIR }}/registry-service"
+          target: "${{ secrets.UAT_DEPLOY_DIR }}/registry-service/target"
+          strip_components: 2
           overwrite: true
 
       - name: Copy token-service Jar to UAT
@@ -147,7 +153,8 @@ jobs:
           username: ${{ secrets.UAT_USER }}
           key: ${{ secrets.UAT_SSH_KEY }}
           source: "./artifact/token-service/*.jar"
-          target: "${{ secrets.UAT_DEPLOY_DIR }}/token-service"
+          target: "${{ secrets.UAT_DEPLOY_DIR }}/token-service/target"
+          strip_components: 2
           overwrite: true
 
       - name: Copy message-service Jar to UAT
@@ -157,7 +164,8 @@ jobs:
           username: ${{ secrets.UAT_USER }}
           key: ${{ secrets.UAT_SSH_KEY }}
           source: "./artifact/message-service/*.jar"
-          target: "${{ secrets.UAT_DEPLOY_DIR }}/message-service"
+          target: "${{ secrets.UAT_DEPLOY_DIR }}/message-service/target"
+          strip_components: 2
           overwrite: true
 
       - name: Copy document-service Jar to UAT
@@ -167,7 +175,8 @@ jobs:
           username: ${{ secrets.UAT_USER }}
           key: ${{ secrets.UAT_SSH_KEY }}
           source: "./artifact/document-service/*.jar"
-          target: "${{ secrets.UAT_DEPLOY_DIR }}/document-service"
+          target: "${{ secrets.UAT_DEPLOY_DIR }}/document-service/target"
+          strip_components: 2
           overwrite: true
 
       - name: Copy notification-service Jar to UAT
@@ -177,7 +186,8 @@ jobs:
           username: ${{ secrets.UAT_USER }}
           key: ${{ secrets.UAT_SSH_KEY }}
           source: "./artifact/notification-service/*.jar"
-          target: "${{ secrets.UAT_DEPLOY_DIR }}/notification-service"
+          target: "${{ secrets.UAT_DEPLOY_DIR }}/notification-service/target"
+          strip_components: 2
           overwrite: true
 
       - name: Copy auth-service Jar to UAT
@@ -187,7 +197,8 @@ jobs:
           username: ${{ secrets.UAT_USER }}
           key: ${{ secrets.UAT_SSH_KEY }}
           source: "./artifact/auth-service/*.jar"
-          target: "${{ secrets.UAT_DEPLOY_DIR }}/auth-service"
+          target: "${{ secrets.UAT_DEPLOY_DIR }}/auth-service/target"
+          strip_components: 2
           overwrite: true
 
       - name: Copy login-service Jar to UAT
@@ -197,7 +208,8 @@ jobs:
           username: ${{ secrets.UAT_USER }}
           key: ${{ secrets.UAT_SSH_KEY }}
           source: "./artifact/login-service/*.jar"
-          target: "${{ secrets.UAT_DEPLOY_DIR }}/login-service"
+          target: "${{ secrets.UAT_DEPLOY_DIR }}/login-service/target"
+          strip_components: 2
           overwrite: true
 
       - name: Copy claim-service Jar to UAT
@@ -207,7 +219,8 @@ jobs:
           username: ${{ secrets.UAT_USER }}
           key: ${{ secrets.UAT_SSH_KEY }}
           source: "./artifact/claim-service/*.jar"
-          target: "${{ secrets.UAT_DEPLOY_DIR }}/claim-service"
+          target: "${{ secrets.UAT_DEPLOY_DIR }}/claim-service/target"
+          strip_components: 2
           overwrite: true
 
       - name: Copy cloud-service Jar to UAT
@@ -217,7 +230,18 @@ jobs:
           username: ${{ secrets.UAT_USER }}
           key: ${{ secrets.UAT_SSH_KEY }}
           source: "./artifact/cloud-service/*.jar"
-          target: "${{ secrets.UAT_DEPLOY_DIR }}/cloud-service"
+          target: "${{ secrets.UAT_DEPLOY_DIR }}/cloud-service/target"
+          strip_components: 2
+          overwrite: true
+
+      - name: Copy Docker Compose Files to UAT
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.UAT_HOST }}
+          username: ${{ secrets.UAT_USER }}
+          key: ${{ secrets.UAT_SSH_KEY }}
+          source: "docker-compose-uat.yml,registry-service/Dockerfile,token-service/Dockerfile,message-service/Dockerfile,document-service/Dockerfile,notification-service/Dockerfile,auth-service/Dockerfile,login-service/Dockerfile,claim-service/Dockerfile,cloud-service/Dockerfile"
+          target: "${{ secrets.UAT_DEPLOY_DIR }}"
           overwrite: true
 
       - name: Restart Services in UAT Order
@@ -229,6 +253,7 @@ jobs:
           script: |
             set -e
             DEPLOY_BASE="${{ secrets.UAT_DEPLOY_DIR }}"
+            COMPOSE_FILE="${DEPLOY_BASE}/docker-compose-uat.yml"
 
             wait_for_http() {
               url="$1"
@@ -262,74 +287,55 @@ jobs:
               return 1
             }
 
-            heap_opts_for_service() {
+            stop_old_java_service() {
               service="$1"
-              case "$service" in
-                auth-service)
-                  echo "-Xms256m -Xmx768m"
-                  ;;
-                claim-service)
-                  echo "-Xms256m -Xmx512m"
-                  ;;
-                registry-service)
-                  echo "-Xms128m -Xmx512m"
-                  ;;
-                token-service|login-service|message-service|document-service|notification-service|cloud-service)
-                  echo "-Xms128m -Xmx384m"
-                  ;;
-                *)
-                  echo "-Xms128m -Xmx384m"
-                  ;;
-              esac
-            }
-
-            restart_service() {
-              service="$1"
-              port="$2"
-              eureka_name="$3"
               deploy_dir="${DEPLOY_BASE}/${service}"
               pid_file="${deploy_dir}/${service}.pid"
-
-              latest_jar_path="$(find "$deploy_dir" -type f -name '*.jar' | sort | tail -n 1)"
-              if [ -z "$latest_jar_path" ]; then
-                echo "No jar found in $deploy_dir"
-                find "$deploy_dir" -maxdepth 5 -type f | head -n 200 || true
-                exit 1
-              fi
-
               if [ -f "$pid_file" ]; then
                 old_pid="$(cat "$pid_file" 2>/dev/null || true)"
                 if [ -n "$old_pid" ] && kill -0 "$old_pid" 2>/dev/null; then
+                  echo "Stopping old java process for $service: $old_pid"
                   kill "$old_pid" || true
                   sleep 5
                 fi
                 rm -f "$pid_file"
               fi
+              pkill -f "${deploy_dir}/.*\.jar" || true
+              pkill -f "${service}-0.0.1.jar" || true
+            }
 
-              pkill -f "$latest_jar_path" || true
-              sleep 3
+            compose_up_service() {
+              service="$1"
+              port="$2"
+              eureka_name="$3"
 
-              java_heap_opts="$(heap_opts_for_service "$service")"
-              nohup java $java_heap_opts -jar "$latest_jar_path" --spring.profiles.active=uat > "${deploy_dir}/${service}.log" 2>&1 &
-              echo $! > "$pid_file"
-              echo "Started $service using $(basename "$latest_jar_path") with ${java_heap_opts}"
-
+              docker compose -f "$COMPOSE_FILE" up -d --build "$service"
               wait_for_http "http://127.0.0.1:${port}" "$service"
               if [ -n "$eureka_name" ]; then
                 wait_for_eureka_service "$eureka_name"
               fi
             }
 
-            wait_for_http "http://127.0.0.1:8081/eureka/apps" "registry-service precheck" 12 5 || true
+            docker --version
+            docker compose version
 
-            restart_service "registry-service" "8081" ""
+            for service in registry-service token-service message-service document-service notification-service auth-service login-service claim-service cloud-service; do
+              stop_old_java_service "$service"
+            done
+            sleep 3
+
+            cd "$DEPLOY_BASE"
+
+            compose_up_service "registry-service" "8081" ""
             wait_for_http "http://127.0.0.1:8081/eureka/apps" "registry-service"
 
-            restart_service "token-service" "8082" "TOKEN-SERVICE"
-            restart_service "message-service" "8084" "MESSAGE-SERVICE"
-            restart_service "document-service" "8086" "DOCUMENT-SERVICE"
-            restart_service "notification-service" "8088" "NOTIFICATION-SERVICE"
-            restart_service "auth-service" "8085" "AUTH-SERVICE"
-            restart_service "login-service" "8083" "LOGIN-SERVICE"
-            restart_service "claim-service" "8087" "CLAIM-SERVICE"
-            restart_service "cloud-service" "8080" "CLOUD-SERVICE"
+            compose_up_service "token-service" "8082" "TOKEN-SERVICE"
+            compose_up_service "message-service" "8084" "MESSAGE-SERVICE"
+            compose_up_service "document-service" "8086" "DOCUMENT-SERVICE"
+            compose_up_service "notification-service" "8088" "NOTIFICATION-SERVICE"
+            compose_up_service "auth-service" "8085" "AUTH-SERVICE"
+            compose_up_service "login-service" "8083" "LOGIN-SERVICE"
+            compose_up_service "claim-service" "8087" "CLAIM-SERVICE"
+            compose_up_service "cloud-service" "8080" "CLOUD-SERVICE"
+
+            docker compose -f "$COMPOSE_FILE" ps
