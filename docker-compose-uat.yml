@@ -4,6 +4,7 @@ services:
       context: ./registry-service
     image: care/registry-service:uat
     container_name: registry-service
+    mem_limit: 768m
     ports:
       - "8081:8081"
     environment:
@@ -18,6 +19,7 @@ services:
       context: ./token-service
     image: care/token-service:uat
     container_name: token-service
+    mem_limit: 512m
     ports:
       - "8082:8082"
     environment:
@@ -39,6 +41,7 @@ services:
       context: ./message-service
     image: care/message-service:uat
     container_name: message-service
+    mem_limit: 512m
     ports:
       - "8084:8084"
     environment:
@@ -60,6 +63,7 @@ services:
       context: ./document-service
     image: care/document-service:uat
     container_name: document-service
+    mem_limit: 512m
     ports:
       - "8086:8086"
     environment:
@@ -81,6 +85,7 @@ services:
       context: ./notification-service
     image: care/notification-service:uat
     container_name: notification-service
+    mem_limit: 512m
     ports:
       - "8088:8088"
     environment:
@@ -103,6 +108,7 @@ services:
       context: ./auth-service
     image: care/auth-service:uat
     container_name: auth-service
+    mem_limit: 1g
     ports:
       - "8085:8085"
     environment:
@@ -127,6 +133,7 @@ services:
       context: ./login-service
     image: care/login-service:uat
     container_name: login-service
+    mem_limit: 512m
     ports:
       - "8083:8083"
     environment:
@@ -150,6 +157,7 @@ services:
       context: ./claim-service
     image: care/claim-service:uat
     container_name: claim-service
+    mem_limit: 768m
     ports:
       - "8087:8087"
     environment:
@@ -174,6 +182,7 @@ services:
       context: ./cloud-service
     image: care/cloud-service:uat
     container_name: cloud-service
+    mem_limit: 512m
     ports:
       - "8080:8080"
     environment:
