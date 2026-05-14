@@ -110,6 +110,8 @@ public interface InsuranceClaimsRequestRepository extends JpaRepository<Insuranc
             @Param("staffCategory") String staffCategory,
             @Param("statuses") List<Workflow> statuses);
 
+    List<InsuranceClaimsRequest> findAllByEmployeeAndRequestStatusIn(ApplicationUser employee, List<Workflow> statuses);
+
     @Query(value = "SELECT " +
             "    COUNT(*) AS fullCount, " +
             "    COUNT(CASE WHEN ic.request_status = 'APPROVED' THEN 1 END) AS approvedCount, " +
