@@ -68,6 +68,7 @@ public class DashboardServiceImpl implements DashboardService {
     @Transactional(readOnly = true)
     public ResponseEntity<ApiResponse<Object>> dashboardSummary(DashboardSummaryDTO dashboardSummaryDTO, Locale locale) {
         try {
+            normalizeDashboardFilters(dashboardSummaryDTO);
             log.info("Get dashboard summary {}", dashboardSummaryDTO);
             return applicationUserRepository.findByUsernameAndUserPersonalDetails_UserStatus(dashboardSummaryDTO.getUsername().trim(), Status.ACTIVE).map((user) -> {
 
@@ -203,6 +204,34 @@ public class DashboardServiceImpl implements DashboardService {
             log.error("Failed to load dashboard reference data", e);
             throw e;
         }
+    }
+
+    private void normalizeDashboardFilters(DashboardSummaryDTO dashboardSummaryDTO) {
+        if (dashboardSummaryDTO == null) {
+            return;
+        }
+        dashboardSummaryDTO.setYear(normalizeText(dashboardSummaryDTO.getYear()));
+        dashboardSummaryDTO.setMonth(normalizeOptionalFilter(dashboardSummaryDTO.getMonth()));
+        dashboardSummaryDTO.setClaimDependentId(normalizeOptionalFilter(dashboardSummaryDTO.getClaimDependentId()));
+        dashboardSummaryDTO.setRelationCategory(normalizeOptionalFilter(dashboardSummaryDTO.getRelationCategory()));
+        dashboardSummaryDTO.setTreatmentType(normalizeOptionalFilter(dashboardSummaryDTO.getTreatmentType()));
+        dashboardSummaryDTO.setInsuranceMonthCategory(normalizeOptionalFilter(dashboardSummaryDTO.getInsuranceMonthCategory()));
+    }
+
+    private String normalizeOptionalFilter(String value) {
+        String normalized = normalizeText(value);
+        if (normalized == null || "ALL".equalsIgnoreCase(normalized)) {
+            return null;
+        }
+        return normalized;
+    }
+
+    private String normalizeText(String value) {
+        if (value == null) {
+            return null;
+        }
+        String trimmed = value.trim();
+        return trimmed.isEmpty() ? null : trimmed;
     }
 
     private InsuranceStaffCategoryPeriod resolvePeriodByYear(List<InsuranceStaffCategoryPeriod> periods, String yearValue) {
