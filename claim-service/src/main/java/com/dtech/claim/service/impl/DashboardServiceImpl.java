@@ -335,8 +335,12 @@ public class DashboardServiceImpl implements DashboardService {
         Date changeDate = previousPermanentDate != null
                 ? user.getUserPersonalDetails().getUserCompanyDetails().getPermanentDate()
                 : null;
-        InsuranceStaffCategoryPeriod prevPeriod = null;
-        if (changeDate != null
+        InsuranceStaffCategoryPeriod prevPeriod = resolvePreviousPeriodFromClaimHistory(
+                user,
+                treatmentCode,
+                currentPeriod);
+        if (prevPeriod == null
+                && changeDate != null
                 && currentPeriod.getStaffCategories() != null) {
             prevPeriod = insuranceStaffCategoryPeriodRepository
                     .findByDateWithinRangeAnyStaff(changeDate)
@@ -413,6 +417,57 @@ public class DashboardServiceImpl implements DashboardService {
         dto.setTotalLimit(maxFundLimit != null ? maxFundLimit : BigDecimal.ZERO);
         dto.setRemainingAmount(remaining);
         return dto;
+    }
+
+    private InsuranceStaffCategoryPeriod resolvePreviousPeriodFromClaimHistory(ApplicationUser applicationUser,
+                                                                              String treatmentCode,
+                                                                              InsuranceStaffCategoryPeriod currentPeriod) {
+        if (applicationUser == null
+                || currentPeriod == null
+                || currentPeriod.getStaffCategories() == null
+                || treatmentCode == null) {
+            return null;
+        }
+
+        String currentStaffCode = currentPeriod.getStaffCategories().getCode();
+        return insuranceClaimsRequestRepository
+                .findAllByEmployeeAndRequestStatusIn(applicationUser, List.of(Workflow.APPROVED))
+                .stream()
+                .filter(claim -> claim.getInsuranceClaimsDetails() != null)
+                .filter(claim -> claim.getInsuranceClaimsDetails().getTreatment() != null)
+                .filter(claim -> treatmentCode.equalsIgnoreCase(
+                        claim.getInsuranceClaimsDetails().getTreatment().getTreatmentCode()))
+                .map(this::resolveClaimPeriod)
+                .filter(Objects::nonNull)
+                .filter(claimPeriod -> claimPeriod.getId() != null && currentPeriod.getId() != null)
+                .filter(claimPeriod -> !claimPeriod.getId().equals(currentPeriod.getId()))
+                .filter(claimPeriod -> claimPeriod.getStaffCategories() != null)
+                .filter(claimPeriod -> !currentStaffCode.equals(claimPeriod.getStaffCategories().getCode()))
+                .filter(claimPeriod -> isOverlappingPeriod(claimPeriod, currentPeriod))
+                .max(Comparator.comparing(InsuranceStaffCategoryPeriod::getFromDate,
+                        Comparator.nullsLast(Comparator.naturalOrder())))
+                .orElse(null);
+    }
+
+    private InsuranceStaffCategoryPeriod resolveClaimPeriod(InsuranceClaimsRequest claim) {
+        if (claim.getInsuranceDetailsLimit() != null
+                && claim.getInsuranceDetailsLimit().getInsuranceStaffCategoryPeriod() != null) {
+            return claim.getInsuranceDetailsLimit().getInsuranceStaffCategoryPeriod();
+        }
+        if (claim.getInsuranceClaimsDetails() != null) {
+            return claim.getInsuranceClaimsDetails().getInsuranceStaffCategoryPeriod();
+        }
+        return null;
+    }
+
+    private boolean isOverlappingPeriod(InsuranceStaffCategoryPeriod candidate,
+                                        InsuranceStaffCategoryPeriod currentPeriod) {
+        if (candidate.getFromDate() == null || candidate.getToDate() == null
+                || currentPeriod.getFromDate() == null || currentPeriod.getToDate() == null) {
+            return true;
+        }
+        return !candidate.getToDate().before(currentPeriod.getFromDate())
+                && !candidate.getFromDate().after(currentPeriod.getToDate());
     }
 
     private InsuranceQuarter resolveApplicableQuarter(InsuranceDetailsLimit insuranceDetailsLimit,
