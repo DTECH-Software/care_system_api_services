@@ -25,7 +25,7 @@ public class ApplicationUserDetailsResponseDTO {
     private boolean expectingFirstTimeLogging;
     //private boolean mbExpectingFirstTimeLogging;
     private boolean expectingDependentsRegister;
-    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "Asia/Colombo")
+    @JsonFormat(pattern = "yyyy-MM-dd", timezone = "Asia/Colombo")
     private Date passwordExpiredDate;
     private UserPersonalDetailsResponseDTO userPersonalDetails;
     private DocumentDownloadResponseDTO profileImg;

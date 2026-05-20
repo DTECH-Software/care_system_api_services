@@ -12,7 +12,9 @@ import lombok.extern.log4j.Log4j2;
 import java.text.SimpleDateFormat;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.Calendar;
@@ -27,8 +29,10 @@ public class DateTimeUtil {
     }
 
     public static Date get30FutureDate() {
-        log.info("get 30 future DateTime");
-        LocalDateTime futureDate = LocalDateTime.now().plusDays(28);
+        log.info("get 6 months future password expiry date");
+        LocalDateTime futureDate = LocalDate.now()
+                .plusMonths(6)
+                .atTime(LocalTime.MAX);
         return Date.from(futureDate.atZone(ZoneId.systemDefault()).toInstant());
     }
 
