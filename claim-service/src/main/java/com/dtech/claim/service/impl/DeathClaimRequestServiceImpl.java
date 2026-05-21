@@ -172,7 +172,7 @@ public class DeathClaimRequestServiceImpl implements DeathClaimRequestService {
                 splashData.put("insuranceClaimsDependents", claimDependent);
                 splashData.put("deathClaimsFundLimits", deathLimitDTOS);
                 splashData.put("deathMinPastDate", minuesDate);
-                splashData.put("isRequestEnable", minDate.after(user.getUserPersonalDetails().getUserCompanyDetails().getPermanentDate()));
+                splashData.put("isRequestEnable", isPermanentDateEligible(user, minDate));
                 return ResponseEntity.ok().body(responseUtil.success((Object) splashData, messageSource.getMessage(ResponseMessageUtil.DEATH_CLAIMS_REFERENCE_DETAILS_SUCCESS, null, locale)));
 
             }).orElseGet(() -> {
@@ -198,7 +198,7 @@ public class DeathClaimRequestServiceImpl implements DeathClaimRequestService {
 
                         Date minDate = DateTimeUtil.getMinuesDate(minDateAfterPer != null ? minDateAfterPer.getValue() : 0);
 
-                        if (minDate.before(user.getUserPersonalDetails().getUserCompanyDetails().getPermanentDate())) {
+                        if (!isPermanentDateEligible(user, minDate)) {
                             log.info("This timer period cant process ,PermanentDate case {} ", minDate);
                             return ResponseEntity.ok().body(responseUtil.error(null, 1056, messageSource.getMessage(ResponseMessageUtil.PERMANENT_DATE_TOO_OLD_MESSAGE, new Object[]{Objects.nonNull(minDateAfterPer) ? minDateAfterPer.getValue() : 0}, locale)));
                         }
@@ -377,6 +377,22 @@ public class DeathClaimRequestServiceImpl implements DeathClaimRequestService {
         approvalWorkFlow.setApprovalLevel(ApprovalLevel.LEVEL01);
         approvalWorkFlow.setStatus(Workflow.UNDER_REVIEW);
         return approvalWorkFlowRepository.saveAndFlush(approvalWorkFlow);
+    }
+
+    private boolean isPermanentDateEligible(ApplicationUser user, Date minDate) {
+        if (user == null
+                || user.getUserPersonalDetails() == null
+                || user.getUserPersonalDetails().getUserCompanyDetails() == null
+                || minDate == null) {
+            return false;
+        }
+        UserCompanyDetails companyDetails = user.getUserPersonalDetails().getUserCompanyDetails();
+        return isDateEligible(companyDetails.getPermanentDate(), minDate)
+                || isDateEligible(companyDetails.getPreviousPermanentDate(), minDate);
+    }
+
+    private boolean isDateEligible(Date permanentDate, Date minDate) {
+        return permanentDate != null && !minDate.before(permanentDate);
     }
 
 
