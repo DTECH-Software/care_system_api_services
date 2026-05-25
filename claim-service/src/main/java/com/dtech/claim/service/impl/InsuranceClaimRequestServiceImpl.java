@@ -302,7 +302,10 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
                                                 log.info(user.getUserPersonalDetails().getUserCompanyDetails().getStaffCategories().getCode());
                                                 log.info(DateTimeUtil.getCurrentDateTime());
                                                 InsuranceStaffCategoryPeriod insuranceYear = insuranceStaffCategoryPeriodRepository.
-                                                        findByDateWithinRange(DateTimeUtil.getCurrentDateTime(), user.getUserPersonalDetails().getUserCompanyDetails().getStaffCategories().getCode()).orElse(null);
+                                                        findByDateWithinRange(DateTimeUtil.getCurrentDateTime(), user.getUserPersonalDetails().getUserCompanyDetails().getStaffCategories().getCode())
+                                                        .stream()
+                                                        .findFirst()
+                                                        .orElse(null);
                                                 log.info("Current insurance year {}", insuranceYear);
                                                 if (insuranceYear == null) {
                                                     log.info("Insurance period not found");
@@ -675,7 +678,11 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
         try {
             log.info("Insurance claim reference data {}", channelRequestDTO);
             return applicationUserRepository.findByUsernameAndUserPersonalDetails_UserStatus(channelRequestDTO.getUsername().trim(), Status.ACTIVE).map((user) -> {
-                InsuranceStaffCategoryPeriod period = insuranceStaffCategoryPeriodRepository.findByDateWithinRange(DateTimeUtil.getCurrentDateTime(), user.getUserPersonalDetails().getUserCompanyDetails().getStaffCategories().getCode()).orElse(null);
+                InsuranceStaffCategoryPeriod period = insuranceStaffCategoryPeriodRepository
+                        .findByDateWithinRange(DateTimeUtil.getCurrentDateTime(), user.getUserPersonalDetails().getUserCompanyDetails().getStaffCategories().getCode())
+                        .stream()
+                        .findFirst()
+                        .orElse(null);
                 List<Treatment> treatmentList = treatmentRepository.findAllByStatus(Status.ACTIVE);
                 log.info("Insurance claim reference data get dependence {} ", treatmentList);
 
@@ -982,6 +989,8 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
                                                       Date lookupDate) {
         InsuranceQuarter matchingQuarter = insuranceQuarterRepository
                 .findByDateWithinRangeAndCodeWithLimit(insuranceDetailsLimit, categoryCode, lookupDate)
+                .stream()
+                .findFirst()
                 .orElse(null);
         if (matchingQuarter != null) {
             return matchingQuarter;

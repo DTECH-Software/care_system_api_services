@@ -475,6 +475,8 @@ public class DashboardServiceImpl implements DashboardService {
                                                       Date lookupDate) {
         InsuranceQuarter matchingQuarter = insuranceQuarterRepository
                 .findByDateWithinRangeAndCodeWithLimit(insuranceDetailsLimit, categoryCode, lookupDate)
+                .stream()
+                .findFirst()
                 .orElse(null);
         if (matchingQuarter != null) {
             return matchingQuarter;

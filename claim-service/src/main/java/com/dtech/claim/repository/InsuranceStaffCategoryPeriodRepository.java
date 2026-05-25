@@ -14,8 +14,11 @@ import java.util.Optional;
 @Repository
 public interface InsuranceStaffCategoryPeriodRepository extends JpaRepository<InsuranceStaffCategoryPeriod, Long> {
 
-    @Query("SELECT i FROM InsuranceStaffCategoryPeriod i WHERE :inputDate BETWEEN i.fromDate AND i.toDate and i.staffCategories.code = :staff ")
-    Optional<InsuranceStaffCategoryPeriod> findByDateWithinRange(@Param("inputDate") Date inputDate,@Param("staff") String staff);
+    @Query("SELECT i FROM InsuranceStaffCategoryPeriod i " +
+            "WHERE :inputDate BETWEEN i.fromDate AND i.toDate " +
+            "AND i.staffCategories.code = :staff " +
+            "ORDER BY i.fromDate DESC, i.id DESC")
+    List<InsuranceStaffCategoryPeriod> findByDateWithinRange(@Param("inputDate") Date inputDate,@Param("staff") String staff);
 
     @Query("SELECT i FROM InsuranceStaffCategoryPeriod i WHERE :inputDate BETWEEN i.fromDate AND i.toDate ORDER BY i.fromDate DESC")
     List<InsuranceStaffCategoryPeriod> findByDateWithinRangeAnyStaff(@Param("inputDate") Date inputDate);
