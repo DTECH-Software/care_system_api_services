@@ -278,6 +278,12 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
                                                         return ResponseEntity.ok().body(responseUtil.error(null, 1047, messageSource.getMessage(ResponseMessageUtil.CLAIM_DEPENDENT_DEATH_REQUEST_ALREADY_PROCEED, null, locale)));
                                                     }
 
+                                                    if (isParentClaimBlockedStaff(staffCategoryCode)
+                                                            && claimsDependents.get().getDependentCategory().equals(DependentCategory.PARENTS)) {
+                                                        log.info("Parent dependent claim is not allowed for staff category {}", staffCategoryCode);
+                                                        return ResponseEntity.ok().body(responseUtil.error(null, 1049, messageSource.getMessage(ResponseMessageUtil.DEPENDENT_NOT_ELIGIBLE_TO_CLAIM_REQUEST, null, locale)));
+                                                    }
+
                                                     if (user.getUserPersonalDetails().getUserCompanyDetails().getStaffCategories().getCode().equals("NS") && user.getUserPersonalDetails().getMaritalStatus().equals(MaritalStatus.UNMARRIED) && claimsDependents.get().getDependentCategory().equals(DependentCategory.PARENTS)) {
                                                         int age = DateTimeUtil.getAge(String.valueOf(claimsDependents.get().getDob()));
                                                         log.info("Claim deendent age {} ", age);
@@ -835,6 +841,10 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
             log.error(e);
             throw e;
         }
+    }
+
+    private boolean isParentClaimBlockedStaff(String staffCategoryCode) {
+        return Set.of("EX-OP1", "EX-OP2", "MM", "SNR").contains(staffCategoryCode);
     }
 
     private Map<String, AvailableInsuranceLimitDTO> buildCategoryAvailableLimitMap(InsuranceDetailsLimit insuranceDetailsLimit,
