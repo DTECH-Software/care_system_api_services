@@ -57,7 +57,7 @@ import java.util.stream.Collectors;
 public class ProfileServiceImpl implements ProfileService {
 
     private static final List<String> HR_TEAM_ROLE_CODES = List.of(
-            "HRADMIN", "DevTest", "SUPERADMIN", "APPROVER", "ADMIN", "CLAIMS_APPROVER", "W_CSA", "HR_ADMIN"
+            "HRADMIN"
     );
 
     @Autowired
