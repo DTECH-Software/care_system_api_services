@@ -278,7 +278,7 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
                                                         return ResponseEntity.ok().body(responseUtil.error(null, 1047, messageSource.getMessage(ResponseMessageUtil.CLAIM_DEPENDENT_DEATH_REQUEST_ALREADY_PROCEED, null, locale)));
                                                     }
 
-                                                    if (isParentClaimBlockedStaff(staffCategoryCode)
+                                                    if (isParentClaimBlockedForMedical(staffCategoryCode, user.getUserPersonalDetails().getMaritalStatus())
                                                             && claimsDependents.get().getDependentCategory().equals(DependentCategory.PARENTS)) {
                                                         log.info("Parent dependent claim is not allowed for staff category {}", staffCategoryCode);
                                                         return ResponseEntity.ok().body(responseUtil.error(null, 1049, messageSource.getMessage(ResponseMessageUtil.DEPENDENT_NOT_ELIGIBLE_TO_CLAIM_REQUEST, null, locale)));
@@ -699,7 +699,12 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
                             log.info("SUCCESS FILTER {} ", dep.getId());
                             boolean ex = deathClaimRequestRepository.existsByClaimsDependentsAndEmployeeAndRequestStatusIn(dep, user, List.of(Workflow.APPROVED));
                             return !ex;
-                        }).map(dep -> new DependentBaseDTO(
+                        })
+                        .filter(dep -> !isParentClaimBlockedForMedical(
+                                user.getUserPersonalDetails().getUserCompanyDetails().getStaffCategories().getCode(),
+                                user.getUserPersonalDetails().getMaritalStatus())
+                                || !dep.getDependentCategory().equals(DependentCategory.PARENTS))
+                        .map(dep -> new DependentBaseDTO(
                                 String.valueOf(dep.getId()),
                                 dep.getFirstName() + " " + dep.getLastName(),
                                 dep.getRelationCategory().getDescription()
@@ -843,8 +848,9 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
         }
     }
 
-    private boolean isParentClaimBlockedStaff(String staffCategoryCode) {
-        return Set.of("EX-OP1", "EX-OP2", "MM", "SNR").contains(staffCategoryCode);
+    private boolean isParentClaimBlockedForMedical(String staffCategoryCode, MaritalStatus maritalStatus) {
+        return Set.of("EX-OP1", "EX-OP2", "MM", "SNR").contains(staffCategoryCode)
+                || ("NS".equals(staffCategoryCode) && MaritalStatus.MARRIED.equals(maritalStatus));
     }
 
     private Map<String, AvailableInsuranceLimitDTO> buildCategoryAvailableLimitMap(InsuranceDetailsLimit insuranceDetailsLimit,

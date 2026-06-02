@@ -1,0 +1,30 @@
+# Care App Business Logic Review
+
+Ordered review list for Care App API services.
+
+- [01. Service Architecture and Routing](01-service-architecture-and-routing/README.md)
+- [02. Authentication and Login](02-authentication-and-login/README.md)
+- [03. Password Reset and OTP](03-password-reset-and-otp/README.md)
+- [04. Profile and Reference Data](04-profile-and-reference-data/README.md)
+- [05. Dependent Creation and Documents](05-dependent-creation-and-documents/README.md)
+- [06. Dependent Eligibility Rules](06-dependent-eligibility-rules/README.md)
+- [07. Dependent Claim Eligibility](07-dependent-claim-eligibility/README.md)
+- [08. Employee Claim Eligibility](08-employee-claim-eligibility/README.md)
+- [09. Medical Claim Reference Data](09-medical-claim-reference-data/README.md)
+- [10. Medical Claim Creation](10-medical-claim-creation/README.md)
+- [11. Claim Validation](11-claim-validation/README.md)
+- [12. Policy Period and Quarter Selection](12-policy-period-and-quarter-selection/README.md)
+- [13. Available Balance Calculation](13-available-balance-calculation/README.md)
+- [14. Shared and Category Bucket Logic](14-shared-and-category-bucket-logic/README.md)
+- [15. Rejoin and Promotion Carry Forward](15-rejoin-and-promotion-carry-forward/README.md)
+- [16. Claim Request ID Generation](16-claim-request-id-generation/README.md)
+- [17. Claim History and Status](17-claim-history-and-status/README.md)
+- [18. Dashboard Summary](18-dashboard-summary/README.md)
+- [19. Death Claim Creation](19-death-claim-creation/README.md)
+- [20. Death Dependent Live Status](20-death-dependent-live-status/README.md)
+- [21. Mobile and OP Channel Behavior](21-mobile-and-op-channel-behavior/README.md)
+- [22. Notification Message and Email](22-notification-message-and-email/README.md)
+- [23. Document Cloud Registry and Token Integration](23-document-cloud-registry-and-token-integration/README.md)
+- [24. Docker Health and Uptime Monitoring](24-docker-health-and-uptime-monitoring/README.md)
+- [25. Environment and Deployment Behavior](25-environment-and-deployment-behavior/README.md)
+
