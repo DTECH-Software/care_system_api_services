@@ -495,6 +495,7 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
                                                                 String messageUtil = ResponseMessageUtil.INSURANCE_CLAIM_DEFAULT_REQUEST_SUBMIT_SUCCESS;
 
                                                                 if ((!user.getUserPersonalDetails().getUserCompanyDetails().getStaffCategories().getCode().equals("NS")) && claimRequestDTO.getTreatment().equals(TreatmentType.INDOOR.name()) ||
+                                                                        claimRequestDTO.getTreatment().equals(TreatmentType.CRIC.name()) ||
                                                                         claimRequestDTO.getTreatment().equals(TreatmentType.LIFC.name()) ||
                                                                         claimRequestDTO.getTreatment().equals(TreatmentType.TPPD.name()) ||
                                                                         claimRequestDTO.getTreatment().equals(TreatmentType.PPPD.name()) ||
@@ -591,6 +592,7 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
                                                                 String messageUtil = ResponseMessageUtil.INSURANCE_CLAIM_DEFAULT_REQUEST_SUBMIT_SUCCESS;
 
                                                                 if ((!user.getUserPersonalDetails().getUserCompanyDetails().getStaffCategories().getCode().equals("NS")) && claimRequestDTO.getTreatment().equals(TreatmentType.INDOOR.name()) ||
+                                                                        claimRequestDTO.getTreatment().equals(TreatmentType.CRIC.name()) ||
                                                                         claimRequestDTO.getTreatment().equals(TreatmentType.LIFC.name()) ||
                                                                         claimRequestDTO.getTreatment().equals(TreatmentType.TPPD.name()) ||
                                                                         claimRequestDTO.getTreatment().equals(TreatmentType.PPPD.name()) ||
