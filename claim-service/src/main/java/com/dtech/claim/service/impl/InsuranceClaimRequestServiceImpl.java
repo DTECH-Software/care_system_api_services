@@ -396,7 +396,7 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
                                                                         currentPolicyId,
                                                                         Workflow.APPROVED);
 
-                                                        if (requestEmp > NS_MAX_EMPLOYEE_REQUESTS
+                                                        if (requestEmp >= NS_MAX_EMPLOYEE_REQUESTS
                                                                 || exists
                                                                 || claimRequestDTO.getRequestAmount().compareTo(NS_MAX_CLAIM_AMOUNT) > 0) {
 
@@ -543,7 +543,7 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
                                                                         currentPolicyId,
                                                                         Workflow.APPROVED);
 
-                                                        if (requestEmp > NS_MAX_EMPLOYEE_REQUESTS
+                                                        if (requestEmp >= NS_MAX_EMPLOYEE_REQUESTS
                                                                 || exists
                                                                 || claimRequestDTO.getRequestAmount().compareTo(NS_MAX_CLAIM_AMOUNT) > 0) {
 
