@@ -444,15 +444,14 @@ GROUP BY idl.total_limit
 SELECT COUNT(*) AS approvedRequestCount
 FROM claims_request ic
 LEFT JOIN application_user ap ON ic.employee = ap.id
-LEFT JOIN user_personal_details up ON ap.user_personal_details = up.id
-LEFT JOIN user_company_details cp ON up.user_company_details = cp.id
 LEFT JOIN claims_dependents cd ON ic.dependent = cd.id
 LEFT JOIN user_personal_details upd ON ap.user_personal_details = upd.id
 JOIN insurance_claims_details icd ON ic.insurance_claims_details = icd.id
 JOIN treatment tr ON icd.treatment = tr.code
 LEFT JOIN insurance_details_limit idl ON ic.insurance_details_limit_id = idl.id
+LEFT JOIN insurance_staff_category_period iscp ON idl.insurance_staff_category_period = iscp.id
 WHERE tr.code = :treatment
-  AND cp.staff_category = 'NS'
+  AND iscp.staff_category = 'NS'
   AND ic.request_status = 'APPROVED'
   AND (:policyPeriodId IS NULL OR idl.insurance_staff_category_period = :policyPeriodId)
   AND (:#{#dashboardSummaryDTO.month} IS NULL OR MONTH(ic.created_date) = :#{#dashboardSummaryDTO.month})
