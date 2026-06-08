@@ -228,11 +228,7 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
                         claimRequestDTO.getTreatment().equals(TreatmentType.TPPD.name()) ||
                         claimRequestDTO.getTreatment().equals(TreatmentType.PPPD.name())) {
 
-                    int trAge = 65;
-
-                    if(user.getUserPersonalDetails().getUserCompanyDetails().getStaffCategories().getCode().equals("SNR")){
-                        trAge = 70;
-                    }
+                    int trAge = resolveEmployeeClaimMaxAge(staffCategoryCode);
 
                     int age = DateTimeUtil.getAge(String.valueOf(user.getUserPersonalDetails().getDob()));
                     log.info("Senior staff age {} ", age);
@@ -468,7 +464,7 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
                                                         return ResponseEntity.ok().body(responseUtil.error(null, 1052, messageSource.getMessage(ResponseMessageUtil.CLAIM_LIMIT_EXCEED_WITH_LIMIT, new Object[]{remainingBalance}, locale)));
                                                     }
 
-                                                    if (!user.getUserPersonalDetails().getUserCompanyDetails().getStaffCategories().getCode().equals("SNR")) {
+                                                    if ("NS".equals(user.getUserPersonalDetails().getUserCompanyDetails().getStaffCategories().getCode())) {
                                                         int dob = DateTimeUtil.getAge(String.valueOf(user.getUserPersonalDetails().getDob()));
                                                         if (dob > 60) {
                                                             log.info("User normal staff category {} ", dob);
@@ -853,6 +849,10 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
     private boolean isParentClaimBlockedForMedical(String staffCategoryCode, MaritalStatus maritalStatus) {
         return Set.of("EX-OP1", "EX-OP2", "MM", "SNR").contains(staffCategoryCode)
                 || ("NS".equals(staffCategoryCode) && MaritalStatus.MARRIED.equals(maritalStatus));
+    }
+
+    private int resolveEmployeeClaimMaxAge(String staffCategoryCode) {
+        return "NS".equals(staffCategoryCode) ? 60 : 70;
     }
 
     private Map<String, AvailableInsuranceLimitDTO> buildCategoryAvailableLimitMap(InsuranceDetailsLimit insuranceDetailsLimit,
