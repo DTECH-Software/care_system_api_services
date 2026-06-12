@@ -26,4 +26,6 @@ public class InsuranceClaimRequestResponseDTO {
     private InsuranceClaimsDetailsResponseDTO insuranceClaimsDetails;
     private BigDecimal approvedAmount;
     private Date createdDate;
+    private String staffCategoryCode;
+    private String staffCategoryDescription;
 }

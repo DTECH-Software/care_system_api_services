@@ -51,6 +51,9 @@ import java.util.stream.Collectors;
 @Log4j2
 @RequiredArgsConstructor
 public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestService {
+    private static final int NORMAL_STAFF_PARENT_MAX_CLAIM_AGE = 64;
+    private static final int CHILD_MAX_CLAIM_AGE = 24;
+
 
     @Autowired
     private final ApplicationUserRepository applicationUserRepository;
@@ -283,16 +286,16 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
                                                     if (user.getUserPersonalDetails().getUserCompanyDetails().getStaffCategories().getCode().equals("NS") && user.getUserPersonalDetails().getMaritalStatus().equals(MaritalStatus.UNMARRIED) && claimsDependents.get().getDependentCategory().equals(DependentCategory.PARENTS)) {
                                                         int age = DateTimeUtil.getAge(String.valueOf(claimsDependents.get().getDob()));
                                                         log.info("Claim deendent age {} ", age);
-                                                        if (age > 65) {
+                                                        if (age > NORMAL_STAFF_PARENT_MAX_CLAIM_AGE) {
                                                             log.info("Claim deendent age {} ", age);
-                                                            return ResponseEntity.ok().body(responseUtil.error(null, 1047, messageSource.getMessage(ResponseMessageUtil.CLAIM_DEPENDENT_INSURANCE_REQUEST_PARENT_AGE_LIMIT_EXCEED, new Object[]{65}, locale)));
+                                                            return ResponseEntity.ok().body(responseUtil.error(null, 1047, messageSource.getMessage(ResponseMessageUtil.CLAIM_DEPENDENT_INSURANCE_REQUEST_PARENT_AGE_LIMIT_EXCEED, new Object[]{NORMAL_STAFF_PARENT_MAX_CLAIM_AGE}, locale)));
                                                         }
                                                     } else if (claimsDependents.get().getDependentCategory().equals(DependentCategory.CHILDREN)) {
                                                         int age = DateTimeUtil.getAge(String.valueOf(claimsDependents.get().getDob()));
                                                         log.info("Claim deendent child age {} ", age);
-                                                        if (age > 25) {
+                                                        if (age > CHILD_MAX_CLAIM_AGE) {
                                                             log.info("Claim deendent child age {} ", age);
-                                                            return ResponseEntity.ok().body(responseUtil.error(null, 1047, messageSource.getMessage(ResponseMessageUtil.CLAIM_DEPENDENT_INSURANCE_REQUEST_CHILDREN_AGE_LIMIT_EXCEED, new Object[]{25}, locale)));
+                                                            return ResponseEntity.ok().body(responseUtil.error(null, 1047, messageSource.getMessage(ResponseMessageUtil.CLAIM_DEPENDENT_INSURANCE_REQUEST_CHILDREN_AGE_LIMIT_EXCEED, new Object[]{CHILD_MAX_CLAIM_AGE}, locale)));
 
                                                         }
                                                     }
@@ -702,6 +705,8 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
                                 user.getUserPersonalDetails().getUserCompanyDetails().getStaffCategories().getCode(),
                                 user.getUserPersonalDetails().getMaritalStatus())
                                 || !dep.getDependentCategory().equals(DependentCategory.PARENTS))
+                        .filter(dep -> isParentWithinNormalStaffMedicalAgeLimit(user, dep))
+                        .filter(this::isChildWithinMedicalAgeLimit)
                         .map(dep -> new DependentBaseDTO(
                                 String.valueOf(dep.getId()),
                                 dep.getFirstName() + " " + dep.getLastName(),
@@ -849,6 +854,32 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
     private boolean isParentClaimBlockedForMedical(String staffCategoryCode, MaritalStatus maritalStatus) {
         return Set.of("EX-OP1", "EX-OP2", "MM", "SNR").contains(staffCategoryCode)
                 || ("NS".equals(staffCategoryCode) && MaritalStatus.MARRIED.equals(maritalStatus));
+    }
+
+    private boolean isParentWithinNormalStaffMedicalAgeLimit(ApplicationUser user, ClaimsDependents dependent) {
+        if (user == null
+                || dependent == null
+                || !DependentCategory.PARENTS.equals(dependent.getDependentCategory())
+                || user.getUserPersonalDetails() == null
+                || user.getUserPersonalDetails().getUserCompanyDetails() == null
+                || user.getUserPersonalDetails().getUserCompanyDetails().getStaffCategories() == null) {
+            return true;
+        }
+        String staffCategoryCode = user.getUserPersonalDetails().getUserCompanyDetails().getStaffCategories().getCode();
+        if (!"NS".equalsIgnoreCase(staffCategoryCode)
+                || !MaritalStatus.UNMARRIED.equals(user.getUserPersonalDetails().getMaritalStatus())) {
+            return true;
+        }
+        int age = DateTimeUtil.getAge(String.valueOf(dependent.getDob()));
+        return age <= NORMAL_STAFF_PARENT_MAX_CLAIM_AGE;
+    }
+
+    private boolean isChildWithinMedicalAgeLimit(ClaimsDependents dependent) {
+        if (dependent == null || !DependentCategory.CHILDREN.equals(dependent.getDependentCategory())) {
+            return true;
+        }
+        int age = DateTimeUtil.getAge(String.valueOf(dependent.getDob()));
+        return age <= CHILD_MAX_CLAIM_AGE;
     }
 
     private int resolveEmployeeClaimMaxAge(String staffCategoryCode) {
