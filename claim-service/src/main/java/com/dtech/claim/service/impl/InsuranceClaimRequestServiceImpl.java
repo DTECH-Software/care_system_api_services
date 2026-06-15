@@ -213,7 +213,7 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
                     log.info("Senior staff age {} ", age);
                     if (age > trAge) {
                         log.info("Senior staff age {} ", age);
-                        return ResponseEntity.ok().body(responseUtil.error(null, 1047, messageSource.getMessage(ResponseMessageUtil.CLAIM_SENIOR_STAFF_AGE_LIMIT_EXCEED, new Object[]{trAge}, locale)));
+                        return ResponseEntity.ok().body(responseUtil.error(null, 1047, messageSource.getMessage(ResponseMessageUtil.CLAIM_SENIOR_STAFF_AGE_LIMIT_EXCEED, new Object[]{trAge + 1}, locale)));
                     }
 
                 } else {
@@ -223,7 +223,7 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
                     log.info("Senior staff age {} ", age);
                     if (age > trAge) {
                         log.info("Senior staff age {} ", age);
-                        return ResponseEntity.ok().body(responseUtil.error(null, 1047, messageSource.getMessage(ResponseMessageUtil.CLAIM_SENIOR_STAFF_AGE_LIMIT_EXCEED, new Object[]{trAge}, locale)));
+                        return ResponseEntity.ok().body(responseUtil.error(null, 1047, messageSource.getMessage(ResponseMessageUtil.CLAIM_SENIOR_STAFF_AGE_LIMIT_EXCEED, new Object[]{trAge + 1}, locale)));
                     }
                 }
 
