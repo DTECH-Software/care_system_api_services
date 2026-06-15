@@ -53,6 +53,8 @@ import java.util.stream.Collectors;
 public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestService {
     private static final int NORMAL_STAFF_PARENT_MAX_CLAIM_AGE = 64;
     private static final int CHILD_MAX_CLAIM_AGE = 24;
+    private static final int NORMAL_STAFF_EMPLOYEE_MAX_CLAIM_AGE = 59;
+    private static final int OTHER_STAFF_EMPLOYEE_MAX_CLAIM_AGE = 69;
 
 
     @Autowired
@@ -206,7 +208,7 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
 
                 if (normalStaff) {
                     log.info("Normal staff cover age limit exceeded {} ", user.getUserPersonalDetails().getUserCompanyDetails().getStaffCategories().getCode());
-                    int trAge = 60;
+                    int trAge = NORMAL_STAFF_EMPLOYEE_MAX_CLAIM_AGE;
                     int age = DateTimeUtil.getAge(String.valueOf(user.getUserPersonalDetails().getDob()));
                     log.info("Senior staff age {} ", age);
                     if (age > trAge) {
@@ -216,7 +218,7 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
 
                 } else {
                     log.info("Other staff cover age limit exceeded {} ", user.getUserPersonalDetails().getUserCompanyDetails().getStaffCategories().getCode());
-                    int trAge = 70;
+                    int trAge = OTHER_STAFF_EMPLOYEE_MAX_CLAIM_AGE;
                     int age = DateTimeUtil.getAge(String.valueOf(user.getUserPersonalDetails().getDob()));
                     log.info("Senior staff age {} ", age);
                     if (age > trAge) {
@@ -420,9 +422,9 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
                                                     } else if (isCRIC && "SNR".equals(staffCategoryCode)) {
                                                         log.info("Dependent eligible due to CRIC {} ", sumOfClaims);
                                                         int age = DateTimeUtil.getAge(String.valueOf(user.getUserPersonalDetails().getDob()));
-                                                        if (age > 70) {
+                                                        if (age > OTHER_STAFF_EMPLOYEE_MAX_CLAIM_AGE) {
                                                             log.info("Cant snr cri request");
-                                                            return ResponseEntity.ok().body(responseUtil.error(null, 1052, messageSource.getMessage(ResponseMessageUtil.SENIOR_STAFF_CANT_REQUEST_UP_TO_60_AGE, new Object[]{70}, locale)));
+                                                            return ResponseEntity.ok().body(responseUtil.error(null, 1052, messageSource.getMessage(ResponseMessageUtil.SENIOR_STAFF_CANT_REQUEST_UP_TO_60_AGE, new Object[]{OTHER_STAFF_EMPLOYEE_MAX_CLAIM_AGE}, locale)));
 
                                                         }
 
@@ -469,9 +471,9 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
 
                                                     if ("NS".equals(user.getUserPersonalDetails().getUserCompanyDetails().getStaffCategories().getCode())) {
                                                         int dob = DateTimeUtil.getAge(String.valueOf(user.getUserPersonalDetails().getDob()));
-                                                        if (dob > 60) {
+                                                        if (dob > NORMAL_STAFF_EMPLOYEE_MAX_CLAIM_AGE) {
                                                             log.info("User normal staff category {} ", dob);
-                                                            return ResponseEntity.ok().body(responseUtil.error(null, 1052, messageSource.getMessage(ResponseMessageUtil.SENIOR_STAFF_CANT_REQUEST_UP_TO_60_AGE, new Object[]{60}, locale)));
+                                                            return ResponseEntity.ok().body(responseUtil.error(null, 1052, messageSource.getMessage(ResponseMessageUtil.SENIOR_STAFF_CANT_REQUEST_UP_TO_60_AGE, new Object[]{NORMAL_STAFF_EMPLOYEE_MAX_CLAIM_AGE}, locale)));
                                                         }
                                                     }
 
@@ -883,7 +885,9 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
     }
 
     private int resolveEmployeeClaimMaxAge(String staffCategoryCode) {
-        return "NS".equals(staffCategoryCode) ? 60 : 70;
+        return "NS".equals(staffCategoryCode)
+                ? NORMAL_STAFF_EMPLOYEE_MAX_CLAIM_AGE
+                : OTHER_STAFF_EMPLOYEE_MAX_CLAIM_AGE;
     }
 
     private Map<String, AvailableInsuranceLimitDTO> buildCategoryAvailableLimitMap(InsuranceDetailsLimit insuranceDetailsLimit,
