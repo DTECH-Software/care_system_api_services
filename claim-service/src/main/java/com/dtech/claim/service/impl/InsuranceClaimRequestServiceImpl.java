@@ -55,6 +55,8 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
     private static final int CHILD_MAX_CLAIM_AGE = 24;
     private static final int NORMAL_STAFF_EMPLOYEE_MAX_CLAIM_AGE = 59;
     private static final int OTHER_STAFF_EMPLOYEE_MAX_CLAIM_AGE = 69;
+    private static final int NORMAL_STAFF_SPOUSE_MAX_CLAIM_AGE = 59;
+    private static final int OTHER_STAFF_SPOUSE_MAX_CLAIM_AGE = 69;
 
 
     @Autowired
@@ -300,6 +302,10 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
                                                             return ResponseEntity.ok().body(responseUtil.error(null, 1047, messageSource.getMessage(ResponseMessageUtil.CLAIM_DEPENDENT_INSURANCE_REQUEST_CHILDREN_AGE_LIMIT_EXCEED, new Object[]{CHILD_MAX_CLAIM_AGE}, locale)));
 
                                                         }
+                                                    } else if (!isSpouseWithinMedicalAgeLimit(user, claimsDependents.get())) {
+                                                        int maxAge = resolveSpouseClaimMaxAge(staffCategoryCode);
+                                                        log.info("Spouse dependent claim is not allowed because age reaches or exceeds {}", maxAge + 1);
+                                                        return ResponseEntity.ok().body(responseUtil.error(null, 1047, messageSource.getMessage(ResponseMessageUtil.CLAIM_SENIOR_STAFF_AGE_LIMIT_EXCEED, new Object[]{maxAge + 1}, locale)));
                                                     }
 
                                                 } else {
@@ -709,6 +715,7 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
                                 || !dep.getDependentCategory().equals(DependentCategory.PARENTS))
                         .filter(dep -> isParentWithinNormalStaffMedicalAgeLimit(user, dep))
                         .filter(this::isChildWithinMedicalAgeLimit)
+                        .filter(dep -> isSpouseWithinMedicalAgeLimit(user, dep))
                         .map(dep -> new DependentBaseDTO(
                                 String.valueOf(dep.getId()),
                                 dep.getFirstName() + " " + dep.getLastName(),
@@ -882,6 +889,24 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
         }
         int age = DateTimeUtil.getAge(String.valueOf(dependent.getDob()));
         return age <= CHILD_MAX_CLAIM_AGE;
+    }
+
+    private boolean isSpouseWithinMedicalAgeLimit(ApplicationUser user, ClaimsDependents dependent) {
+        if (user == null || dependent == null || !DependentCategory.SPOUSE.equals(dependent.getDependentCategory())) {
+            return true;
+        }
+        String staffCategoryCode = user.getUserPersonalDetails()
+                .getUserCompanyDetails()
+                .getStaffCategories()
+                .getCode();
+        int age = DateTimeUtil.getAge(String.valueOf(dependent.getDob()));
+        return age <= resolveSpouseClaimMaxAge(staffCategoryCode);
+    }
+
+    private int resolveSpouseClaimMaxAge(String staffCategoryCode) {
+        return "NS".equals(staffCategoryCode)
+                ? NORMAL_STAFF_SPOUSE_MAX_CLAIM_AGE
+                : OTHER_STAFF_SPOUSE_MAX_CLAIM_AGE;
     }
 
     private int resolveEmployeeClaimMaxAge(String staffCategoryCode) {
