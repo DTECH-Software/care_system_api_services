@@ -203,6 +203,11 @@ public class ProfileServiceImpl implements ProfileService {
                                 }
                             } else if (detailsRequestDTO.getRelationCategory().equalsIgnoreCase(RelationCategory.WIFE.name())) {
 
+                                if (hasActiveOrPendingSpouse(applicationUser)) {
+                                    log.info("User profile add dependent request already has active spouse");
+                                    return ResponseEntity.ok().body(responseUtil.error(null, 1022, messageSource.getMessage(ResponseMessageUtil.DEPENDENT_WIFE_MARRIED_ROUND_ALREADY_FOUND, new Object[]{clientMobile}, locale)));
+                                }
+
                                 boolean existed = claimDependentsRepository.existsAllByApplicationUserAndRelationCategoryAndStatusInAndMarried_Id(applicationUser,
                                         RelationCategory.WIFE, Arrays.asList(Workflow.APPROVED, Workflow.UNDER_REVIEW), Long.valueOf(detailsRequestDTO.getMarried()));
                                 if (existed) {
@@ -210,6 +215,11 @@ public class ProfileServiceImpl implements ProfileService {
                                     return ResponseEntity.ok().body(responseUtil.error(null, 1022, messageSource.getMessage(ResponseMessageUtil.DEPENDENT_WIFE_MARRIED_ROUND_ALREADY_FOUND, new Object[]{clientMobile}, locale)));
                                 }
                             } else if (detailsRequestDTO.getRelationCategory().equalsIgnoreCase(RelationCategory.HUSBAND.name())) {
+
+                                if (hasActiveOrPendingSpouse(applicationUser)) {
+                                    log.info("User profile add dependent request already has active spouse");
+                                    return ResponseEntity.ok().body(responseUtil.error(null, 1022, messageSource.getMessage(ResponseMessageUtil.DEPENDENT_HUSBAND_MARRIED_ROUND_ALREADY_FOUND, new Object[]{clientMobile}, locale)));
+                                }
 
                                 boolean existed = claimDependentsRepository.existsAllByApplicationUserAndRelationCategoryAndStatusInAndMarried_Id(applicationUser,
                                         RelationCategory.HUSBAND, Arrays.asList(Workflow.APPROVED, Workflow.UNDER_REVIEW), Long.valueOf(detailsRequestDTO.getMarried()));
@@ -691,6 +701,15 @@ public class ProfileServiceImpl implements ProfileService {
             log.error(e);
             throw e;
         }
+    }
+
+    private boolean hasActiveOrPendingSpouse(ApplicationUser applicationUser) {
+        return claimDependentsRepository.existsByApplicationUserAndRelationCategoryInAndStatusInAndLiveStatus(
+                applicationUser,
+                List.of(RelationCategory.WIFE, RelationCategory.HUSBAND),
+                List.of(Workflow.APPROVED, Workflow.UNDER_REVIEW),
+                true
+        );
     }
 
     @Scheduled(fixedRate = 10000)

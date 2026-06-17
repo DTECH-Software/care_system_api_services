@@ -20,6 +20,7 @@ import java.util.List;
 public interface ClaimDependentsRepository extends JpaRepository<ClaimsDependents,Long> {
     boolean existsAllByApplicationUserAndRelationCategoryAndStatusIn(ApplicationUser applicationUser, RelationCategory relationCategory, List<Workflow> workflow);
     boolean existsAllByApplicationUserAndRelationCategoryAndStatusInAndMarried_Id(ApplicationUser applicationUser, RelationCategory relationCategory, List<Workflow> workflow,Long id);
+    boolean existsByApplicationUserAndRelationCategoryInAndStatusInAndLiveStatus(ApplicationUser applicationUser, List<RelationCategory> relationCategories, List<Workflow> workflow, Boolean liveStatus);
     List<ClaimsDependents> findAllByStatusIn(List<Workflow> workflow);
     List<ClaimsDependents> findByApplicationUserAndStatusAndLiveStatus(ApplicationUser applicationUser, Workflow status, Boolean liveStatus);
 }
