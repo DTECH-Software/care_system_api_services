@@ -55,6 +55,7 @@ public class ResponseMessageUtil {
     public final static String INSURANCE_DETAILS_NOT_FOUND_OR_INACTIVE = "val.insurance.details.not.found.or.inactive";
     public final static String CLAIM_LIMIT_EXCEED_WITH_LIMIT = "val.claim.limit.exceed.with.limit";
     public final static String STAFF_CLAIM_LIMIT_OR_OUT_OF_EMPLOYEE_REQUEST_EXCEED = "val.claim.normal.staff.claim.limit.or.out.of.employee";
+    public final static String NORMAL_STAFF_CRIC_PERMANENT_PERIOD_NOT_COMPLETED = "val.claim.normal.staff.cric.permanent.period.not.completed";
     public final static String COMMON_PARAM_NOT_FOUND = "val.common.param.not.found";
     public final static String OLDER_DATE_INSURANCE_CLAIM_REQUEST = "val.older.date.insurance.claim.request";
     public final static String OLDER_DATE_DEATH_CLAIM_REQUEST = "val.older.date.death.claim.request";

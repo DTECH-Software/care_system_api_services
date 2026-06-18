@@ -57,6 +57,7 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
     private static final int OTHER_STAFF_EMPLOYEE_MAX_CLAIM_AGE = 69;
     private static final int NORMAL_STAFF_SPOUSE_MAX_CLAIM_AGE = 59;
     private static final int OTHER_STAFF_SPOUSE_MAX_CLAIM_AGE = 69;
+    private static final int NORMAL_STAFF_CRIC_MIN_PERMANENT_YEARS = 3;
 
 
     @Autowired
@@ -243,6 +244,13 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
                         log.info("Senior staff age {} ", age);
                         return ResponseEntity.ok().body(responseUtil.error(null, 1047, messageSource.getMessage(ResponseMessageUtil.CLAIM_SENIOR_STAFF_AGE_LIMIT_EXCEED, new Object[]{trAge}, locale)));
                     }
+                }
+
+                if (isCRIC && "NS".equals(staffCategoryCode) && !hasCompletedNormalStaffCricPermanentPeriod(user)) {
+                    log.info("Normal staff CRIC request blocked. Three years permanent employment not completed user={}",
+                            claimRequestDTO.getUsername());
+                    return ResponseEntity.ok().body(responseUtil.error(null, 1054,
+                            messageSource.getMessage(ResponseMessageUtil.NORMAL_STAFF_CRIC_PERMANENT_PERIOD_NOT_COMPLETED, null, locale)));
                 }
 
                 return commonParameterRepository.findByCode(CommonParam.INSURANCE_CLAIM_REQUEST_PERIOD.name()).map((param) -> {
@@ -749,6 +757,13 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
                             insuranceDetailsLimits.size());
 
                     insuranceDetailsLimits.forEach(in -> {
+                        if (TreatmentType.CRIC.name().equals(in.getTreatment().getTreatmentCode())
+                                && "NS".equals(user.getUserPersonalDetails().getUserCompanyDetails().getStaffCategories().getCode())
+                                && !hasCompletedNormalStaffCricPermanentPeriod(user)) {
+                            log.info("Skipping CRIC reference data. Normal staff has not completed three years permanent employment user={}",
+                                    channelRequestDTO.getUsername());
+                            return;
+                        }
                         log.info("Add treatment");
                         addIfNotPresent(userWiseTreatment, in);
                         String insuranceCategory = in.getTreatment().getTreatmentCode();
@@ -907,6 +922,29 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
         return "NS".equals(staffCategoryCode)
                 ? NORMAL_STAFF_SPOUSE_MAX_CLAIM_AGE
                 : OTHER_STAFF_SPOUSE_MAX_CLAIM_AGE;
+    }
+
+    private boolean hasCompletedNormalStaffCricPermanentPeriod(ApplicationUser user) {
+        Date permanentDate = resolvePermanentDateForCricEligibility(user);
+        if (permanentDate == null) {
+            return false;
+        }
+        Calendar eligibleDate = Calendar.getInstance();
+        eligibleDate.setTime(permanentDate);
+        eligibleDate.add(Calendar.YEAR, NORMAL_STAFF_CRIC_MIN_PERMANENT_YEARS);
+        return !DateTimeUtil.getCurrentDateTime().before(eligibleDate.getTime());
+    }
+
+    private Date resolvePermanentDateForCricEligibility(ApplicationUser user) {
+        if (user == null
+                || user.getUserPersonalDetails() == null
+                || user.getUserPersonalDetails().getUserCompanyDetails() == null) {
+            return null;
+        }
+        UserCompanyDetails companyDetails = user.getUserPersonalDetails().getUserCompanyDetails();
+        return companyDetails.getPreviousPermanentDate() != null
+                ? companyDetails.getPreviousPermanentDate()
+                : companyDetails.getPermanentDate();
     }
 
     private int resolveEmployeeClaimMaxAge(String staffCategoryCode) {
