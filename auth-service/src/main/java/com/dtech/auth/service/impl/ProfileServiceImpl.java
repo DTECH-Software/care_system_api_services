@@ -17,6 +17,7 @@ import com.dtech.auth.mapper.EntityToDto.ProfileMapper;
 import com.dtech.auth.model.*;
 import com.dtech.auth.model.DocumentStore;
 import com.dtech.auth.repository.*;
+import com.dtech.auth.service.AssistedUserResolver;
 import com.dtech.auth.service.EmailNotificationService;
 import com.dtech.auth.service.ProfileService;
 import com.dtech.auth.util.*;
@@ -77,6 +78,9 @@ public class ProfileServiceImpl implements ProfileService {
 
     @Autowired
     private final Gson gson;
+
+    @Autowired
+    private final AssistedUserResolver assistedUserResolver;
 
     @Autowired
     private final DocumentFeignClient documentFeignClient;
@@ -140,8 +144,7 @@ public class ProfileServiceImpl implements ProfileService {
     public ResponseEntity<ApiResponse<Object>> addDependents(ClaimDependentRequestDTO claimDependentRequestDTO, Locale locale) {
         try {
             log.info("User profile add dependant request {} ", claimDependentRequestDTO);
-            return applicationUserRepository.
-                    findByUsernameAndUserPersonalDetails_UserStatus(claimDependentRequestDTO.getUsername().trim(), Status.ACTIVE)
+            return assistedUserResolver.resolve(claimDependentRequestDTO)
                     .map(applicationUser -> {
 
                         for (ClaimDependentDetailsRequestDTO detailsRequestDTO : claimDependentRequestDTO.getDependents()) {
@@ -308,8 +311,7 @@ public class ProfileServiceImpl implements ProfileService {
 
         try {
             log.info("User profile view dependent request {} ", channelRequestDTO);
-            return applicationUserRepository
-                    .findByUsernameAndUserPersonalDetails_UserStatus(channelRequestDTO.getUsername(), Status.ACTIVE)
+            return assistedUserResolver.resolve(channelRequestDTO)
                     .map((user) -> {
                         log.info("User profile view dependent available {} ", user);
                         List<ClaimsDependents> collect = user.getClaimsDependents().stream().sorted(

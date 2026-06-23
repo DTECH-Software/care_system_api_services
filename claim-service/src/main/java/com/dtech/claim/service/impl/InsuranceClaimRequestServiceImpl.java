@@ -21,6 +21,7 @@ import com.dtech.claim.feign.DocumentFeignClient;
 import com.dtech.claim.mapper.EntityToDtoMapper;
 import com.dtech.claim.model.*;
 import com.dtech.claim.repository.*;
+import com.dtech.claim.service.AssistedUserResolver;
 import com.dtech.claim.service.InsuranceClaimRequestService;
 import com.dtech.claim.specifications.InsuranceClaimHistorySpecification;
 import com.dtech.claim.util.*;
@@ -129,6 +130,9 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
     @Autowired
     private final RejoinCarryForwardService rejoinCarryForwardService;
 
+    @Autowired
+    private final AssistedUserResolver assistedUserResolver;
+
     private static final BigDecimal NS_MAX_CLAIM_AMOUNT = BigDecimal.valueOf(800000);
     private static final int NS_MAX_EMPLOYEE_REQUESTS = 4;
 
@@ -138,7 +142,7 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
         try {
             log.info("Claim request processing started {}", claimRequestDTO);
 
-            return applicationUserRepository.findByUsernameAndUserPersonalDetails_UserStatus(claimRequestDTO.getUsername().trim(), Status.ACTIVE).map((user) -> {
+            return assistedUserResolver.resolve(claimRequestDTO).map((user) -> {
 
                 if (user.getUserPersonalDetails().getIsTemp() || user.getUserPersonalDetails().getUserCompanyDetails().getFacility().equals(Facility.DEATH)) {
                     log.info("Claims request user not {} ", user.getUsername());
@@ -698,7 +702,7 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
     public ResponseEntity<ApiResponse<Object>> insuranceClaimReferenceData(ChannelRequestDTO channelRequestDTO, Locale locale) {
         try {
             log.info("Insurance claim reference data {}", channelRequestDTO);
-            return applicationUserRepository.findByUsernameAndUserPersonalDetails_UserStatus(channelRequestDTO.getUsername().trim(), Status.ACTIVE).map((user) -> {
+            return assistedUserResolver.resolve(channelRequestDTO).map((user) -> {
                 InsuranceStaffCategoryPeriod period = insuranceStaffCategoryPeriodRepository
                         .findByDateWithinRange(DateTimeUtil.getCurrentDateTime(), user.getUserPersonalDetails().getUserCompanyDetails().getStaffCategories().getCode())
                         .stream()
@@ -1377,7 +1381,7 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
         try {
             log.info("Claim history filter list {}", paginationRequest);
 
-            return applicationUserRepository.findByUsernameAndUserPersonalDetails_UserStatus(paginationRequest.getUsername().trim(), Status.ACTIVE).map((user) -> {
+            return assistedUserResolver.resolve(paginationRequest).map((user) -> {
 
                 Pageable pageable = PaginationUtil.getPageable(paginationRequest);
 

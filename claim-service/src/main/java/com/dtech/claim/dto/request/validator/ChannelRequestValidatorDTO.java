@@ -35,7 +35,8 @@ import lombok.Data;
                 "DEATH_CLAIM_FILTER_LIST",
                 "DASHBOARD_SUMMARY",
                 "DASHBOARD_SUMMARY_REF_DATA",
-                "FIND_CLAIMS_ATTACHMENTS"
+                "FIND_CLAIMS_ATTACHMENTS",
+                "ASSISTED_EMPLOYEE_SELECT"
         }, required = {"username"}, message = "Username is required.")
 public class ChannelRequestValidatorDTO {
     @NotBlank(message = "Channel is required.")
@@ -47,6 +48,8 @@ public class ChannelRequestValidatorDTO {
     @ValidEnum(enumClass = Messages.class, message = "Invalid message.")
     private String message;
     private String username;
+    private Boolean assistedMode;
+    private Long actingEmployeeId;
     @Valid
     private ChannelMbDeviceDetailsValidatorDTO deviceDetails;
 }

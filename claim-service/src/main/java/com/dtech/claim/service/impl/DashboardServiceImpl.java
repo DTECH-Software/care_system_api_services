@@ -17,6 +17,7 @@ import com.dtech.claim.enums.*;
 import com.dtech.claim.enums.TreatmentCategory;
 import com.dtech.claim.model.*;
 import com.dtech.claim.repository.*;
+import com.dtech.claim.service.AssistedUserResolver;
 import com.dtech.claim.service.DashboardService;
 import com.dtech.claim.util.DateTimeUtil;
 import com.dtech.claim.util.ResponseMessageUtil;
@@ -64,13 +65,16 @@ public class DashboardServiceImpl implements DashboardService {
     @Autowired
     private final RejoinCarryForwardService rejoinCarryForwardService;
 
+    @Autowired
+    private final AssistedUserResolver assistedUserResolver;
+
     @Override
     @Transactional(readOnly = true)
     public ResponseEntity<ApiResponse<Object>> dashboardSummary(DashboardSummaryDTO dashboardSummaryDTO, Locale locale) {
         try {
             normalizeDashboardFilters(dashboardSummaryDTO);
             log.info("Get dashboard summary {}", dashboardSummaryDTO);
-            return applicationUserRepository.findByUsernameAndUserPersonalDetails_UserStatus(dashboardSummaryDTO.getUsername().trim(), Status.ACTIVE).map((user) -> {
+            return assistedUserResolver.resolve(dashboardSummaryDTO).map((user) -> {
 
                 HashMap<String, Object> list = new HashMap<>();
                 List<InsuranceStaffCategoryPeriod> activePeriods = insuranceStaffCategoryPeriodRepository
@@ -177,7 +181,7 @@ public class DashboardServiceImpl implements DashboardService {
     public ResponseEntity<ApiResponse<Object>> dashboardReferenceData(ChannelRequestDTO channelRequestDTO, Locale locale) {
         try {
             log.info("Dashboard reference data {}", channelRequestDTO);
-            return applicationUserRepository.findByUsernameAndUserPersonalDetails_UserStatus(channelRequestDTO.getUsername().trim(), Status.ACTIVE)
+            return assistedUserResolver.resolve(channelRequestDTO)
                     .map(user -> {
                         Map<String, Object> response = new HashMap<>();
 

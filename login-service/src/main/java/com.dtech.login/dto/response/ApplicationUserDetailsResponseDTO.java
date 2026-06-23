@@ -31,4 +31,8 @@ public class ApplicationUserDetailsResponseDTO {
     @JsonFormat(pattern = "yyyy-MM-dd", timezone = "Asia/Colombo")
     private Date createdDate;
     private String facilityId;
+    private String userType;
+    private boolean assistedClaim;
+    private String roleCode;
+    private String roleDescription;
 }

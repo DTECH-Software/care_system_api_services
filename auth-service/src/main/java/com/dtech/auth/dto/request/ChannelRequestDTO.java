@@ -17,5 +17,7 @@ public class ChannelRequestDTO {
     private String ip;
     private String message;
     private String username;
+    private Boolean assistedMode;
+    private Long actingEmployeeId;
     private ChannelMbDeviceDetailsDTO deviceDetails;
 }

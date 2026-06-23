@@ -38,6 +38,8 @@ public class ChannelRequestValidatorDTO {
     @ValidEnum(enumClass = Messages.class, message = "Invalid message.")
     private String message;
     private String username;
+    private Boolean assistedMode;
+    private Long actingEmployeeId;
     @Valid
     private ChannelMbDeviceDetailsValidatorsDTO deviceDetails;
 }

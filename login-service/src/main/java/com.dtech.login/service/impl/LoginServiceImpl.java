@@ -23,10 +23,12 @@ import com.dtech.login.model.ApplicationPasswordPolicy;
 import com.dtech.login.model.ApplicationUser;
 import com.dtech.login.model.ApplicationUserDeviceDetails;
 import com.dtech.login.model.ApplicationUserSession;
+import com.dtech.login.model.WebUser;
 import com.dtech.login.repository.ApplicationPasswordPolicyRepository;
 import com.dtech.login.repository.ApplicationUserDeviceDetailsRepository;
 import com.dtech.login.repository.ApplicationUserRepository;
 import com.dtech.login.repository.ApplicationUserSessionRepository;
+import com.dtech.login.repository.WebUserRepository;
 import com.dtech.login.service.LoginService;
 import com.dtech.login.util.*;
 import com.google.gson.Gson;
@@ -42,6 +44,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.security.NoSuchAlgorithmException;
+import java.util.Date;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
@@ -51,6 +55,8 @@ import java.util.Optional;
 @RequiredArgsConstructor
 @Log4j2
 public class LoginServiceImpl implements LoginService {
+    private static final String WEB_TOKEN_USERNAME_PREFIX = "WEB:";
+    private static final List<String> ASSISTED_LOGIN_ROLES = List.of("HRADMIN", "SUPERADMIN");
 
     @Autowired
     private final ApplicationUserRepository applicationUserRepository;
@@ -82,6 +88,9 @@ public class LoginServiceImpl implements LoginService {
     @Autowired
     private final ModelMapper modelMapper;
 
+    @Autowired
+    private final WebUserRepository webUserRepository;
+
     @Override
     @Transactional
     public ResponseEntity<ApiResponse<Object>> logIn(LoginRequestDTO loginRequestDTO, Locale locale) {
@@ -97,6 +106,9 @@ public class LoginServiceImpl implements LoginService {
                 log.info("Login request find by email {} ", username);
                 optionalUser = applicationUserRepository.findByPrimaryEmailIgnoreCaseAndUserPersonalDetails_UserStatus(username,Status.ACTIVE);
                 loginRequestDTO.setUsername(optionalUser.isEmpty() ? "" : optionalUser.get().getUsername());
+            }
+            if (optionalUser.isEmpty()) {
+                return loginWebUser(loginRequestDTO, username, password, locale);
             }
             return optionalUser.map(user -> {
 
@@ -154,6 +166,89 @@ public class LoginServiceImpl implements LoginService {
             log.error(e);
             throw e;
         }
+    }
+
+    private ResponseEntity<ApiResponse<Object>> loginWebUser(LoginRequestDTO loginRequestDTO, String username, String password, Locale locale) {
+        Optional<WebUser> webUserOptional = webUserRepository.findByUsernameAndStatus(username, Status.ACTIVE);
+        if (webUserOptional.isEmpty()) {
+            webUserOptional = webUserRepository.findByEmailIgnoreCaseAndStatus(username, Status.ACTIVE);
+        }
+
+        return webUserOptional.map(webUser -> {
+            if (!isHrAdmin(webUser)) {
+                log.info("Web user {} is not allowed for assisted care app login", webUser.getUsername());
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(responseUtil.error(null, 1006,
+                        messageSource.getMessage(ResponseMessageUtil.USERNAME_PASSWORD_INVALID, null, locale)));
+            }
+
+            String hashPasswordRequest;
+            try {
+                hashPasswordRequest = PasswordUtil.passwordEncoder(webUser.getUserKey(), password);
+            } catch (NoSuchAlgorithmException e) {
+                throw new RuntimeException(e);
+            }
+
+            if (!webUser.getPassword().equals(hashPasswordRequest)) {
+                log.info("Processing assisted login password mismatch for username {} ", username);
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(responseUtil.error(null, 1005,
+                        messageSource.getMessage(ResponseMessageUtil.USERNAME_PASSWORD_INVALID, null, locale)));
+            }
+
+            if (webUser.isReset() || webUser.getLoginStatus() == Status.INACTIVE) {
+                log.info("Assisted login user is reset state or inactive {}", webUser.getUsername());
+                return ResponseEntity.ok().body(responseUtil.error(null, 1004,
+                        messageSource.getMessage(ResponseMessageUtil.LOGIN_STATUS_INACTIVE_OR_EXPECTED_RESET, null, locale)));
+            }
+
+            if (webUser.getPasswordExpiredDate().before(DateTimeUtil.getCurrentDateTime())) {
+                log.info("Assisted login user password {} is expired", webUser.getUsername());
+                return ResponseEntity.ok().body(responseUtil.error(null, 1003,
+                        messageSource.getMessage(ResponseMessageUtil.PASSWORD_EXPIRED_AT_LOGIN_TIME, null, locale)));
+            }
+
+            ChannelRequestDTO channelRequestDTO = CommonRequestMapper.mapCommonRequest(loginRequestDTO, ChannelRequestDTO.class);
+            channelRequestDTO.setUsername(WEB_TOKEN_USERNAME_PREFIX + webUser.getUsername());
+            ResponseEntity<ApiResponse<Object>> tokenResponse = tokenFeignClient.getToken(channelRequestDTO);
+            Object objectApiResponse = ExtractApiResponseUtil.extractApiResponse(tokenResponse);
+            AccessTokenResponseDTO accessTokenResponseDTO = gson.fromJson(gson.toJson(objectApiResponse), AccessTokenResponseDTO.class);
+
+            webUser.setLastLoggedDate(DateTimeUtil.getCurrentDateTime());
+            webUser.setAttemptCount(0);
+            webUserRepository.saveAndFlush(webUser);
+
+            ApplicationUserDetailsResponseDTO response = new ApplicationUserDetailsResponseDTO();
+            response.setAccessToken(accessTokenResponseDTO.getAccessToken());
+            response.setUsername(webUser.getUsername());
+            response.setPrimaryEmail(webUser.getEmail());
+            response.setPrimaryMobile(webUser.getMobile());
+            response.setLastLoggedDate(formatDateTime(webUser.getLastLoggedDate()));
+            response.setLastPasswordChangeDate(formatDateTime(webUser.getLastPasswordChangeDate()));
+            response.setPasswordExpiredDate(formatDateTime(webUser.getPasswordExpiredDate()));
+            response.setUserType("HR_ADMIN");
+            response.setAssistedClaim(true);
+            if (webUser.getUserRole() != null) {
+                response.setRoleCode(webUser.getUserRole().getCode());
+                response.setRoleDescription(webUser.getUserRole().getDescription());
+            }
+            return ResponseEntity.ok().body(responseUtil.success((Object) response,
+                    messageSource.getMessage(ResponseMessageUtil.AUTHENTICATION_SUCCESS, null, locale)));
+        }).orElseGet(() -> {
+            log.info("Processing login request user not found for username {} ", username);
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(responseUtil.error(null, 1006,
+                    messageSource.getMessage(ResponseMessageUtil.USERNAME_PASSWORD_INVALID, null, locale)));
+        });
+    }
+
+    private boolean isHrAdmin(WebUser webUser) {
+        return webUser != null
+                && webUser.getLoginStatus() == Status.ACTIVE
+                && webUser.getStatus() == Status.ACTIVE
+                && webUser.getUserRole() != null
+                && ASSISTED_LOGIN_ROLES.stream().anyMatch(role -> role.equalsIgnoreCase(webUser.getUserRole().getCode()));
+    }
+
+    private String formatDateTime(Date date) {
+        return date == null ? null : DateTimeUtil.getYyyyMMddHHMmSsTimeFormatter(date);
     }
     @Transactional
     protected void updateApplicationUserDetails(ApplicationUser applicationUser) {
