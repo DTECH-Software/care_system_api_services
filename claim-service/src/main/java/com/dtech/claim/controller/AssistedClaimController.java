@@ -4,6 +4,7 @@ import com.dtech.claim.dto.request.AssistedEmployeeSelectRequestDTO;
 import com.dtech.claim.dto.request.validator.AssistedEmployeeSelectValidatorDTO;
 import com.dtech.claim.dto.response.ApiResponse;
 import com.dtech.claim.model.ApplicationUser;
+import com.dtech.claim.model.Document;
 import com.dtech.claim.model.UserAddress;
 import com.dtech.claim.model.UserCompanyDetails;
 import com.dtech.claim.model.UserPersonalDetails;
@@ -52,6 +53,13 @@ public class AssistedClaimController {
         response.put("assistedMode", true);
         response.put("actingEmployeeId", user.getId());
         response.put("username", user.getUsername());
+        response.put("primaryEmail", user.getPrimaryEmail());
+        response.put("primaryMobile", user.getPrimaryMobile());
+        response.put("lastPasswordChangeDate", formatDateTime(user.getLastPasswordChangeDate()));
+        response.put("lastLoggedDate", formatDateTime(user.getLastLoggedDate()));
+        response.put("expectingFirstTimeLogging", user.isExpectingFirstTimeLogging());
+        response.put("expectingDependentsRegister", user.isExpectingDependentsRegister());
+        response.put("passwordExpiredDate", formatDate(user.getPasswordExpiredDate()));
         response.put("epfNo", user.getUserPersonalDetails().getEpfNo());
         response.put("employeeName", (user.getUserPersonalDetails().getFirstName() + " " + user.getUserPersonalDetails().getLastName()).trim());
         response.put("company", user.getUserPersonalDetails().getUserCompanyDetails().getCompanyTypes().getCode());
@@ -59,6 +67,15 @@ public class AssistedClaimController {
         response.put("staffCategory", user.getUserPersonalDetails().getUserCompanyDetails().getStaffCategories().getCode());
         response.put("staffCategoryDescription", user.getUserPersonalDetails().getUserCompanyDetails().getStaffCategories().getDescription());
         response.put("userPersonalDetails", buildUserPersonalDetails(user));
+        response.put("profileImg", buildDocument(user.getProfileImg()));
+        response.put("notification", Map.of("unreadCount", 0, "latestNotifications", java.util.List.of()));
+        response.put("createdDate", formatDate(user.getCreatedDate()));
+        response.put("facilityId", user.getFacilityId());
+        response.put("userType", null);
+        response.put("assistedClaim", false);
+        response.put("roleCode", null);
+        response.put("roleDescription", null);
+        response.put("reset", user.isReset());
         return response;
     }
 
@@ -73,13 +90,18 @@ public class AssistedClaimController {
         details.put("nic", personalDetails.getNic());
         details.put("email", personalDetails.getEmail());
         details.put("mobileNo", personalDetails.getMobileNo());
+        details.put("gender", personalDetails.getGender() != null ? personalDetails.getGender().name() : null);
+        details.put("genderDescription", personalDetails.getGender() != null ? personalDetails.getGender().getDescription() : null);
+        details.put("title", personalDetails.getTitle() != null ? personalDetails.getTitle().name() : null);
+        details.put("titleDescription", personalDetails.getTitle() != null ? personalDetails.getTitle().getDescription() : null);
         details.put("maritalStatus", personalDetails.getMaritalStatus() != null ? personalDetails.getMaritalStatus().name() : null);
         details.put("maritalStatusDescription", personalDetails.getMaritalStatus() != null ? personalDetails.getMaritalStatus().getDescription() : null);
-        details.put("dob", formatDate(personalDetails.getDob()));
+        details.put("dob", personalDetails.getDob());
+        details.put("age", resolveAge(personalDetails.getDob()));
         details.put("userStatus", personalDetails.getUserStatus() != null ? personalDetails.getUserStatus().name() : null);
         details.put("isTemp", personalDetails.getIsTemp());
         details.put("tempId", personalDetails.getTempId());
-        details.put("createdDate", formatDate(user.getCreatedDate()));
+        details.put("birthImg", buildDocument(personalDetails.getBirthImg()));
         details.put("userAddress", buildAddress(personalDetails.getUserAddress()));
         details.put("userCompanyDetails", buildCompanyDetails(personalDetails.getUserCompanyDetails()));
         return details;
@@ -128,5 +150,29 @@ public class AssistedClaimController {
 
     private String formatDate(java.util.Date date) {
         return date == null ? null : new SimpleDateFormat("yyyy-MM-dd").format(date);
+    }
+
+    private String formatDateTime(java.util.Date date) {
+        return date == null ? null : new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(date);
+    }
+
+    private Map<String, Object> buildDocument(Document document) {
+        if (document == null) {
+            return null;
+        }
+        Map<String, Object> response = new HashMap<>();
+        response.put("type", document.getType() != null ? document.getType().name() : null);
+        response.put("fileName", document.getFileName());
+        response.put("fileType", document.getFileType());
+        response.put("doc", document.getDoc());
+        return response;
+    }
+
+    private Integer resolveAge(java.util.Date dob) {
+        if (dob == null) {
+            return null;
+        }
+        java.time.LocalDate birthDate = dob.toInstant().atZone(java.time.ZoneId.systemDefault()).toLocalDate();
+        return java.time.Period.between(birthDate, java.time.LocalDate.now()).getYears();
     }
 }

@@ -9,6 +9,8 @@ package com.dtech.claim.model;
 
 import com.dtech.claim.enums.MaritalStatus;
 import com.dtech.claim.enums.Status;
+import com.dtech.claim.enums.Gender;
+import com.dtech.claim.enums.Title;
 
 import jakarta.persistence.*;
 import lombok.Data;
@@ -33,6 +35,10 @@ public class UserPersonalDetails extends Audit implements Serializable {
     @Column(name = "epf_no",nullable = false,updatable = false)
     private String epfNo;
 
+    @Column(name = "title",nullable = false)
+    @Enumerated(EnumType.STRING)
+    private Title title;
+
     @Column(name = "initials",nullable = false,length = 30)
     private String initials;
 
@@ -50,6 +56,10 @@ public class UserPersonalDetails extends Audit implements Serializable {
 
     @Column(name = "mobile_no",nullable = false)
     private String mobileNo;
+
+    @Column(name = "gender",nullable = false)
+    @Enumerated(EnumType.STRING)
+    private Gender gender;
 
     @Column(name = "marital_status",nullable = false)
     @Enumerated(EnumType.STRING)
@@ -80,4 +90,7 @@ public class UserPersonalDetails extends Audit implements Serializable {
     @Column(name = "temp_id")
     private String tempId;
 
+    @OneToOne(fetch = FetchType.EAGER,cascade = CascadeType.REFRESH,targetEntity = Document.class)
+    @JoinColumn(name = "birth_img",referencedColumnName = "id")
+    private Document birthImg;
 }

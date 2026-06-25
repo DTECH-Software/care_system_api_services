@@ -33,6 +33,9 @@ public class ApplicationUser extends Audit implements Serializable {
     @Column(name = "id",nullable = false,updatable = false,unique = true)
     private Long id;
 
+    @Column(name = "facility_id",nullable = false)
+    private String facilityId;
+
     @Column(name = "username",nullable = false,updatable = false,unique = true)
     private String username;
 

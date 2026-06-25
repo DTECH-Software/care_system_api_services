@@ -99,6 +99,7 @@ public class AssistedUserResolver {
             String temporaryPassword = UUID.randomUUID().toString();
 
             ApplicationUser applicationUser = new ApplicationUser();
+            applicationUser.setFacilityId(generateFacilityId());
             applicationUser.setUsername(username);
             applicationUser.setPrimaryEmail(personalDetails.getEmail());
             applicationUser.setPrimaryMobile(personalDetails.getMobileNo());
@@ -134,6 +135,12 @@ public class AssistedUserResolver {
             candidate = base + "_" + suffix++;
         }
         return candidate;
+    }
+
+    private String generateFacilityId() {
+        Number maxId = (Number) entityManager.createNativeQuery("SELECT COALESCE(MAX(id), 0) FROM application_user")
+                .getSingleResult();
+        return String.format("%04d", maxId.longValue());
     }
 
     private boolean isHrUser(String username) {
