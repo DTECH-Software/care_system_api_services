@@ -4,6 +4,7 @@ import com.dtech.claim.dto.request.ChannelRequestDTO;
 import com.dtech.claim.dto.request.validator.ChannelRequestValidatorDTO;
 import com.dtech.claim.enums.Status;
 import com.dtech.claim.model.ApplicationUser;
+import com.dtech.claim.model.Document;
 import com.dtech.claim.model.OnboardingRequest;
 import com.dtech.claim.model.UserPersonalDetails;
 import com.dtech.claim.repository.ApplicationUserRepository;
@@ -69,7 +70,9 @@ public class AssistedUserResolver {
             log.info("Assisted employee select expected one active employee for epf {}, found {}", epfNo, employees.size());
             return Optional.empty();
         }
-        return Optional.of(ensureApplicationUser(employees.get(0), hrUsername));
+        ApplicationUser applicationUser = ensureApplicationUser(employees.get(0), hrUsername);
+        initializeForResponse(applicationUser);
+        return Optional.of(applicationUser);
     }
 
     private Optional<ApplicationUser> resolveAssisted(String username, Long actingEmployeeId) {
@@ -83,6 +86,41 @@ public class AssistedUserResolver {
     private ApplicationUser ensureApplicationUser(UserPersonalDetails userPersonalDetails, String hrUsername) {
         return applicationUserRepository.findByUserPersonalDetails(userPersonalDetails)
                 .orElseGet(() -> createApplicationUser(userPersonalDetails, hrUsername));
+    }
+
+    private void initializeForResponse(ApplicationUser applicationUser) {
+        UserPersonalDetails personalDetails = applicationUser.getUserPersonalDetails();
+        if (personalDetails == null) {
+            return;
+        }
+        touchDocument(applicationUser.getProfileImg());
+        touchDocument(personalDetails.getBirthImg());
+        if (personalDetails.getUserAddress() != null) {
+            personalDetails.getUserAddress().getCity();
+        }
+        if (personalDetails.getUserCompanyDetails() != null) {
+            personalDetails.getUserCompanyDetails().getDesignation();
+            if (personalDetails.getUserCompanyDetails().getCompanyTypes() != null) {
+                personalDetails.getUserCompanyDetails().getCompanyTypes().getDescription();
+            }
+            if (personalDetails.getUserCompanyDetails().getStaffCategories() != null) {
+                personalDetails.getUserCompanyDetails().getStaffCategories().getDescription();
+            }
+            if (personalDetails.getUserCompanyDetails().getStaffTypes() != null) {
+                personalDetails.getUserCompanyDetails().getStaffTypes().getDescription();
+            }
+            if (personalDetails.getUserCompanyDetails().getInsurancePolicy() != null) {
+                personalDetails.getUserCompanyDetails().getInsurancePolicy().getDescription();
+            }
+        }
+    }
+
+    private void touchDocument(Document document) {
+        if (document != null) {
+            document.getFileName();
+            document.getFileType();
+            document.getDoc();
+        }
     }
 
     private ApplicationUser createApplicationUser(UserPersonalDetails personalDetails, String hrUsername) {
