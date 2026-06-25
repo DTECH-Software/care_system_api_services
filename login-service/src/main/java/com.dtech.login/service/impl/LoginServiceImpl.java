@@ -56,7 +56,7 @@ import java.util.Optional;
 @Log4j2
 public class LoginServiceImpl implements LoginService {
     private static final String WEB_TOKEN_USERNAME_PREFIX = "WEB:";
-    private static final List<String> ASSISTED_LOGIN_ROLES = List.of("HRADMIN", "SUPERADMIN");
+    private static final List<String> ASSISTED_LOGIN_ROLES = List.of("HRADMIN", "HR", "SUPERADMIN");
 
     @Autowired
     private final ApplicationUserRepository applicationUserRepository;

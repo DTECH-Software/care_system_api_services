@@ -27,8 +27,6 @@ import java.util.UUID;
 @RequiredArgsConstructor
 @Log4j2
 public class AssistedUserResolver {
-    private static final List<String> ASSISTED_LOGIN_ROLES = List.of("HRADMIN", "SUPERADMIN");
-
     private final ApplicationUserRepository applicationUserRepository;
     private final UserPersonalDetailsRepository userPersonalDetailsRepository;
     private final OnboardingRequestRepository onboardingRequestRepository;
@@ -154,10 +152,9 @@ public class AssistedUserResolver {
                 WHERE wu.username = :username
                   AND wu.status = 'ACTIVE'
                   AND wu.login_status = 'ACTIVE'
-                  AND UPPER(wur.code) IN (:roles)
+                  AND UPPER(wur.code) IN ('HRADMIN', 'HR', 'SUPERADMIN')
                 """)
                 .setParameter("username", username.trim())
-                .setParameter("roles", ASSISTED_LOGIN_ROLES)
                 .getSingleResult();
         return count.longValue() > 0;
     }

@@ -12,13 +12,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Optional;
-import java.util.List;
 
 @Service
 @RequiredArgsConstructor
 public class AssistedUserResolver {
-    private static final List<String> ASSISTED_LOGIN_ROLES = List.of("HRADMIN", "SUPERADMIN");
-
     private final ApplicationUserRepository applicationUserRepository;
 
     @PersistenceContext
@@ -54,10 +51,9 @@ public class AssistedUserResolver {
                 WHERE wu.username = :username
                   AND wu.status = 'ACTIVE'
                   AND wu.login_status = 'ACTIVE'
-                  AND UPPER(wur.code) IN (:roles)
+                  AND UPPER(wur.code) IN ('HRADMIN', 'HR', 'SUPERADMIN')
                 """)
                 .setParameter("username", username.trim())
-                .setParameter("roles", ASSISTED_LOGIN_ROLES)
                 .getSingleResult();
         return count.longValue() > 0;
     }

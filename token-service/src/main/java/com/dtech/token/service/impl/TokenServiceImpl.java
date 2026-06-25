@@ -39,7 +39,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 @RequiredArgsConstructor
 public class TokenServiceImpl implements TokenService {
     private static final String WEB_TOKEN_USERNAME_PREFIX = "WEB:";
-    private static final List<String> ASSISTED_LOGIN_ROLES = List.of("HRADMIN", "SUPERADMIN");
+    private static final List<String> ASSISTED_LOGIN_ROLES = List.of("HRADMIN", "HR", "SUPERADMIN");
 
     @Autowired
     private final JwtUtil jwtUtil;
