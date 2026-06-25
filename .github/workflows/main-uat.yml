@@ -16,15 +16,14 @@ on:
       - "docker-compose-uat.yml"
       - ".github/workflows/main-uat.yml"
   workflow_dispatch:
-
-jobs:
-  ci:
-    name: Build Services
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        service:
+    inputs:
+      service:
+        description: "Service to deploy. Use all for full deployment."
+        required: true
+        default: "all"
+        type: choice
+        options:
+          - all
           - auth-service
           - claim-service
           - cloud-service
@@ -34,6 +33,83 @@ jobs:
           - notification-service
           - registry-service
           - token-service
+
+env:
+  ALL_SERVICES: registry-service token-service message-service document-service notification-service auth-service login-service claim-service cloud-service
+
+jobs:
+  detect:
+    name: Detect Changed Services
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.detect.outputs.matrix }}
+      services: ${{ steps.detect.outputs.services }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Detect services
+        id: detect
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          all_services="${ALL_SERVICES}"
+          selected_services=""
+
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            requested="${{ github.event.inputs.service }}"
+            if [ "$requested" = "all" ]; then
+              selected_services="$all_services"
+            else
+              selected_services="$requested"
+            fi
+          else
+            before="${{ github.event.before }}"
+            after="${{ github.sha }}"
+            if [ -z "$before" ] || echo "$before" | grep -Eq '^0+$'; then
+              changed_files="$(git diff-tree --no-commit-id --name-only -r "$after")"
+            else
+              changed_files="$(git diff --name-only "$before" "$after")"
+            fi
+
+            echo "Changed files:"
+            echo "$changed_files"
+
+            if echo "$changed_files" | grep -Eq '^(docker-compose-uat\.yml|\.github/workflows/main-uat\.yml)$'; then
+              selected_services="$all_services"
+            else
+              for service in $all_services; do
+                if echo "$changed_files" | grep -q "^${service}/"; then
+                  selected_services="${selected_services} ${service}"
+                fi
+              done
+            fi
+          fi
+
+          selected_services="$(echo "$selected_services" | xargs)"
+          if [ -z "$selected_services" ]; then
+            echo "No deployable service changes detected."
+            echo 'matrix={"service":[]}' >> "$GITHUB_OUTPUT"
+            echo "services=" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          json_items="$(printf '%s\n' $selected_services | jq -R . | jq -sc .)"
+          echo "Deploy services: $selected_services"
+          echo "matrix={\"service\":${json_items}}" >> "$GITHUB_OUTPUT"
+          echo "services=$selected_services" >> "$GITHUB_OUTPUT"
+
+  ci:
+    name: Build Changed Services
+    runs-on: ubuntu-latest
+    needs: detect
+    if: needs.detect.outputs.services != ''
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJson(needs.detect.outputs.matrix) }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -59,201 +135,63 @@ jobs:
           if-no-files-found: error
 
   cd:
-    name: Deploy to UAT
+    name: Deploy Changed Services to UAT
     runs-on: ubuntu-latest
-    needs: ci
-    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master' || github.ref == 'refs/heads/develop'
+    needs: [ detect, ci ]
+    if: needs.detect.outputs.services != '' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master' || github.ref == 'refs/heads/develop')
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Download registry-service Artifact
+      - name: Download changed service artifacts
         uses: actions/download-artifact@v4
         with:
-          name: registry-service-jar
-          path: ./artifact/registry-service
+          pattern: "*-jar"
+          path: ./artifact
 
-      - name: Download token-service Artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: token-service-jar
-          path: ./artifact/token-service
+      - name: Prepare deploy package
+        shell: bash
+        run: |
+          set -euo pipefail
+          services="${{ needs.detect.outputs.services }}"
+          rm -rf upload
+          mkdir -p upload
+          cp docker-compose-uat.yml upload/docker-compose-uat.yml
+          for service in $services; do
+            mkdir -p "upload/${service}/target"
+            cp "artifact/${service}-jar/"*.jar "upload/${service}/target/"
+            cp "${service}/Dockerfile" "upload/${service}/Dockerfile"
+          done
 
-      - name: Download message-service Artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: message-service-jar
-          path: ./artifact/message-service
-
-      - name: Download document-service Artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: document-service-jar
-          path: ./artifact/document-service
-
-      - name: Download notification-service Artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: notification-service-jar
-          path: ./artifact/notification-service
-
-      - name: Download auth-service Artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: auth-service-jar
-          path: ./artifact/auth-service
-
-      - name: Download login-service Artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: login-service-jar
-          path: ./artifact/login-service
-
-      - name: Download claim-service Artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: claim-service-jar
-          path: ./artifact/claim-service
-
-      - name: Download cloud-service Artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: cloud-service-jar
-          path: ./artifact/cloud-service
-
-      - name: Ensure Deploy Directories (UAT)
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.UAT_HOST }}
-          username: ${{ secrets.UAT_USER }}
-          key: ${{ secrets.UAT_SSH_KEY }}
-          script: |
-            set -e
-            DEPLOY_BASE="${{ secrets.UAT_DEPLOY_DIR }}"
-            for service in registry-service token-service message-service document-service notification-service auth-service login-service claim-service cloud-service; do
-              rm -rf "${DEPLOY_BASE}/${service}/target"
-              mkdir -p "${DEPLOY_BASE}/${service}/target"
-            done
-
-      - name: Copy registry-service Jar to UAT
+      - name: Copy changed files to UAT
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.UAT_HOST }}
           username: ${{ secrets.UAT_USER }}
           key: ${{ secrets.UAT_SSH_KEY }}
-          source: "./artifact/registry-service/*.jar"
-          target: "${{ secrets.UAT_DEPLOY_DIR }}/registry-service/target"
-          strip_components: 2
-          overwrite: true
-
-      - name: Copy token-service Jar to UAT
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: ${{ secrets.UAT_HOST }}
-          username: ${{ secrets.UAT_USER }}
-          key: ${{ secrets.UAT_SSH_KEY }}
-          source: "./artifact/token-service/*.jar"
-          target: "${{ secrets.UAT_DEPLOY_DIR }}/token-service/target"
-          strip_components: 2
-          overwrite: true
-
-      - name: Copy message-service Jar to UAT
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: ${{ secrets.UAT_HOST }}
-          username: ${{ secrets.UAT_USER }}
-          key: ${{ secrets.UAT_SSH_KEY }}
-          source: "./artifact/message-service/*.jar"
-          target: "${{ secrets.UAT_DEPLOY_DIR }}/message-service/target"
-          strip_components: 2
-          overwrite: true
-
-      - name: Copy document-service Jar to UAT
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: ${{ secrets.UAT_HOST }}
-          username: ${{ secrets.UAT_USER }}
-          key: ${{ secrets.UAT_SSH_KEY }}
-          source: "./artifact/document-service/*.jar"
-          target: "${{ secrets.UAT_DEPLOY_DIR }}/document-service/target"
-          strip_components: 2
-          overwrite: true
-
-      - name: Copy notification-service Jar to UAT
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: ${{ secrets.UAT_HOST }}
-          username: ${{ secrets.UAT_USER }}
-          key: ${{ secrets.UAT_SSH_KEY }}
-          source: "./artifact/notification-service/*.jar"
-          target: "${{ secrets.UAT_DEPLOY_DIR }}/notification-service/target"
-          strip_components: 2
-          overwrite: true
-
-      - name: Copy auth-service Jar to UAT
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: ${{ secrets.UAT_HOST }}
-          username: ${{ secrets.UAT_USER }}
-          key: ${{ secrets.UAT_SSH_KEY }}
-          source: "./artifact/auth-service/*.jar"
-          target: "${{ secrets.UAT_DEPLOY_DIR }}/auth-service/target"
-          strip_components: 2
-          overwrite: true
-
-      - name: Copy login-service Jar to UAT
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: ${{ secrets.UAT_HOST }}
-          username: ${{ secrets.UAT_USER }}
-          key: ${{ secrets.UAT_SSH_KEY }}
-          source: "./artifact/login-service/*.jar"
-          target: "${{ secrets.UAT_DEPLOY_DIR }}/login-service/target"
-          strip_components: 2
-          overwrite: true
-
-      - name: Copy claim-service Jar to UAT
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: ${{ secrets.UAT_HOST }}
-          username: ${{ secrets.UAT_USER }}
-          key: ${{ secrets.UAT_SSH_KEY }}
-          source: "./artifact/claim-service/*.jar"
-          target: "${{ secrets.UAT_DEPLOY_DIR }}/claim-service/target"
-          strip_components: 2
-          overwrite: true
-
-      - name: Copy cloud-service Jar to UAT
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: ${{ secrets.UAT_HOST }}
-          username: ${{ secrets.UAT_USER }}
-          key: ${{ secrets.UAT_SSH_KEY }}
-          source: "./artifact/cloud-service/*.jar"
-          target: "${{ secrets.UAT_DEPLOY_DIR }}/cloud-service/target"
-          strip_components: 2
-          overwrite: true
-
-      - name: Copy Docker Compose Files to UAT
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: ${{ secrets.UAT_HOST }}
-          username: ${{ secrets.UAT_USER }}
-          key: ${{ secrets.UAT_SSH_KEY }}
-          source: "docker-compose-uat.yml,registry-service/Dockerfile,token-service/Dockerfile,message-service/Dockerfile,document-service/Dockerfile,notification-service/Dockerfile,auth-service/Dockerfile,login-service/Dockerfile,claim-service/Dockerfile,cloud-service/Dockerfile"
+          source: "upload/**"
           target: "${{ secrets.UAT_DEPLOY_DIR }}"
+          strip_components: 1
           overwrite: true
 
-      - name: Restart Services in UAT Order
+      - name: Restart changed services in UAT order
         uses: appleboy/ssh-action@v1.0.3
+        env:
+          CHANGED_SERVICES: ${{ needs.detect.outputs.services }}
         with:
           host: ${{ secrets.UAT_HOST }}
           username: ${{ secrets.UAT_USER }}
           key: ${{ secrets.UAT_SSH_KEY }}
+          envs: CHANGED_SERVICES
           script: |
             set -e
             DEPLOY_BASE="${{ secrets.UAT_DEPLOY_DIR }}"
             COMPOSE_FILE="${DEPLOY_BASE}/docker-compose-uat.yml"
+
+            should_deploy() {
+              service="$1"
+              echo " $CHANGED_SERVICES " | grep -q " $service "
+            }
 
             wait_for_http() {
               url="$1"
@@ -324,6 +262,12 @@ jobs:
               port="$2"
               eureka_name="$3"
 
+              if ! should_deploy "$service"; then
+                echo "Skipping unchanged service: $service"
+                return 0
+              fi
+
+              stop_old_java_service "$service"
               docker compose -f "$COMPOSE_FILE" up -d --build "$service"
               wait_for_http "http://127.0.0.1:${port}" "$service"
               if [ -n "$eureka_name" ]; then
@@ -333,16 +277,12 @@ jobs:
 
             docker --version
             docker compose version
-
-            for service in registry-service token-service message-service document-service notification-service auth-service login-service claim-service cloud-service; do
-              stop_old_java_service "$service"
-            done
-            sleep 3
-
             cd "$DEPLOY_BASE"
 
             compose_up_service "registry-service" "8081" ""
-            wait_for_http "http://127.0.0.1:8081/eureka/apps" "registry-service"
+            if should_deploy "registry-service"; then
+              wait_for_http "http://127.0.0.1:8081/eureka/apps" "registry-service"
+            fi
 
             compose_up_service "token-service" "8082" "TOKEN-SERVICE"
             compose_up_service "message-service" "8084" "MESSAGE-SERVICE"
