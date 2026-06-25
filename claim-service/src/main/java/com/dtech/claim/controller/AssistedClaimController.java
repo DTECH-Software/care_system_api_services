@@ -172,7 +172,9 @@ public class AssistedClaimController {
         if (dob == null) {
             return null;
         }
-        java.time.LocalDate birthDate = dob.toInstant().atZone(java.time.ZoneId.systemDefault()).toLocalDate();
+        java.time.LocalDate birthDate = java.time.Instant.ofEpochMilli(dob.getTime())
+                .atZone(java.time.ZoneId.systemDefault())
+                .toLocalDate();
         return java.time.Period.between(birthDate, java.time.LocalDate.now()).getYears();
     }
 }
