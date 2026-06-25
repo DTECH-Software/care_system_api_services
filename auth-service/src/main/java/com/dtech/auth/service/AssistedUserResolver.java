@@ -8,6 +8,8 @@ import com.dtech.auth.repository.ApplicationUserRepository;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -33,11 +35,12 @@ public class AssistedUserResolver {
     }
 
     private Optional<ApplicationUser> resolveAssisted(String username, Long actingEmployeeId) {
-        if (actingEmployeeId == null || !isHrUser(username)) {
+        Optional<String> operatorUsername = resolveOperatorUsername(username);
+        if (actingEmployeeId == null || operatorUsername.isEmpty()) {
             return Optional.empty();
         }
         return applicationUserRepository.findByIdAndUserPersonalDetails_UserStatus(actingEmployeeId, Status.ACTIVE)
-                .filter(user -> hasCompanyAccess(username, getCompanyCode(user.getUserPersonalDetails())));
+                .filter(user -> hasCompanyAccess(operatorUsername.get(), getCompanyCode(user.getUserPersonalDetails())));
     }
 
     private boolean isHrUser(String username) {
@@ -56,6 +59,17 @@ public class AssistedUserResolver {
                 .setParameter("username", username.trim())
                 .getSingleResult();
         return count.longValue() > 0;
+    }
+
+    private Optional<String> resolveOperatorUsername(String requestUsername) {
+        if (isHrUser(requestUsername)) {
+            return Optional.of(requestUsername.trim());
+        }
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication != null && authentication.getName() != null && isHrUser(authentication.getName())) {
+            return Optional.of(authentication.getName());
+        }
+        return Optional.empty();
     }
 
     private boolean hasCompanyAccess(String username, String companyCode) {

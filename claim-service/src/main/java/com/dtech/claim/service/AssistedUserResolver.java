@@ -16,6 +16,8 @@ import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -59,28 +61,30 @@ public class AssistedUserResolver {
 
     @Transactional
     public Optional<ApplicationUser> selectEmployee(String hrUsername, String epfNo) {
-        if (!isHrUser(hrUsername)) {
+        String operatorUsername = resolveOperatorUsername(hrUsername).orElse(null);
+        if (operatorUsername == null) {
             return Optional.empty();
         }
         List<UserPersonalDetails> employees = userPersonalDetailsRepository.findByEpfNoAndUserStatus(epfNo.trim(), Status.ACTIVE)
                 .stream()
-                .filter(employee -> hasCompanyAccess(hrUsername, getCompanyCode(employee)))
+                .filter(employee -> hasCompanyAccess(operatorUsername, getCompanyCode(employee)))
                 .toList();
         if (employees.size() != 1) {
             log.info("Assisted employee select expected one active employee for epf {}, found {}", epfNo, employees.size());
             return Optional.empty();
         }
-        ApplicationUser applicationUser = ensureApplicationUser(employees.get(0), hrUsername);
+        ApplicationUser applicationUser = ensureApplicationUser(employees.get(0), operatorUsername);
         initializeForResponse(applicationUser);
         return Optional.of(applicationUser);
     }
 
     private Optional<ApplicationUser> resolveAssisted(String username, Long actingEmployeeId) {
-        if (actingEmployeeId == null || !isHrUser(username)) {
+        Optional<String> operatorUsername = resolveOperatorUsername(username);
+        if (actingEmployeeId == null || operatorUsername.isEmpty()) {
             return Optional.empty();
         }
         return applicationUserRepository.findByIdAndUserPersonalDetails_UserStatus(actingEmployeeId, Status.ACTIVE)
-                .filter(user -> hasCompanyAccess(username, getCompanyCode(user.getUserPersonalDetails())));
+                .filter(user -> hasCompanyAccess(operatorUsername.get(), getCompanyCode(user.getUserPersonalDetails())));
     }
 
     private ApplicationUser ensureApplicationUser(UserPersonalDetails userPersonalDetails, String hrUsername) {
@@ -195,6 +199,17 @@ public class AssistedUserResolver {
                 .setParameter("username", username.trim())
                 .getSingleResult();
         return count.longValue() > 0;
+    }
+
+    private Optional<String> resolveOperatorUsername(String requestUsername) {
+        if (isHrUser(requestUsername)) {
+            return Optional.of(requestUsername.trim());
+        }
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication != null && authentication.getName() != null && isHrUser(authentication.getName())) {
+            return Optional.of(authentication.getName());
+        }
+        return Optional.empty();
     }
 
     private boolean hasCompanyAccess(String username, String companyCode) {
