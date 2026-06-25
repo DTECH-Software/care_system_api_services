@@ -42,10 +42,24 @@ public class AssistedClaimController {
     public ResponseEntity<ApiResponse<Object>> selectEmployee(@RequestBody @Valid AssistedEmployeeSelectValidatorDTO validatorDTO,
                                                               Locale locale) {
         AssistedEmployeeSelectRequestDTO request = gson.fromJson(gson.toJson(validatorDTO), AssistedEmployeeSelectRequestDTO.class);
-        return assistedUserResolver.selectEmployee(request.getUsername(), request.getEpfNo())
-                .map(user -> ResponseEntity.ok().body(responseUtil.success(buildResponse(user), "Assisted employee selected successfully")))
-                .orElseGet(() -> ResponseEntity.ok().body(responseUtil.error(null, 1014,
-                        messageSource.getMessage(ResponseMessageUtil.APPLICATION_USER_NOT_FOUND, null, locale))));
+        AssistedUserResolver.SelectionResult result = assistedUserResolver.selectEmployee(request.getUsername(), request.getEpfNo(), request.getCompany());
+        if (!result.found()) {
+            return ResponseEntity.ok().body(responseUtil.error(null, 1014,
+                    messageSource.getMessage(ResponseMessageUtil.APPLICATION_USER_NOT_FOUND, null, locale)));
+        }
+        if (result.selectionRequired()) {
+            return ResponseEntity.ok().body(responseUtil.success(buildSelectionRequiredResponse(request.getEpfNo(), result.employees()),
+                    "Multiple employees found. Please select company."));
+        }
+        return ResponseEntity.ok().body(responseUtil.success(buildResponse(result.applicationUser()), "Assisted employee selected successfully"));
+    }
+
+    private Object buildSelectionRequiredResponse(String epfNo, java.util.List<Map<String, Object>> employees) {
+        Map<String, Object> response = new HashMap<>();
+        response.put("selectionRequired", true);
+        response.put("epfNo", epfNo);
+        response.put("employees", employees);
+        return response;
     }
 
     private Object buildResponse(ApplicationUser user) {

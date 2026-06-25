@@ -9,4 +9,5 @@ import lombok.EqualsAndHashCode;
 public class AssistedEmployeeSelectValidatorDTO extends ChannelRequestValidatorDTO {
     @NotBlank(message = "EPF number is required.")
     private String epfNo;
+    private String company;
 }

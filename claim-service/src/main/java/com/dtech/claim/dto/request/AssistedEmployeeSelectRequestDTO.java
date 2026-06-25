@@ -7,4 +7,5 @@ import lombok.EqualsAndHashCode;
 @Data
 public class AssistedEmployeeSelectRequestDTO extends ChannelRequestDTO {
     private String epfNo;
+    private String company;
 }

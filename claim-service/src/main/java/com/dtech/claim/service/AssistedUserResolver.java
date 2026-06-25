@@ -22,7 +22,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.security.NoSuchAlgorithmException;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -60,22 +62,59 @@ public class AssistedUserResolver {
     }
 
     @Transactional
-    public Optional<ApplicationUser> selectEmployee(String hrUsername, String epfNo) {
+    public SelectionResult selectEmployee(String hrUsername, String epfNo, String company) {
         String operatorUsername = resolveOperatorUsername(hrUsername).orElse(null);
         if (operatorUsername == null) {
-            return Optional.empty();
+            return SelectionResult.notFound();
         }
         List<UserPersonalDetails> employees = userPersonalDetailsRepository.findByEpfNoAndUserStatus(epfNo.trim(), Status.ACTIVE)
                 .stream()
                 .filter(employee -> hasCompanyAccess(operatorUsername, getCompanyCode(employee)))
+                .filter(employee -> isCompanyMatched(employee, company))
                 .toList();
-        if (employees.size() != 1) {
-            log.info("Assisted employee select expected one active employee for epf {}, found {}", epfNo, employees.size());
-            return Optional.empty();
+        if (employees.isEmpty()) {
+            log.info("Assisted employee select no active employee for epf {}, company {}", epfNo, company);
+            return SelectionResult.notFound();
+        }
+        if (employees.size() > 1) {
+            log.info("Assisted employee select found multiple active employees for epf {}, company {}", epfNo, company);
+            employees.forEach(this::initializeForOptionResponse);
+            return SelectionResult.selectionRequired(employees.stream().map(this::buildEmployeeOption).toList());
         }
         ApplicationUser applicationUser = ensureApplicationUser(employees.get(0), operatorUsername);
         initializeForResponse(applicationUser);
-        return Optional.of(applicationUser);
+        return SelectionResult.selected(applicationUser);
+    }
+
+    private boolean isCompanyMatched(UserPersonalDetails employee, String company) {
+        if (company == null || company.trim().isEmpty()) {
+            return true;
+        }
+        String companyCode = getCompanyCode(employee);
+        return companyCode != null && companyCode.equalsIgnoreCase(company.trim());
+    }
+
+    private void initializeForOptionResponse(UserPersonalDetails personalDetails) {
+        if (personalDetails == null || personalDetails.getUserCompanyDetails() == null) {
+            return;
+        }
+        if (personalDetails.getUserCompanyDetails().getCompanyTypes() != null) {
+            personalDetails.getUserCompanyDetails().getCompanyTypes().getDescription();
+        }
+        if (personalDetails.getUserCompanyDetails().getStaffCategories() != null) {
+            personalDetails.getUserCompanyDetails().getStaffCategories().getDescription();
+        }
+    }
+
+    private Map<String, Object> buildEmployeeOption(UserPersonalDetails personalDetails) {
+        Map<String, Object> option = new HashMap<>();
+        option.put("epfNo", personalDetails.getEpfNo());
+        option.put("employeeName", (personalDetails.getFirstName() + " " + personalDetails.getLastName()).trim());
+        option.put("company", personalDetails.getUserCompanyDetails().getCompanyTypes().getCode());
+        option.put("companyDescription", personalDetails.getUserCompanyDetails().getCompanyTypes().getDescription());
+        option.put("staffCategory", personalDetails.getUserCompanyDetails().getStaffCategories().getCode());
+        option.put("staffCategoryDescription", personalDetails.getUserCompanyDetails().getStaffCategories().getDescription());
+        return option;
     }
 
     private Optional<ApplicationUser> resolveAssisted(String username, Long actingEmployeeId) {
@@ -246,5 +285,22 @@ public class AssistedUserResolver {
             return null;
         }
         return userPersonalDetails.getUserCompanyDetails().getCompanyTypes().getCode();
+    }
+
+    public record SelectionResult(ApplicationUser applicationUser,
+                                  boolean selectionRequired,
+                                  List<Map<String, Object>> employees,
+                                  boolean found) {
+        public static SelectionResult selected(ApplicationUser applicationUser) {
+            return new SelectionResult(applicationUser, false, List.of(), true);
+        }
+
+        public static SelectionResult selectionRequired(List<Map<String, Object>> employees) {
+            return new SelectionResult(null, true, employees, true);
+        }
+
+        public static SelectionResult notFound() {
+            return new SelectionResult(null, false, List.of(), false);
+        }
     }
 }
