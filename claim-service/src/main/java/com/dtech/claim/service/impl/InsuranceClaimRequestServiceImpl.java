@@ -507,7 +507,7 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
                                                                 updateApplicationUserOtpData(user, user.getApplicationOtpSession());
                                                                 ApprovalWorkFlow approvalWorkFlow = updateApprovalData();
                                                                 String claimRequestId = saveClaimRequest(claimRequestDTO, user, claimsDependents, treatment, tc, approvalWorkFlow, insuranceYear, insuranceDetailsLimit, treatmentQuarter);
-                                                                notifyMessage(user.getPrimaryMobile(), claimRequestId);
+                                                                notifyMessage(assistedUserResolver.resolveNotificationMobile(claimRequestDTO, user), claimRequestId);
 
                                                                 String messageUtil = ResponseMessageUtil.INSURANCE_CLAIM_DEFAULT_REQUEST_SUBMIT_SUCCESS;
 
@@ -604,7 +604,7 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
                                                                 ApprovalWorkFlow approvalWorkFlow = updateApprovalData();
                                                                 updateApplicationUserOtpData(user, user.getApplicationOtpSession());
                                                                 String claimRequestId = saveClaimRequest(claimRequestDTO, user, claimsDependents, treatment, tc, approvalWorkFlow, insuranceYear, insuranceDetailsLimit, treatmentQuarter);
-                                                                notifyMessage(user.getPrimaryMobile(), claimRequestId);
+                                                                notifyMessage(assistedUserResolver.resolveNotificationMobile(claimRequestDTO, user), claimRequestId);
 
                                                                 String messageUtil = ResponseMessageUtil.INSURANCE_CLAIM_DEFAULT_REQUEST_SUBMIT_SUCCESS;
 

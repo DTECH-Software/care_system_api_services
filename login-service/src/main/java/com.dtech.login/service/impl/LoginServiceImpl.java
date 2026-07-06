@@ -56,6 +56,7 @@ import java.util.Optional;
 @Log4j2
 public class LoginServiceImpl implements LoginService {
     private static final String WEB_TOKEN_USERNAME_PREFIX = "WEB:";
+    private static final String DUMMY_MOBILE_PREFIX = "0000";
     private static final List<String> ASSISTED_LOGIN_ROLES = List.of("HRADMIN", "HR", "SUPERADMIN");
 
     @Autowired
@@ -125,6 +126,11 @@ public class LoginServiceImpl implements LoginService {
                         log.info("user is reset state or inactive {}",user.getUsername());
                         return ResponseEntity.ok().body(responseUtil.error(null, 1004, messageSource.getMessage(ResponseMessageUtil.LOGIN_STATUS_INACTIVE_OR_EXPECTED_RESET, null, locale)));
                     }
+                    if (isDummyMobile(user.getPrimaryMobile())) {
+                        log.info("Blocked normal care app login for dummy-mobile employee {}", user.getUsername());
+                        return ResponseEntity.ok().body(responseUtil.error(null, 1004,
+                                "This employee does not have a registered mobile number. Please contact HR."));
+                    }
 
                     Optional<Integer> passwordPolicyAttemptCount = getPasswordPolicyAttemptCount();
                     if (user.getPasswordExpiredDate().before(DateTimeUtil.getCurrentDateTime())) {
@@ -166,6 +172,10 @@ public class LoginServiceImpl implements LoginService {
             log.error(e);
             throw e;
         }
+    }
+
+    private boolean isDummyMobile(String mobile) {
+        return mobile != null && mobile.trim().startsWith(DUMMY_MOBILE_PREFIX);
     }
 
     private ResponseEntity<ApiResponse<Object>> loginWebUser(LoginRequestDTO loginRequestDTO, String username, String password, Locale locale) {

@@ -47,6 +47,7 @@ import java.util.Optional;
 @Log4j2
 @RequiredArgsConstructor
 public class OtpServiceImpl implements OtpService {
+    private static final String DUMMY_MOBILE_PREFIX = "0000";
 
     @Autowired
     private final UserPersonalDetailsRepository userPersonalDetailsRepository;
@@ -186,7 +187,12 @@ public class OtpServiceImpl implements OtpService {
                     log.info("Rest password send otp session send message {}", user);
                     String otp = RandomGeneratorUtil.getRandom6DigitNumber();
                     log.info("Generate otp - reset verified {} ", otp);
-                    MessageResponseDTO messageResponseDTO = sendMessageService.sendToCustomer(new MessageRequestDTO(user.getPrimaryMobile(), MessageType.OTP.name(), otp));
+                    String deliveryMobile = resolveOtpDeliveryMobile(otpRequestDTO, user);
+                    if (deliveryMobile == null) {
+                        return ResponseEntity.ok().body(responseUtil.error(null, 1038,
+                                "This employee does not have a registered mobile number. Please enter an assisted mobile number."));
+                    }
+                    MessageResponseDTO messageResponseDTO = sendMessageService.sendToCustomer(new MessageRequestDTO(deliveryMobile, MessageType.OTP.name(), otp));
                     log.info("Reset otp request success");
                     ApplicationOtpSession applicationOtpSession = updateOtpSession(otp, messageResponseDTO.isSuccess());
                     updateApplicationUser(user, applicationOtpSession);
@@ -225,6 +231,25 @@ public class OtpServiceImpl implements OtpService {
             log.error(e);
             throw e;
         }
+    }
+
+    private String resolveOtpDeliveryMobile(OtpRequestDTO otpRequestDTO, ApplicationUser user) {
+        String userMobile = user != null ? user.getPrimaryMobile() : null;
+        if (otpRequestDTO != null
+                && Messages.CLAIM_REQUEST_OTP_REQUEST.name().equalsIgnoreCase(otpRequestDTO.getMessage())
+                && isDummyMobile(userMobile)) {
+            String assistedMobile = otpRequestDTO.getPrimaryMobile();
+            return isBlank(assistedMobile) ? null : assistedMobile.trim();
+        }
+        return userMobile;
+    }
+
+    private boolean isDummyMobile(String mobile) {
+        return mobile != null && mobile.trim().startsWith(DUMMY_MOBILE_PREFIX);
+    }
+
+    private boolean isBlank(String value) {
+        return value == null || value.trim().isEmpty();
     }
 
     @Transactional

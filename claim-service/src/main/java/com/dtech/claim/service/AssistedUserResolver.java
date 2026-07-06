@@ -32,6 +32,7 @@ import java.util.UUID;
 @RequiredArgsConstructor
 @Log4j2
 public class AssistedUserResolver {
+    private static final String DUMMY_MOBILE_PREFIX = "0000";
     private final ApplicationUserRepository applicationUserRepository;
     private final UserPersonalDetailsRepository userPersonalDetailsRepository;
     private final OnboardingRequestRepository onboardingRequestRepository;
@@ -114,7 +115,22 @@ public class AssistedUserResolver {
         option.put("companyDescription", personalDetails.getUserCompanyDetails().getCompanyTypes().getDescription());
         option.put("staffCategory", personalDetails.getUserCompanyDetails().getStaffCategories().getCode());
         option.put("staffCategoryDescription", personalDetails.getUserCompanyDetails().getStaffCategories().getDescription());
+        option.put("hasRealMobile", hasRealMobile(personalDetails.getMobileNo()));
         return option;
+    }
+
+    @Transactional(readOnly = true)
+    public String resolveNotificationMobile(ChannelRequestDTO request, ApplicationUser selectedUser) {
+        if (request != null && Boolean.TRUE.equals(request.getAssistedMode())) {
+            Optional<String> operatorUsername = resolveOperatorUsername(request.getUsername());
+            Optional<String> operatorMobile = operatorUsername.flatMap(this::findWebUserMobile);
+            if (operatorMobile.isPresent()) {
+                return operatorMobile.get();
+            }
+            log.warn("Assisted request has no HR mobile. Falling back to selected employee mobile. username={}",
+                    request.getUsername());
+        }
+        return selectedUser != null ? selectedUser.getPrimaryMobile() : null;
     }
 
     private Optional<ApplicationUser> resolveAssisted(String username, Long actingEmployeeId) {
@@ -238,6 +254,29 @@ public class AssistedUserResolver {
                 .setParameter("username", username.trim())
                 .getSingleResult();
         return count.longValue() > 0;
+    }
+
+    private Optional<String> findWebUserMobile(String username) {
+        if (username == null || username.trim().isEmpty()) {
+            return Optional.empty();
+        }
+        @SuppressWarnings("unchecked")
+        List<String> mobiles = entityManager.createNativeQuery("""
+                SELECT wu.mobile
+                FROM web_user wu
+                WHERE wu.username = :username
+                  AND wu.status = 'ACTIVE'
+                  AND wu.login_status = 'ACTIVE'
+                """)
+                .setParameter("username", username.trim())
+                .getResultList();
+        return mobiles.stream()
+                .filter(this::hasRealMobile)
+                .findFirst();
+    }
+
+    public boolean hasRealMobile(String mobile) {
+        return mobile != null && !mobile.trim().startsWith(DUMMY_MOBILE_PREFIX) && !mobile.trim().isBlank();
     }
 
     private Optional<String> resolveOperatorUsername(String requestUsername) {

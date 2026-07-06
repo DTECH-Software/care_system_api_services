@@ -69,6 +69,7 @@ public class AssistedClaimController {
         response.put("username", user.getUsername());
         response.put("primaryEmail", user.getPrimaryEmail());
         response.put("primaryMobile", user.getPrimaryMobile());
+        response.put("hasRealMobile", assistedUserResolver.hasRealMobile(user.getPrimaryMobile()));
         response.put("lastPasswordChangeDate", formatDateTime(user.getLastPasswordChangeDate()));
         response.put("lastLoggedDate", formatDateTime(user.getLastLoggedDate()));
         response.put("expectingFirstTimeLogging", user.isExpectingFirstTimeLogging());
@@ -104,6 +105,7 @@ public class AssistedClaimController {
         details.put("nic", personalDetails.getNic());
         details.put("email", personalDetails.getEmail());
         details.put("mobileNo", personalDetails.getMobileNo());
+        details.put("hasRealMobile", assistedUserResolver.hasRealMobile(personalDetails.getMobileNo()));
         details.put("gender", personalDetails.getGender() != null ? personalDetails.getGender().name() : null);
         details.put("genderDescription", personalDetails.getGender() != null ? personalDetails.getGender().getDescription() : null);
         details.put("title", personalDetails.getTitle() != null ? personalDetails.getTitle().name() : null);
