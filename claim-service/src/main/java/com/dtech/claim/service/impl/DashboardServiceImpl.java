@@ -329,6 +329,21 @@ public class DashboardServiceImpl implements DashboardService {
                         treatmentCode);
 
         if (insuranceDetailsLimitOpt.isEmpty()) {
+            log.warn("Dashboard exact policy limit not found. Falling back by staff period. user={}, policy={}, periodId={}, treatment={}",
+                    user.getUsername(),
+                    user.getUserPersonalDetails().getUserCompanyDetails().getInsurancePolicy() != null
+                            ? user.getUserPersonalDetails().getUserCompanyDetails().getInsurancePolicy().getCode()
+                            : null,
+                    currentPeriod.getId(),
+                    treatmentCode);
+            insuranceDetailsLimitOpt = insuranceDetailsLimitRepository
+                    .findFirstByStatusAndInsuranceStaffCategoryPeriodAndTreatment_TreatmentCode(
+                            Status.ACTIVE,
+                            currentPeriod,
+                            treatmentCode);
+        }
+
+        if (insuranceDetailsLimitOpt.isEmpty()) {
             return dto;
         }
 
