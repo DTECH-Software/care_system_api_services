@@ -235,13 +235,17 @@ public class OtpServiceImpl implements OtpService {
 
     private String resolveOtpDeliveryMobile(OtpRequestDTO otpRequestDTO, ApplicationUser user) {
         String userMobile = user != null ? user.getPrimaryMobile() : null;
-        if (otpRequestDTO != null
-                && Messages.CLAIM_REQUEST_OTP_REQUEST.name().equalsIgnoreCase(otpRequestDTO.getMessage())
-                && isDummyMobile(userMobile)) {
+        if (isAssistedClaimOtpRequest(otpRequestDTO) && isDummyMobile(userMobile)) {
             String assistedMobile = otpRequestDTO.getPrimaryMobile();
             return isBlank(assistedMobile) ? null : assistedMobile.trim();
         }
         return userMobile;
+    }
+
+    private boolean isAssistedClaimOtpRequest(OtpRequestDTO otpRequestDTO) {
+        return otpRequestDTO != null
+                && Boolean.TRUE.equals(otpRequestDTO.getAssistedMode())
+                && Messages.CLAIM_REQUEST_OTP_REQUEST.name().equalsIgnoreCase(otpRequestDTO.getMessage());
     }
 
     private boolean isDummyMobile(String mobile) {

@@ -14,5 +14,7 @@ import lombok.EqualsAndHashCode;
 @Data
 public class OtpRequestDTO extends ChannelRequestDTO{
     private String primaryMobile;
+    private Boolean assistedMode;
+    private Long actingEmployeeId;
     private SignupOtpRequestDTO signupOtp;
 }
