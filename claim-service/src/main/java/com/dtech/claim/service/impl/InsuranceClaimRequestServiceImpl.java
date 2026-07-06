@@ -1545,6 +1545,7 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
             insuranceClaimsRequest.setApprovalLevel(ApprovalLevel.LEVEL01);
             insuranceClaimsRequest.setInsuranceDetailsLimit(insuranceDetailsLimit);
             insuranceClaimsRequest.setInsuranceQuarter(insuranceQuarter);
+            insuranceClaimsRequest.setAssistedMobileNo(assistedUserResolver.resolveAssistedMobileForClaim(claimRequestDTO, applicationUser));
             insuranceClaimsRequestRepository.saveAndFlush(insuranceClaimsRequest);
             log.info("Complete save claim request id {}", claimRequestId);
             return claimRequestId;

@@ -1,6 +1,7 @@
 package com.dtech.claim.service;
 
 import com.dtech.claim.dto.request.ChannelRequestDTO;
+import com.dtech.claim.dto.request.ClaimRequestDTO;
 import com.dtech.claim.dto.request.validator.ChannelRequestValidatorDTO;
 import com.dtech.claim.enums.Status;
 import com.dtech.claim.model.ApplicationUser;
@@ -121,6 +122,11 @@ public class AssistedUserResolver {
 
     @Transactional(readOnly = true)
     public String resolveNotificationMobile(ChannelRequestDTO request, ApplicationUser selectedUser) {
+        if (request instanceof ClaimRequestDTO claimRequest
+                && !hasRealMobile(selectedUser != null ? selectedUser.getPrimaryMobile() : null)
+                && hasRealMobile(claimRequest.getAssistedMobileNo())) {
+            return claimRequest.getAssistedMobileNo().trim();
+        }
         if (request != null && Boolean.TRUE.equals(request.getAssistedMode())) {
             Optional<String> operatorUsername = resolveOperatorUsername(request.getUsername());
             Optional<String> operatorMobile = operatorUsername.flatMap(this::findWebUserMobile);
@@ -131,6 +137,16 @@ public class AssistedUserResolver {
                     request.getUsername());
         }
         return selectedUser != null ? selectedUser.getPrimaryMobile() : null;
+    }
+
+    public String resolveAssistedMobileForClaim(ClaimRequestDTO request, ApplicationUser selectedUser) {
+        if (request != null
+                && Boolean.TRUE.equals(request.getAssistedMode())
+                && !hasRealMobile(selectedUser != null ? selectedUser.getPrimaryMobile() : null)
+                && hasRealMobile(request.getAssistedMobileNo())) {
+            return request.getAssistedMobileNo().trim();
+        }
+        return null;
     }
 
     private Optional<ApplicationUser> resolveAssisted(String username, Long actingEmployeeId) {

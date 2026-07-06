@@ -29,4 +29,5 @@ public class ClaimRequestDTO extends ChannelRequestDTO {
     private List<SupportingDocumentDTO> documents;
     private String otp;
     private Boolean isValidation;
+    private String assistedMobileNo;
 }
