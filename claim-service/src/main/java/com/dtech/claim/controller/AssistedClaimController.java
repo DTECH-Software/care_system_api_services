@@ -104,8 +104,7 @@ public class AssistedClaimController {
         details.put("lastName", personalDetails.getLastName());
         details.put("nic", personalDetails.getNic());
         details.put("email", personalDetails.getEmail());
-        details.put("mobileNo", personalDetails.getMobileNo());
-        details.put("hasRealMobile", assistedUserResolver.hasRealMobile(personalDetails.getMobileNo()));
+        details.put("mobileNo", assistedUserResolver.hasRealMobile(personalDetails.getMobileNo()) ? personalDetails.getMobileNo() : null);
         details.put("gender", personalDetails.getGender() != null ? personalDetails.getGender().name() : null);
         details.put("genderDescription", personalDetails.getGender() != null ? personalDetails.getGender().getDescription() : null);
         details.put("title", personalDetails.getTitle() != null ? personalDetails.getTitle().name() : null);
