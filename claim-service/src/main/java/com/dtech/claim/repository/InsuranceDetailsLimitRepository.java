@@ -35,6 +35,8 @@ public interface InsuranceDetailsLimitRepository extends JpaRepository<Insurance
                                                                                                                             InsuranceStaffCategoryPeriod insuranceYear,
                                                                                                                             String treatmentCode);
     List<InsuranceDetailsLimit> findByInsurancePolicyAndStatusAndInsuranceStaffCategoryPeriod(InsurancePolicy insurancePolicy,Status status,InsuranceStaffCategoryPeriod insuranceYear);
+    List<InsuranceDetailsLimit> findByStatusAndInsuranceStaffCategoryPeriod(Status status,
+                                                                            InsuranceStaffCategoryPeriod insuranceYear);
 //    List<InsuranceDetailsLimit> findByInsurancePolicyAndStatus(InsurancePolicy insurancePolicy,Status status);
 
     List<InsuranceDetailsLimit> findByInsurancePolicyAndStatusAndInsuranceStaffCategoryPeriodStatusAndInsuranceStaffCategoryPeriodFromDateLessThanEqualAndInsuranceStaffCategoryPeriodToDateGreaterThanEqualAndInsuranceStaffCategoryPeriodStaffCategoriesCode(

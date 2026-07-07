@@ -748,12 +748,7 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
 //                                    user.getUserPersonalDetails().getUserCompanyDetails().getInsurancePolicy(),
 //                                    Status.ACTIVE, period);
 
-                    List<InsuranceDetailsLimit> insuranceDetailsLimits = insuranceDetailsLimitRepository
-                            .findByInsurancePolicyAndStatusAndInsuranceStaffCategoryPeriod(
-                                    user.getUserPersonalDetails().getUserCompanyDetails().getInsurancePolicy(),
-                                    Status.ACTIVE,
-                                    period
-                            );
+                    List<InsuranceDetailsLimit> insuranceDetailsLimits = resolveInsuranceDetailsLimits(user, period);
                     log.info("Insurance claim reference data periodId={}, limitCount={}",
                             period.getId(),
                             insuranceDetailsLimits.size());
@@ -797,6 +792,29 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
             log.error(e);
             throw e;
         }
+    }
+
+    private List<InsuranceDetailsLimit> resolveInsuranceDetailsLimits(ApplicationUser user,
+                                                                      InsuranceStaffCategoryPeriod period) {
+        InsurancePolicy policy = user.getUserPersonalDetails()
+                .getUserCompanyDetails()
+                .getInsurancePolicy();
+        List<InsuranceDetailsLimit> limits = insuranceDetailsLimitRepository
+                .findByInsurancePolicyAndStatusAndInsuranceStaffCategoryPeriod(
+                        policy,
+                        Status.ACTIVE,
+                        period
+                );
+
+        if (!limits.isEmpty()) {
+            return limits;
+        }
+
+        log.warn("Insurance reference exact policy limits not found. Falling back by staff period. user={}, policy={}, periodId={}",
+                user.getUsername(),
+                policy != null ? policy.getCode() : null,
+                period != null ? period.getId() : null);
+        return insuranceDetailsLimitRepository.findByStatusAndInsuranceStaffCategoryPeriod(Status.ACTIVE, period);
     }
 
     @Transactional(readOnly = true)
