@@ -40,6 +40,8 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class DashboardServiceImpl implements DashboardService {
 
+    private static final int NORMAL_STAFF_CRIC_MIN_PERMANENT_YEARS = 3;
+
     @Autowired
     private final ApplicationUserRepository applicationUserRepository;
 
@@ -108,11 +110,15 @@ public class DashboardServiceImpl implements DashboardService {
 
                     int i = 0;
                     if (user.getUserPersonalDetails().getUserCompanyDetails().getStaffCategories().getCode().equals("NS")) {
-                        countOfInsurance.setCritical(null);
                         int requestApprovedCount = insuranceClaimsRequestRepository.findApprovedRequestCountByTreatment(dashboardSummaryDTO,
                                 selectedPolicyPeriodId, TreatmentType.CRIC.name());
                         i = 4 - requestApprovedCount;
                         i = Math.max(i, 0);
+                        if (hasCompletedNormalStaffCricPermanentPeriod(user)) {
+                            countOfInsurance.setCritical(critical);
+                        } else {
+                            countOfInsurance.setCritical(null);
+                        }
                     } else if (user.getUserPersonalDetails().getUserCompanyDetails().getStaffCategories().getCode().equals("SNR")) {
                         int requestApprovedCount = insuranceClaimsRequestRepository.findApprovedRequestCountByTreatmentSNR(dashboardSummaryDTO, user.getId(),
                                 selectedPolicyPeriodId, TreatmentType.CRIC.name());
@@ -519,5 +525,28 @@ public class DashboardServiceImpl implements DashboardService {
             return insuranceDetailsLimit.getGlobalLimit();
         }
         return insuranceQuarter != null ? insuranceQuarter.getQuarterLimit() : null;
+    }
+
+    private boolean hasCompletedNormalStaffCricPermanentPeriod(ApplicationUser user) {
+        Date permanentDate = resolvePermanentDateForCricEligibility(user);
+        if (permanentDate == null) {
+            return false;
+        }
+        Calendar eligibleDate = Calendar.getInstance();
+        eligibleDate.setTime(permanentDate);
+        eligibleDate.add(Calendar.YEAR, NORMAL_STAFF_CRIC_MIN_PERMANENT_YEARS);
+        return !DateTimeUtil.getCurrentDateTime().before(eligibleDate.getTime());
+    }
+
+    private Date resolvePermanentDateForCricEligibility(ApplicationUser user) {
+        if (user == null
+                || user.getUserPersonalDetails() == null
+                || user.getUserPersonalDetails().getUserCompanyDetails() == null) {
+            return null;
+        }
+        UserCompanyDetails companyDetails = user.getUserPersonalDetails().getUserCompanyDetails();
+        return companyDetails.getPreviousPermanentDate() != null
+                ? companyDetails.getPreviousPermanentDate()
+                : companyDetails.getPermanentDate();
     }
 }
