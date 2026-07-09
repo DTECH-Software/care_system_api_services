@@ -53,6 +53,13 @@ public class ClaimRequestValidatorDTO extends ChannelRequestValidatorDTO {
     private String otp;
     @NotNull(message = "Request validation type is required.")
     private Boolean isValidation;
-    @Pattern(regexp = "^(071|070|074|077|075|078|072|076)[0-9]{7}$", message = "Invalid assisted mobile number. It must start with 071, 074, 070, 077, 075, 078, 072, or 076, and be followed by 7 digits.")
     private String assistedMobileNo;
+
+    @AssertTrue(message = "Invalid assisted mobile number. It must start with 071, 074, 070, 077, 075, 078, 072, or 076, and be followed by 7 digits.")
+    public boolean isAssistedMobileNoValid() {
+        if (!Boolean.TRUE.equals(getAssistedMode()) || assistedMobileNo == null || assistedMobileNo.trim().isEmpty()) {
+            return true;
+        }
+        return assistedMobileNo.trim().matches("^(071|070|074|077|075|078|072|076)[0-9]{7}$");
+    }
 }
