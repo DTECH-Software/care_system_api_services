@@ -146,8 +146,13 @@ public class AssistedClaimController {
         response.put("staffTypes", base(companyDetails.getStaffTypes() != null ? companyDetails.getStaffTypes().getCode() : null,
                 companyDetails.getStaffTypes() != null ? companyDetails.getStaffTypes().getDescription() : null));
         response.put("designation", companyDetails.getDesignation());
-        response.put("permanentDate", formatDate(companyDetails.getPermanentDate()));
-        response.put("previousPermanentDate", formatDate(companyDetails.getPreviousPermanentDate()));
+        if (companyDetails.getPreviousPermanentDate() == null) {
+            response.put("permanentDate", null);
+            response.put("previousPermanentDate", formatDate(companyDetails.getPermanentDate()));
+        } else {
+            response.put("permanentDate", formatDate(companyDetails.getPermanentDate()));
+            response.put("previousPermanentDate", formatDate(companyDetails.getPreviousPermanentDate()));
+        }
         response.put("terminateDate", formatDate(companyDetails.getTerminateDate()));
         response.put("insurancePolicy", base(companyDetails.getInsurancePolicy() != null ? companyDetails.getInsurancePolicy().getCode() : null,
                 companyDetails.getInsurancePolicy() != null ? companyDetails.getInsurancePolicy().getDescription() : null));
