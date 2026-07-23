@@ -79,10 +79,7 @@ public class DashboardServiceImpl implements DashboardService {
             return assistedUserResolver.resolve(dashboardSummaryDTO).map((user) -> {
 
                 HashMap<String, Object> list = new HashMap<>();
-                List<InsuranceStaffCategoryPeriod> activePeriods = insuranceStaffCategoryPeriodRepository
-                        .findAllByStaffCategories_CodeAndStatus(
-                                user.getUserPersonalDetails().getUserCompanyDetails().getStaffCategories().getCode(),
-                                Status.ACTIVE);
+                List<InsuranceStaffCategoryPeriod> activePeriods = resolveApplicablePolicyPeriods(user);
                 InsuranceStaffCategoryPeriod selectedPolicyPeriod = resolvePeriodByYear(activePeriods, dashboardSummaryDTO.getYear());
                 Long selectedPolicyPeriodId = selectedPolicyPeriod != null ? selectedPolicyPeriod.getId() : null;
 
@@ -191,9 +188,7 @@ public class DashboardServiceImpl implements DashboardService {
                     .map(user -> {
                         Map<String, Object> response = new HashMap<>();
 
-                        String staffCode = user.getUserPersonalDetails().getUserCompanyDetails().getStaffCategories().getCode();
-                        List<InsuranceStaffCategoryPeriod> periods = insuranceStaffCategoryPeriodRepository
-                                .findAllByStaffCategories_CodeAndStatus(staffCode, Status.ACTIVE);
+                        List<InsuranceStaffCategoryPeriod> periods = resolveApplicablePolicyPeriods(user);
 
                         List<SimpleBaseDTO> years = periods.stream()
                                 .map(InsuranceStaffCategoryPeriod::getFromDate)
@@ -283,6 +278,47 @@ public class DashboardServiceImpl implements DashboardService {
                 .orElse(null);
     }
 
+    private List<InsuranceStaffCategoryPeriod> resolveApplicablePolicyPeriods(ApplicationUser user) {
+        if (user == null
+                || user.getUserPersonalDetails() == null
+                || user.getUserPersonalDetails().getUserCompanyDetails() == null
+                || user.getUserPersonalDetails().getUserCompanyDetails().getStaffCategories() == null) {
+            return List.of();
+        }
+
+        UserCompanyDetails companyDetails = user.getUserPersonalDetails().getUserCompanyDetails();
+        Date transferDate = companyDetails.getTransferDate();
+        List<InsuranceStaffCategoryPeriod> periods = new ArrayList<>(
+                insuranceStaffCategoryPeriodRepository.findAllByStaffCategories_CodeAndStatus(
+                        companyDetails.getStaffCategories().getCode(), Status.ACTIVE));
+
+        if (transferDate != null && companyDetails.getPreviousStaffCategories() != null) {
+            periods.removeIf(period -> period.getFromDate() != null
+                    && period.getFromDate().before(transferDate));
+            periods.addAll(insuranceStaffCategoryPeriodRepository
+                    .findAllByStaffCategories_CodeAndStatus(
+                            companyDetails.getPreviousStaffCategories().getCode(), Status.ACTIVE)
+                    .stream()
+                    .filter(period -> period.getFromDate() != null
+                            && period.getFromDate().before(transferDate))
+                    .toList());
+        }
+
+        return periods.stream()
+                .filter(Objects::nonNull)
+                .collect(Collectors.toMap(
+                        InsuranceStaffCategoryPeriod::getId,
+                        period -> period,
+                        (first, ignored) -> first,
+                        LinkedHashMap::new))
+                .values()
+                .stream()
+                .sorted(Comparator.comparing(
+                        InsuranceStaffCategoryPeriod::getFromDate,
+                        Comparator.nullsLast(Comparator.naturalOrder())))
+                .toList();
+    }
+
     private int getYear(Date date) {
         Calendar calendar = Calendar.getInstance();
         calendar.setTime(date);
@@ -329,7 +365,8 @@ public class DashboardServiceImpl implements DashboardService {
 
         Optional<InsuranceDetailsLimit> insuranceDetailsLimitOpt = insuranceDetailsLimitRepository
                 .findByInsurancePolicyAndStatusAndInsuranceStaffCategoryPeriodAndTreatment_TreatmentCode(
-                        user.getUserPersonalDetails().getUserCompanyDetails().getInsurancePolicy(),
+                        resolveInsurancePolicyForPeriod(
+                                user.getUserPersonalDetails().getUserCompanyDetails(), currentPeriod),
                         Status.ACTIVE,
                         currentPeriod,
                         treatmentCode);
@@ -442,6 +479,17 @@ public class DashboardServiceImpl implements DashboardService {
         dto.setTotalLimit(maxFundLimit != null ? maxFundLimit : BigDecimal.ZERO);
         dto.setRemainingAmount(remaining);
         return dto;
+    }
+
+    private InsurancePolicy resolveInsurancePolicyForPeriod(UserCompanyDetails companyDetails,
+                                                             InsuranceStaffCategoryPeriod period) {
+        if (companyDetails.getTransferDate() != null
+                && period.getFromDate() != null
+                && period.getFromDate().before(companyDetails.getTransferDate())
+                && companyDetails.getPreviousInsurancePolicy() != null) {
+            return companyDetails.getPreviousInsurancePolicy();
+        }
+        return companyDetails.getInsurancePolicy();
     }
 
     private InsuranceStaffCategoryPeriod resolvePreviousPeriodFromClaimHistory(ApplicationUser applicationUser,

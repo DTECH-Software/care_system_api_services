@@ -37,6 +37,10 @@ public class UserCompanyDetails extends Audit implements Serializable {
     @JoinColumn(name = "staff_category",nullable = false,referencedColumnName = "code")
     private StaffCategories staffCategories;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "previous_staff_category", referencedColumnName = "code")
+    private StaffCategories previousStaffCategories;
+
     @ManyToOne(fetch = FetchType.LAZY,cascade = CascadeType.ALL)
     @JoinColumn(name = "staff_type",nullable = false,referencedColumnName = "code")
     private StaffTypes staffTypes;
@@ -63,6 +67,14 @@ public class UserCompanyDetails extends Audit implements Serializable {
     @ManyToOne(fetch = FetchType.LAZY,cascade = CascadeType.PERSIST)
     @JoinColumn(name = "insurance_policy",nullable = false,referencedColumnName = "code")
     private InsurancePolicy insurancePolicy;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "previous_insurance_policy", referencedColumnName = "code")
+    private InsurancePolicy previousInsurancePolicy;
+
+    @Column(name = "transfer_date")
+    @Temporal(TemporalType.DATE)
+    private Date transferDate;
 
     @Column(name = "facility",nullable = false)
     @Enumerated(EnumType.STRING)
