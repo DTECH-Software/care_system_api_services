@@ -23,6 +23,8 @@ public class UserCompanyDetailsResponseDTO {
     private Date permanentDate;
     @JsonFormat(pattern = "yyyy-MM-dd", timezone = "Asia/Colombo")
     private Date previousPermanentDate;
+    @JsonFormat(pattern = "yyyy-MM-dd", timezone = "Asia/Colombo")
+    private Date transferDate;
     private Date terminateDate;
     private String designation;
     private SimpleBaseDTO insurancePolicy;
