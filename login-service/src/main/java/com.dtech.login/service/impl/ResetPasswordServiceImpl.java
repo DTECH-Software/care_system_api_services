@@ -72,7 +72,7 @@ public class ResetPasswordServiceImpl implements ResetPasswordService {
         try {
             log.info("Processing reset password request gen otp {} ", applicationUser.getUsername());
             String otp = RandomGeneratorUtil.getRandom6DigitNumber();
-            log.info("Generate otp {} ", otp);
+            log.info("Generated OTP for password reset request");
             MessageRequestDTO messageRequestDTO = new MessageRequestDTO();
             messageRequestDTO.setValue(otp);
             messageRequestDTO.setMobileNo(applicationUser.getPrimaryMobile());
@@ -100,12 +100,12 @@ public class ResetPasswordServiceImpl implements ResetPasswordService {
     @Transactional
     protected ApplicationOtpSession updateOtpSession(String otp, boolean state) {
         try {
-            log.info("Processing reset password request gen otp application otp session update {} ", otp);
+            log.info("Updating password reset OTP session");
             ApplicationOtpSession applicationOtpSession = new ApplicationOtpSession();
             applicationOtpSession.setOtp(otp);
             applicationOtpSession.setSuccess(state);
             ApplicationOtpSession otpSession = applicationOtpSessionRepository.saveAndFlush(applicationOtpSession);
-            log.info("Reset password request otp session update {} ", otpSession);
+            log.info("Password reset OTP session updated id={}", otpSession.getId());
             return otpSession;
         } catch (Exception e) {
             log.error(e);
@@ -133,7 +133,7 @@ public class ResetPasswordServiceImpl implements ResetPasswordService {
     public ResponseEntity<ApiResponse<Object>> resetPassword(ResetPasswordDTO resetPasswordDTO, Locale locale) {
 
         try {
-            log.info("processing reset password request {}", resetPasswordDTO);
+            log.info("Processing password reset request for username={}", resetPasswordDTO.getUsername());
             String username = resetPasswordDTO.getUsername().trim();
             String password = resetPasswordDTO.getConfirmPassword().trim();
 

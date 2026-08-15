@@ -10,6 +10,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import jakarta.servlet.http.HttpServletRequest;
 
 import java.util.Locale;
 
@@ -24,8 +25,10 @@ public class BiometricController {
 
     @PostMapping(produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.APPLICATION_JSON_VALUE)
     @ApiOperation(value = "Handle biometric login request", notes = "Biometric login request success or failed")
-    public ResponseEntity<ApiResponse<Object>> biometricLogin(@RequestBody BiometricLoginRequestDTO biometricLoginRequestDTO, Locale locale) {
-        log.info("Biometric login request controller {}", biometricLoginRequestDTO);
+    public ResponseEntity<ApiResponse<Object>> biometricLogin(@RequestBody BiometricLoginRequestDTO biometricLoginRequestDTO,
+                                                              HttpServletRequest servletRequest, Locale locale) {
+        servletRequest.setAttribute("care.audit.username", biometricLoginRequestDTO.getUsername());
+        log.info("Biometric login request received for username={}", biometricLoginRequestDTO.getUsername());
         return biometricService.biometricLogin(biometricLoginRequestDTO, locale);
     }
 }

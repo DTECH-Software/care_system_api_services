@@ -56,8 +56,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             if (authorization != null && authorization.startsWith(BEARER_PREFIX)) {
                 log.info("JWT Authentication Filter Authorized - Notification");
                 String token = authorization.substring(7);
-                log.info("JWT Authentication Filter Token - Notification {}", token);
-                log.info("JWT Authentication Filter request to token server - Notification {}", token);
+                log.info("JWT authentication token received; validating token");
 
                 ResponseEntity<ApiResponse<Object>> validateTokenResponse = tokenFeignClient.validateToken(token);
                 log.info("After response token service Notification {}", validateTokenResponse);
@@ -72,9 +71,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                             tokenValidResponseDTO.getUsername(), null, new ArrayList<>()
                     );
                     SecurityContextHolder.getContext().setAuthentication(authentication);
+                    request.setAttribute("care.audit.username", tokenValidResponseDTO.getUsername());
 
                 }else {
-                    log.info("JWT Authentication Filter Token expired or invalid - Notification {}", token);
+                    log.info("JWT authentication token expired or invalid");
                     sendUnauthorizedResponse(response, "Token has expired or is invalid. Please log in again to continue");
                     return ;
                 }

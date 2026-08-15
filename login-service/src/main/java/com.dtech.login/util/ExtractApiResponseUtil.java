@@ -18,14 +18,11 @@ public class ExtractApiResponseUtil {
         try {
             log.info("call api response {}", responseEntity.getStatusCode());
             if (responseEntity.getStatusCode() == HttpStatus.OK && responseEntity.getBody() != null) {
-                log.info("call api response inside body {}", responseEntity.getBody());
                 ApiResponse<Object> apiResponseBody = responseEntity.getBody();
                 if (apiResponseBody.getData() != null) {
-                    log.info("call api response inside api response body data {}" , apiResponseBody.getData());
                     return apiResponseBody.getData();
                 }
             }
-            log.info("call api response without body response {}", responseEntity.getBody());
             return null;
         } catch (Exception e) {
             log.error(e);

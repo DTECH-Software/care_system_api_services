@@ -19,7 +19,7 @@ public class PasswordUtil {
 
     public static String passwordEncoder(String saltKey, String password) throws NoSuchAlgorithmException {
         try {
-            log.info("Password Encoder {}", password);
+            log.debug("Encoding password");
             String passwordWithSalt = saltKey+password;
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
             byte[] hashBytes = digest.digest(passwordWithSalt.getBytes());

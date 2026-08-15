@@ -16,6 +16,7 @@ import com.dtech.login.service.LoginService;
 import com.google.gson.Gson;
 import io.swagger.annotations.ApiOperation;
 import jakarta.validation.Valid;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -39,15 +40,19 @@ public class LoginController {
 
     @PostMapping(path = "/login",produces = MediaType.APPLICATION_JSON_VALUE,consumes = MediaType.APPLICATION_JSON_VALUE)
     @ApiOperation(value = "Handle login request ",notes = "Login request success or failed")
-    public ResponseEntity<ApiResponse<Object>> logIn(@RequestBody @Valid LoginRequestValidatorDTO loginRequestValidatorDTO, Locale locale) {
-        log.info("Login request login controller {} ", loginRequestValidatorDTO);
+    public ResponseEntity<ApiResponse<Object>> logIn(@RequestBody @Valid LoginRequestValidatorDTO loginRequestValidatorDTO,
+                                                      HttpServletRequest servletRequest, Locale locale) {
+        servletRequest.setAttribute("care.audit.username", loginRequestValidatorDTO.getUsername());
+        log.info("Login request received for username={}", loginRequestValidatorDTO.getUsername());
         return loginService.logIn(gson.fromJson(gson.toJson(loginRequestValidatorDTO), LoginRequestDTO.class), locale);
     }
 
     @PostMapping(path = "/logout",produces = MediaType.APPLICATION_JSON_VALUE,consumes = MediaType.APPLICATION_JSON_VALUE)
     @ApiOperation(value = "Handle logout request ",notes = "Logout request success or failed")
-    public ResponseEntity<ApiResponse<Object>> logOut(@RequestBody @Valid ChannelRequestValidatorDTO channelRequestValidatorDTO, Locale locale) {
-        log.info("Logout request  controller {} ", channelRequestValidatorDTO);
+    public ResponseEntity<ApiResponse<Object>> logOut(@RequestBody @Valid ChannelRequestValidatorDTO channelRequestValidatorDTO,
+                                                       HttpServletRequest servletRequest, Locale locale) {
+        servletRequest.setAttribute("care.audit.username", channelRequestValidatorDTO.getUsername());
+        log.info("Logout request received for username={}", channelRequestValidatorDTO.getUsername());
         return loginService.logOut(gson.fromJson(gson.toJson(channelRequestValidatorDTO), ChannelRequestDTO.class), locale);
     }
 

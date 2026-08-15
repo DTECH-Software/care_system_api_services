@@ -19,11 +19,9 @@ public class PasswordEqualsValidators implements ConstraintValidator<PasswordEqu
 
     @Override
     public boolean isValid(Object object, ConstraintValidatorContext constraintValidatorContext) {
-        log.info("Equals validators {}",object);
         Field field1 = null;
         Field field2 = null;
         try {
-            log.info("Equals validators get fields {}",object);
             field1 = object.getClass().getDeclaredField("password");
             field2 = object.getClass().getDeclaredField("confirmPassword");
         } catch (NoSuchFieldException e) {
@@ -37,7 +35,6 @@ public class PasswordEqualsValidators implements ConstraintValidator<PasswordEqu
         String fieldValue1 = null;
         String fieldValue2 = null;
         try {
-            log.info("Equals validators get fields value {}",object);
             fieldValue1 = (String) field1.get(object);
             fieldValue2 = (String) field2.get(object);
         } catch (IllegalAccessException e) {

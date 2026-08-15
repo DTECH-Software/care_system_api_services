@@ -17,7 +17,7 @@ public class CommonRequestMapper {
 
     public static <T> T mapCommonRequest(T inputObject,Class<T> tClass) {
         try {
-            log.info("calling mapCommonRequest {}. mapper class {}", inputObject,tClass);
+            log.debug("Calling common request mapper for class={}", tClass.getSimpleName());
             return gson.fromJson(gson.toJson(inputObject), tClass);
         } catch (Exception e) {
             log.error(e);

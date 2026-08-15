@@ -14,6 +14,7 @@ import com.dtech.login.service.ResetPasswordService;
 import com.google.gson.Gson;
 import io.swagger.annotations.ApiOperation;
 import jakarta.validation.Valid;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -37,8 +38,10 @@ public class ResetPasswordController {
 
     @PostMapping(path = "/reset",produces = MediaType.APPLICATION_JSON_VALUE,consumes = MediaType.APPLICATION_JSON_VALUE)
     @ApiOperation(value = "Handle password request request ",notes = "Password reset request success or failed")
-    public ResponseEntity<ApiResponse<Object>> resetPassword(@RequestBody @Valid ResetPasswordValidatorDTO resetPasswordValidatorDTO, Locale locale) {
-        log.info("Password reset request controller {} ", resetPasswordValidatorDTO);
+    public ResponseEntity<ApiResponse<Object>> resetPassword(@RequestBody @Valid ResetPasswordValidatorDTO resetPasswordValidatorDTO,
+                                                             HttpServletRequest servletRequest, Locale locale) {
+        servletRequest.setAttribute("care.audit.username", resetPasswordValidatorDTO.getUsername());
+        log.info("Password reset request received for username={}", resetPasswordValidatorDTO.getUsername());
         return resetPasswordService.resetPassword(gson.fromJson(gson.toJson(resetPasswordValidatorDTO), ResetPasswordDTO.class), locale);
     }
 
