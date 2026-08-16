@@ -19,6 +19,7 @@ import com.dtech.auth.model.DocumentStore;
 import com.dtech.auth.repository.*;
 import com.dtech.auth.service.AssistedUserResolver;
 import com.dtech.auth.service.EmailNotificationService;
+import com.dtech.auth.service.DependentEmailRecipientConfigService;
 import com.dtech.auth.service.ProfileService;
 import com.dtech.auth.util.*;
 import com.google.gson.Gson;
@@ -103,6 +104,9 @@ public class ProfileServiceImpl implements ProfileService {
 
     @Autowired
     private final EmailNotificationService emailNotificationService;
+
+    @Autowired
+    private final DependentEmailRecipientConfigService dependentEmailRecipientConfigService;
 
     @Autowired
     private final ApplicationOtpSessionRepository applicationOtpSessionRepository;
@@ -533,7 +537,7 @@ public class ProfileServiceImpl implements ProfileService {
             return;
         }
 
-        List<String> recipientEmails = findHrTeamEmailsByCompany(companyCode);
+        List<String> recipientEmails = dependentEmailRecipientConfigService.resolveSubmittedRecipients(companyCode);
         emailNotificationService.notifyHrTeamOnDependentPendingApproval(recipientEmails, applicationUser, savedDependents);
     }
 
