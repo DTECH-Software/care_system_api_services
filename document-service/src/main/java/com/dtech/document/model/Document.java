@@ -8,6 +8,7 @@
 package com.dtech.document.model;
 
 import com.dtech.document.enums.DocType;
+import com.dtech.document.enums.DocumentStorageProvider;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -32,7 +33,7 @@ public class Document extends Audit implements Serializable {
     @Enumerated(EnumType.STRING)
     private DocType type;
 
-    @Column(name = "doc",nullable = false)
+    @Column(name = "doc")
     @Lob
     private String doc;
 
@@ -41,5 +42,21 @@ public class Document extends Audit implements Serializable {
 
     @Column(name = "file_type",nullable = false)
     private String fileType;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "storage_provider", nullable = false)
+    private DocumentStorageProvider storageProvider = DocumentStorageProvider.DATABASE;
+
+    @Column(name = "bucket_name")
+    private String bucketName;
+
+    @Column(name = "object_key", unique = true, length = 500)
+    private String objectKey;
+
+    @Column(name = "object_size")
+    private Long objectSize;
+
+    @Column(name = "checksum_sha256", length = 64)
+    private String checksumSha256;
 
 }

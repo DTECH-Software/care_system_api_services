@@ -18,6 +18,7 @@ import com.dtech.document.dto.response.ApiResponse;
 import com.dtech.document.model.Document;
 import com.dtech.document.repository.DocumentRepository;
 import com.dtech.document.service.DocumentService;
+import com.dtech.document.service.DocumentStorageService;
 import com.dtech.document.util.ResponseMessageUtil;
 import com.dtech.document.util.ResponseUtil;
 import lombok.RequiredArgsConstructor;
@@ -30,7 +31,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.Base64;
 import java.util.Locale;
 import java.util.Optional;
 
@@ -41,6 +41,9 @@ public class DocumentServiceImpl implements DocumentService {
 
     @Autowired
     private final DocumentRepository documentRepository;
+
+    @Autowired
+    private final DocumentStorageService documentStorageService;
 
     @Autowired
     private final Gson gson;
@@ -56,14 +59,15 @@ public class DocumentServiceImpl implements DocumentService {
     public ResponseEntity<ApiResponse<Object>> upload(DocumentUploadRequestDTO documentUploadRequestDTO, Locale locale) throws IOException {
 
         try {
-            log.info("upload document from document service {}", documentUploadRequestDTO);
+            log.info("Upload document type={} fileName={} fileType={}",
+                    documentUploadRequestDTO.getType(), documentUploadRequestDTO.getFileName(),
+                    documentUploadRequestDTO.getFileType());
             Document document = gson.fromJson(gson.toJson(documentUploadRequestDTO), Document.class);
-            String baseConvert = Base64.getEncoder().encodeToString(documentUploadRequestDTO.getDocument());
-            document.setDoc(baseConvert);
-            document = documentRepository.saveAndFlush(document);
+            document = documentStorageService.saveAppDocument(document, documentUploadRequestDTO.getDocument());
+            DocumentUploadResponseDTO uploadResponse = toUploadResponse(document);
             log.info("upload document from document service success ");
             return ResponseEntity.ok().body(
-                    responseUtil.success(gson.fromJson(gson.toJson(document), DocumentUploadResponseDTO.class),
+                    responseUtil.success(uploadResponse,
                             messageSource.getMessage(ResponseMessageUtil.DOCUMENT_UPLOAD_SUCCESS, null, locale))
             );
         } catch (Exception e) {
@@ -81,7 +85,7 @@ public class DocumentServiceImpl implements DocumentService {
             Optional<Document> documentOpt = documentRepository.findById(documentDownloadRequestDTO.getId());
             return documentOpt.map(document -> {
                 log.info("Download document found from document service");
-                byte[] bytes = ImageUtils.decodeFromBase64(document.getDoc());
+                byte[] bytes = ImageUtils.decodeFromBase64(documentStorageService.getBase64(document));
                 DocumentDownloadResponseDTO downloadResponseDTO = ImageDownloadMapper.imageDownloadMapper(document);
                 downloadResponseDTO.setDoc(Arrays.toString(bytes));
                 return downloadResponseDTO;
@@ -104,15 +108,15 @@ public class DocumentServiceImpl implements DocumentService {
             return documentRepository.findById(documentDownloadRequestDTO.getId()).map((doc) -> {
                 log.info("Document found from document service");
                 Object response = null;
+                String base64 = documentStorageService.getBase64(doc);
                 if (documentDownloadRequestDTO.isState()) {
                     log.info("Document true state found with ID: " + documentDownloadRequestDTO.getId());
-                    response = doc;
+                    response = toUploadResponse(doc, base64);
                 } else {
                     log.info("Document false state found with ID: " + documentDownloadRequestDTO.getId());
-                 //   byte[] bytes = ImageUtils.decodeFromBase64(doc.getDoc());
-                   response = ImageDownloadMapper.imageDownloadMapper(doc);
-
-                   // response = downloadResponseDTO;
+                    DocumentDownloadResponseDTO downloadResponse = ImageDownloadMapper.imageDownloadMapper(doc);
+                    downloadResponse.setDoc(base64);
+                    response = downloadResponse;
                 }
                 log.info("download document from document service success");
                 return ResponseEntity.ok().body(responseUtil.success(response, messageSource.getMessage(ResponseMessageUtil.DOCUMENT_DOWNLOAD_SUCCESS, null, locale)));
@@ -124,5 +128,19 @@ public class DocumentServiceImpl implements DocumentService {
             log.error(e);
             throw e;
         }
+    }
+
+    private DocumentUploadResponseDTO toUploadResponse(Document document) {
+        return toUploadResponse(document, documentStorageService.getBase64(document));
+    }
+
+    private DocumentUploadResponseDTO toUploadResponse(Document document, String base64) {
+        DocumentUploadResponseDTO response = new DocumentUploadResponseDTO();
+        response.setId(document.getId());
+        response.setType(document.getType() == null ? null : document.getType().name());
+        response.setDoc(base64);
+        response.setFileName(document.getFileName());
+        response.setFileType(document.getFileType());
+        return response;
     }
 }

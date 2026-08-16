@@ -53,6 +53,8 @@ services:
   document_service:
     image: 'document_service:0.0.1'
     container_name: document_service
+    env_file:
+      - /opt/wecare/secrets/care-admin-object-storage.env
     ports:
       - '8086:8086'
     environment:

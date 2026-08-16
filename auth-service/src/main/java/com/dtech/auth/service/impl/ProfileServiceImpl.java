@@ -95,9 +95,6 @@ public class ProfileServiceImpl implements ProfileService {
     private final DocumentStoreRepository documentStoreRepository;
 
     @Autowired
-    private final DocumentRepository documentRepository;
-
-    @Autowired
     private final JdbcTemplate jdbcTemplate;
 
     @Autowired
@@ -676,7 +673,6 @@ public class ProfileServiceImpl implements ProfileService {
                     log.info("Upload supporting document from dependent");
                     try {
                         Document t = uploadImage(doc.getType(), doc.getFile(), doc.getFileType(), doc.getFileName());
-                        documentRepository.save(t);
                         return t;
                     } catch (IOException e) {
                         log.error(e);
