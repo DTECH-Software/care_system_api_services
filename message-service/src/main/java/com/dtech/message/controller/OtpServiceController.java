@@ -43,14 +43,14 @@ public class OtpServiceController {
     @PostMapping(path = "/send",produces = MediaType.APPLICATION_JSON_VALUE,consumes = MediaType.APPLICATION_JSON_VALUE)
     @ApiOperation(value = "Handle send message request ",notes = "Send message request success or failed")
     public ResponseEntity<ApiResponse<Object>> otpRequest(@RequestBody @Valid OtpRequestValidatorDTO otpRequestValidatorDTO, Locale locale) {
-        log.info("OTP send via txt request  controller {} ", otpRequestValidatorDTO );
+        log.info("OTP send request message={} username={}", otpRequestValidatorDTO.getMessage(), otpRequestValidatorDTO.getUsername());
         return otpService.otpRequest(gson.fromJson(gson.toJson(otpRequestValidatorDTO), OtpRequestDTO.class), locale);
     }
 
     @PostMapping(path = "/validate",produces = MediaType.APPLICATION_JSON_VALUE,consumes = MediaType.APPLICATION_JSON_VALUE)
     @ApiOperation(value = "Handle  OTP validation request",notes = "OTP validation request success or failed")
     public ResponseEntity<ApiResponse<Object>> otpValidate(@RequestBody @Valid OtpValidationValidatorDTO otpValidationValidatorDTO, Locale locale) {
-        log.info("OTP validation request controller {} ", otpValidationValidatorDTO);
+        log.info("OTP validation request message={} username={}", otpValidationValidatorDTO.getMessage(), otpValidationValidatorDTO.getUsername());
         return otpService.otpValidate(gson.fromJson(gson.toJson(otpValidationValidatorDTO), OtpValidationDTO.class), locale);
     }
 

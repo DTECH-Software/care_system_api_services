@@ -15,6 +15,7 @@ import com.dtech.message.dto.response.MessageResponseDTO;
 import com.dtech.message.dto.response.PolicyResponseDTO;
 import com.dtech.message.enums.Messages;
 import com.dtech.message.enums.MessageType;
+import com.dtech.message.enums.OtpPurpose;
 import com.dtech.message.enums.Status;
 import com.dtech.message.model.ApplicationOtpSession;
 import com.dtech.message.model.ApplicationUser;
@@ -28,8 +29,8 @@ import com.dtech.message.util.ResponseUtil;
 import com.google.gson.Gson;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
-import org.hibernate.annotations.ColumnTransformer;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.MessageSource;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
@@ -40,6 +41,7 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.List;
 import java.util.Locale;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
@@ -48,6 +50,15 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class OtpServiceImpl implements OtpService {
     private static final String DUMMY_MOBILE_PREFIX = "0000";
+
+    @Value("${otp.validity-seconds:300}")
+    private int otpValiditySeconds;
+
+    @Value("${otp.resend-cooldown-seconds:60}")
+    private int otpResendCooldownSeconds;
+
+    @Value("${otp.lockout-seconds:2700}")
+    private int otpLockoutSeconds;
 
     @Autowired
     private final UserPersonalDetailsRepository userPersonalDetailsRepository;
@@ -80,12 +91,12 @@ public class OtpServiceImpl implements OtpService {
     private final Gson gson;
 
     @Override
-    @ColumnTransformer
+    @Transactional
     public ResponseEntity<ApiResponse<Object>> otpRequest(OtpRequestDTO otpRequestDTO, Locale locale) {
         try {
-            log.info("Otp request {} ", otpRequestDTO);
+            log.info("OTP request received message={} username={}", otpRequestDTO.getMessage(), otpRequestDTO.getUsername());
             if (otpRequestDTO.getMessage().equalsIgnoreCase(Messages.SIGNUP_OTP_REQUEST.name())) {
-                log.info("Processing SignupOtpRequest {}", otpRequestDTO);
+                log.info("Processing signup OTP request");
                 return userPersonalDetailsRepository.findByEpfNoAndNicIgnoreCaseAndUserStatus(otpRequestDTO.getSignupOtp().getEpfNo().trim(), otpRequestDTO.getSignupOtp().getNic().trim(), Status.ACTIVE)
                         .map(userPersonalDetails -> applicationPasswordPolicyRepository.findPasswordPolicy()
                                 .map(pw -> {
@@ -122,28 +133,34 @@ public class OtpServiceImpl implements OtpService {
                                             return ResponseEntity.ok().body(responseUtil.error(null, 1018, messageSource.getMessage(ResponseMessageUtil.OTP_ALREADY_VERIFIED, null, locale)));
                                         }
                                     }
-                                    String otp = RandomGeneratorUtil.getRandom6DigitNumber();
-                                    log.info("Generate otp - onboarding verified {} ", otp);
-                                    MessageResponseDTO messageResponseDTO = sendMessageService.sendToCustomer(new MessageRequestDTO(otpRequestDTO.getPrimaryMobile(), MessageType.OTP.name(), otp));
-                                    log.info("Signup otp request success");
-                                    ApplicationOtpSession applicationOtpSession = updateOtpSession(otp, messageResponseDTO.isSuccess());
-                                    updateOnboardingVerifiedMobile(otpRequestDTO, applicationOtpSession);
-
-                                    if (messageResponseDTO.isSuccess()) {
-                                        return ResponseEntity.ok().body(responseUtil.success(null, messageResponseDTO.getMessage()));
+                                    String contextKey = signupContextKey(otpRequestDTO);
+                                    Optional<ApplicationOtpSession> latestSession = applicationOtpSessionRepository
+                                            .findTopByContextKeyAndPurposeOrderByCreatedDateDesc(contextKey, OtpPurpose.SIGNUP.name());
+                                    if (latestSession.isPresent() && isWithinSeconds(latestSession.get(), otpResendCooldownSeconds)) {
+                                        return ResponseEntity.ok().body(responseUtil.error(null, 1012,
+                                                messageSource.getMessage(ResponseMessageUtil.APPLICATION_USER_OTP_REQUEST_TRY_TO_AFTER_60S, null, locale)));
                                     }
 
-                                    return ResponseEntity.ok().body(
-                                            responseUtil.error(null, 1038,
-                                                    messageResponseDTO.getMessage()));
+                                    String otp = RandomGeneratorUtil.getRandom6DigitNumber();
+                                    MessageResponseDTO messageResponseDTO = sendMessageService.sendToCustomer(new MessageRequestDTO(otpRequestDTO.getPrimaryMobile(), MessageType.OTP.name(), otp));
+                                    if (!messageResponseDTO.isSuccess()) {
+                                        return ResponseEntity.ok().body(responseUtil.error(null, 1038, messageResponseDTO.getMessage()));
+                                    }
+
+                                    applicationOtpSessionRepository.consumeActiveContextSessions(contextKey, OtpPurpose.SIGNUP.name());
+                                    ApplicationOtpSession applicationOtpSession = updateOtpSession(
+                                            otp, OtpPurpose.SIGNUP.name(), null, contextKey);
+                                    updateOnboardingVerifiedMobile(otpRequestDTO, applicationOtpSession);
+                                    log.info("Signup OTP accepted by SMS provider sessionId={}", applicationOtpSession.getId());
+                                    return ResponseEntity.ok().body(responseUtil.success((Object) otpResponse(applicationOtpSession), messageResponseDTO.getMessage()));
 
                                 })
                                 .orElseGet(() -> {
-                                    log.info("Signup otp request password policy not found {}", otpRequestDTO);
+                                    log.info("Signup OTP password policy not found");
                                     return ResponseEntity.ok().body(responseUtil.error(null, 1010, messageSource.getMessage(ResponseMessageUtil.APPLICATION_USER_PASSWORD_POLICY_NOT_FOUND, null, locale)));
                                 }))
                         .orElseGet(() -> {
-                            log.info("Signup otp request user not found {}", otpRequestDTO);
+                            log.info("Signup OTP employee details not found");
                             return ResponseEntity.ok().body(responseUtil.error(null, 1017, messageSource.getMessage(ResponseMessageUtil.EMPLOYEE_DETAILS_NOT_FOUND_ON_SYSTEM, new Object[]{otpRequestDTO.getPrimaryMobile()}, locale)));
                         });
             } else if (otpRequestDTO.getMessage().equalsIgnoreCase(Messages.RESET_PASSWORD_OTP_REQUEST.name())
@@ -152,56 +169,51 @@ public class OtpServiceImpl implements OtpService {
 
                 log.info("Processing reset password request gen otp {} ", otpRequestDTO.getUsername());
                 String username = otpRequestDTO.getUsername().trim();
-                Optional<ApplicationUser> optionalUser = applicationUserRepository.findByUsernameAndUserPersonalDetails_UserStatus(username, Status.ACTIVE);
+                Optional<ApplicationUser> optionalUser = applicationUserRepository.findForOtpUpdateByUsername(username, Status.ACTIVE);
 
                 if (optionalUser.isEmpty()) {
                     log.info("Reset password OTP request find by email {} ", username);
-                    optionalUser = applicationUserRepository.findByPrimaryEmailIgnoreCaseAndUserPersonalDetails_UserStatus(username, Status.ACTIVE);
+                    optionalUser = applicationUserRepository.findForOtpUpdateByEmail(username, Status.ACTIVE);
                     otpRequestDTO.setUsername(optionalUser.map(ApplicationUser::getUsername).orElse(""));
                 }
 
                 return optionalUser.map(user -> applicationPasswordPolicyRepository.findPasswordPolicy().map((policy) -> {
 
-                    if (user.getOtpAttemptCount() >= policy.getOtpExceedCount()) {
-                        log.info("Reset password OTP request attempt exceed {} , {}", user.getOtpAttemptCount(), policy.getOtpExceedCount());
-                        long minutes = DateTimeUtil.getMinutes(DateTimeUtil.getYyyyMMddHHMmSsTimeFormatter(DateTimeUtil.getSeconds(user.getOtpAttemptResetTime(), 2700)));
-                        return ResponseEntity.ok().body(responseUtil.error(null, 1010, messageSource.getMessage(ResponseMessageUtil.APPLICATION_USER_OTP_EXCEED, new Object[]{minutes}, locale)));
-                    } else if (user.getOtpAttemptCount() > 0) {
-                        log.info("Reset password request otp session {}", user.getApplicationOtpSession());
-                        Optional<ApplicationOtpSession> applicationOtpSession = applicationOtpSessionRepository.
-                                findById(user.getApplicationOtpSession() != null ? user.getApplicationOtpSession().getId() : 0);
+                    String purpose = resolvePurpose(otpRequestDTO.getMessage());
+                    resetAttemptCounterAfterLockout(user, policy.getOtpExceedCount());
 
-                        if (applicationOtpSession.isPresent()) {
-                            log.info("Reset password request otp session {}", applicationOtpSession.get());
-                            if (DateTimeUtil.getSeconds(applicationOtpSession.get().getCreatedDate(), 60).after(DateTimeUtil.getCurrentDateTime())) {
-                                log.info("Reset password request otp session valid this moment {}", DateTimeUtil.getSeconds(applicationOtpSession.get().getCreatedDate(), 60));
-                                return ResponseEntity.ok().body(responseUtil.error(null, 1012, messageSource.getMessage(ResponseMessageUtil.APPLICATION_USER_OTP_REQUEST_TRY_TO_AFTER_60S, null, locale)));
-                            }
-                            log.info("Rest password send otp session attempt exceed greater than 0 {}", user);
-                        } else {
-                            log.info("Reset password request otp session not found {}", applicationOtpSession);
-                            return ResponseEntity.ok().body(responseUtil.error(null, 1011, messageSource.getMessage(ResponseMessageUtil.APPLICATION_USER_OTP_SESSION_NOT_FOUND, null, locale)));
-                        }
+                    if (policy.getOtpExceedCount() > 0 && user.getOtpAttemptCount() >= policy.getOtpExceedCount()) {
+                        log.info("Reset password OTP request attempt exceed {} , {}", user.getOtpAttemptCount(), policy.getOtpExceedCount());
+                        long minutes = remainingLockoutMinutes(user);
+                        return ResponseEntity.ok().body(responseUtil.error(null, 1010, messageSource.getMessage(ResponseMessageUtil.APPLICATION_USER_OTP_EXCEED, new Object[]{minutes}, locale)));
                     }
 
-                    log.info("Rest password send otp session send message {}", user);
+                    Optional<ApplicationOtpSession> latestOtpSession = applicationOtpSessionRepository
+                            .findTopByApplicationUserIdAndPurposeOrderByCreatedDateDesc(user.getId(), purpose);
+                    if (latestOtpSession.isPresent()
+                            && isWithinSeconds(latestOtpSession.get(), otpResendCooldownSeconds)) {
+                        return ResponseEntity.ok().body(responseUtil.error(null, 1012,
+                                messageSource.getMessage(ResponseMessageUtil.APPLICATION_USER_OTP_REQUEST_TRY_TO_AFTER_60S, null, locale)));
+                    }
+
                     String otp = RandomGeneratorUtil.getRandom6DigitNumber();
-                    log.info("Generate otp - reset verified {} ", otp);
                     String deliveryMobile = resolveOtpDeliveryMobile(otpRequestDTO, user);
                     if (deliveryMobile == null) {
                         return ResponseEntity.ok().body(responseUtil.error(null, 1038,
                                 "This employee does not have a registered mobile number. Please enter an assisted mobile number."));
                     }
                     MessageResponseDTO messageResponseDTO = sendMessageService.sendToCustomer(new MessageRequestDTO(deliveryMobile, MessageType.OTP.name(), otp));
-                    log.info("Reset otp request success");
-                    ApplicationOtpSession applicationOtpSession = updateOtpSession(otp, messageResponseDTO.isSuccess());
-                    updateApplicationUser(user, applicationOtpSession);
-                    if (messageResponseDTO.isSuccess()) {
-                        return ResponseEntity.ok().body(responseUtil.success((Object) Map.of("otpRequestAttempt",Math.max(0,policy.getOtpExceedCount() - user.getOtpAttemptCount())), messageResponseDTO.getMessage()));
+                    if (!messageResponseDTO.isSuccess()) {
+                        return ResponseEntity.ok().body(responseUtil.error(null, 1038, messageResponseDTO.getMessage()));
                     }
-                    return ResponseEntity.ok().body(
-                            responseUtil.error(null, 1038,
-                                    messageResponseDTO.getMessage()));
+
+                    applicationOtpSessionRepository.consumeActiveUserSessions(user.getId(), purpose);
+                    ApplicationOtpSession applicationOtpSession = updateOtpSession(otp, purpose, user.getId(), null);
+                    updateApplicationUser(user, applicationOtpSession);
+                    Map<String, Object> response = otpResponse(applicationOtpSession);
+                    response.put("otpRequestAttempt", Math.max(0, policy.getOtpExceedCount() - user.getOtpAttemptCount()));
+                    log.info("OTP accepted by SMS provider purpose={} sessionId={}", purpose, applicationOtpSession.getId());
+                    return ResponseEntity.ok().body(responseUtil.success((Object) response, messageResponseDTO.getMessage()));
                 }).orElseGet(() -> {
                     log.info("Password reset request policy not found for username {} ", username);
                     return ResponseEntity.ok().body(responseUtil.error(null, 1010, messageSource.getMessage(ResponseMessageUtil.APPLICATION_USER_PASSWORD_POLICY_NOT_FOUND, null, locale)));
@@ -222,7 +234,6 @@ public class OtpServiceImpl implements OtpService {
     @Transactional
     protected void updateApplicationUser(ApplicationUser applicationUser, ApplicationOtpSession applicationOtpSession) {
         try {
-            log.info("Rest password opt request update application user {}", applicationUser);
             applicationUser.setApplicationOtpSession(applicationOtpSession);
             applicationUser.setOtpAttemptCount(applicationUser.getOtpAttemptCount() + 1);
             applicationUser.setOtpAttemptResetTime(DateTimeUtil.getCurrentDateTime());
@@ -257,14 +268,18 @@ public class OtpServiceImpl implements OtpService {
     }
 
     @Transactional
-    protected ApplicationOtpSession updateOtpSession(String otp, boolean state) {
+    protected ApplicationOtpSession updateOtpSession(String otp, String purpose, Long applicationUserId, String contextKey) {
         try {
-            log.info("Processing onboarding otp request  application otp session update {} ", otp);
             ApplicationOtpSession applicationOtpSession = new ApplicationOtpSession();
             applicationOtpSession.setOtp(otp);
-            applicationOtpSession.setSuccess(state);
+            applicationOtpSession.setPurpose(purpose);
+            applicationOtpSession.setApplicationUserId(applicationUserId);
+            applicationOtpSession.setContextKey(contextKey);
+            applicationOtpSession.setSuccess(true);
+            applicationOtpSession.setValidated(false);
+            applicationOtpSession.setConsumed(false);
             ApplicationOtpSession otpSession = applicationOtpSessionRepository.saveAndFlush(applicationOtpSession);
-            log.info("Processing onboarding otp request otp session update {} ", otpSession);
+            log.info("OTP session created id={} purpose={}", otpSession.getId(), purpose);
             return otpSession;
         } catch (Exception e) {
             log.error(e);
@@ -275,7 +290,7 @@ public class OtpServiceImpl implements OtpService {
     @Transactional
     protected void updateOnboardingVerifiedMobile(OtpRequestDTO otpRequestDTO, ApplicationOtpSession applicationOtpSession) {
         try {
-            log.info("Update record updateOnboardingVerifiedMobile {}", otpRequestDTO);
+            log.info("Creating onboarding mobile verification for OTP session id={}", applicationOtpSession.getId());
             OnboardingVerifiedMobile onboardingVerifiedMobile = new OnboardingVerifiedMobile();
             onboardingVerifiedMobile.setNic(otpRequestDTO.getSignupOtp().getNic().trim());
             onboardingVerifiedMobile.setEpfNo(otpRequestDTO.getSignupOtp().getEpfNo().trim());
@@ -293,17 +308,16 @@ public class OtpServiceImpl implements OtpService {
     @Transactional
     public ResponseEntity<ApiResponse<Object>> otpValidate(OtpValidationDTO otpValidationDTO, Locale locale) {
         try {
-            log.info("Otp request  Validate {} ", otpValidationDTO);
+            log.info("OTP validation received message={} username={} sessionId={}",
+                    otpValidationDTO.getMessage(), otpValidationDTO.getUsername(), otpValidationDTO.getOtpSessionId());
             if (otpValidationDTO.getMessage().equalsIgnoreCase(Messages.SIGNUP_OTP_VALIDATION.name())) {
-                log.info("Processing SignupOtpValidation {}", otpValidationDTO);
-                return applicationOtpSessionRepository.findByOtpAndValidated(otpValidationDTO.getOtp(), false)
+                log.info("Processing signup OTP validation");
+                return findSignupOtpSession(otpValidationDTO)
                         .map(os -> onboardingVerifiedMobileRepository.findByApplicationOtpSession(os)
                                 .map(oss -> applicationPasswordPolicyRepository.findPasswordPolicy()
                                         .map(pw -> applicationUsernamePolicyRepository.findUsernamePolicy()
                                                 .map(up -> {
-                                                    if (DateTimeUtil.getSeconds(os.getCreatedDate(), 60).after(DateTimeUtil.getCurrentDateTime()) &&
-                                                            os.getOtp().equals(otpValidationDTO.getOtp()) && !os.isValidated()) {
-                                                        log.info("Otp request for signup {} ", os);
+                                                    if (isValidForInitialValidation(os, otpValidationDTO.getOtp())) {
                                                         updateOtpData(os, oss);
                                                         return ResponseEntity.ok().body(
                                                                 responseUtil.success((Object) Map.of("passwordPolicy", gson.fromJson(gson.toJson(pw), PolicyResponseDTO.class), "usernamePolicy", gson.fromJson(gson.toJson(up), PolicyResponseDTO.class)),
@@ -311,14 +325,14 @@ public class OtpServiceImpl implements OtpService {
                                                         );
                                                     }
 
-                                                    log.info("Signup otp request validation fail otp or invalid session {}", os);
+                                                    log.info("Signup OTP invalid or expired sessionId={}", os.getId());
                                                     return ResponseEntity.ok().body(
                                                             responseUtil.error(null, 1016,
                                                                     messageSource.getMessage(ResponseMessageUtil.OTP_INVALID_OR_SESSION_TIME_OUT, null, locale))
                                                     );
                                                 })
                                                 .orElseGet(() -> {
-                                                    log.info("Signup otp mobile verified username policy not found {}", otpValidationDTO);
+                                                    log.info("Signup OTP username policy not found");
                                                     return ResponseEntity.ok().body(
                                                             responseUtil.error(null, 1022,
                                                                     messageSource.getMessage(ResponseMessageUtil.USERNAME_POLICY_NOT_FOUND, null, locale))
@@ -326,7 +340,7 @@ public class OtpServiceImpl implements OtpService {
                                                 })
                                         )
                                         .orElseGet(() -> {
-                                            log.info("Signup otp mobile verified password policy not found {}", otpValidationDTO);
+                                            log.info("Signup OTP password policy not found");
                                             return ResponseEntity.ok().body(
                                                     responseUtil.error(null, 1010,
                                                             messageSource.getMessage(ResponseMessageUtil.PASSWORD_POLICY_NOT_FOUND, null, locale))
@@ -334,14 +348,14 @@ public class OtpServiceImpl implements OtpService {
                                         })
                                 )
                                 .orElseGet(() -> {
-                                    log.info("Signup otp mobile verified not found {}", otpValidationDTO);
+                                    log.info("Signup OTP onboarding verification record not found");
                                     return ResponseEntity.ok().body(
                                             responseUtil.error(null, 1020,
                                                     messageSource.getMessage(ResponseMessageUtil.ONBOARDING_VERIFICATION_OTP_NOT_FOUND, null, locale))
                                     );
                                 })
                         ).orElseGet(() -> {
-                            log.info("Signup otp session not found {}", otpValidationDTO);
+                            log.info("Signup OTP session not found sessionId={}", otpValidationDTO.getOtpSessionId());
                             return ResponseEntity.ok().body(
                                     responseUtil.error(null, 1015,
                                             messageSource.getMessage(ResponseMessageUtil.OTP_SESSION_NOT_FOUND, null, locale))
@@ -350,7 +364,7 @@ public class OtpServiceImpl implements OtpService {
             }else if(otpValidationDTO.getMessage().equalsIgnoreCase(Messages.RESET_PASSWORD_OTP_VALIDATION.name())
                     || otpValidationDTO.getMessage().equalsIgnoreCase(Messages.CLAIM_REQUEST_OTP_VALIDATION.name())
                     || otpValidationDTO.getMessage().equalsIgnoreCase(Messages.PROFILE_UPDATE_OTP_VALIDATION.name())) {
-                log.info("processing otp validation request {}", otpValidationDTO);
+                log.info("Processing OTP validation message={}", otpValidationDTO.getMessage());
                 String username = otpValidationDTO.getUsername().trim();
                 Optional<ApplicationUser> optionalUser = applicationUserRepository
                         .findByUsernameAndUserPersonalDetails_UserStatus(username,Status.ACTIVE);
@@ -364,17 +378,18 @@ public class OtpServiceImpl implements OtpService {
 
                 if (optionalUser.isPresent()) {
                     ApplicationUser user = optionalUser.get();
-                    if (user.getApplicationOtpSession() != null) {
-                        log.info("Otp request otp session  {} ", user.getApplicationOtpSession());
-
-                        if (DateTimeUtil.getSeconds(user.getApplicationOtpSession().getCreatedDate(),60).after(DateTimeUtil.getCurrentDateTime()) &&
-                                user.getApplicationOtpSession().getOtp().equals(otpValidationDTO.getOtp()) && !user.getApplicationOtpSession().isValidated()) {
-                            log.info("Otp request valid {} ", user.getApplicationOtpSession());
-                            updateApplicationUserOtpData(user,user.getApplicationOtpSession());
+                    String purpose = resolvePurpose(otpValidationDTO.getMessage());
+                    Optional<ApplicationOtpSession> currentSession = applicationOtpSessionRepository
+                            .findTopByApplicationUserIdAndPurposeOrderByCreatedDateDesc(user.getId(), purpose);
+                    if (currentSession.isPresent()) {
+                        ApplicationOtpSession session = currentSession.get();
+                        if (matchesRequestedSession(session, otpValidationDTO.getOtpSessionId())
+                                && isValidForInitialValidation(session, otpValidationDTO.getOtp())) {
+                            updateApplicationUserOtpData(user, session);
                             return ResponseEntity.ok().body(responseUtil.success(null, messageSource.getMessage(ResponseMessageUtil.OTP_VALIDATION_SUCCESS, null, locale)));
                         }
 
-                        log.info("Otp request validation fail otp or invalid session {}", user.getApplicationOtpSession());
+                        log.info("OTP invalid or expired purpose={} sessionId={}", purpose, session.getId());
                         return ResponseEntity.ok().body(responseUtil.error(null, 1016, messageSource.getMessage(ResponseMessageUtil.OTP_INVALID_OR_SESSION_TIME_OUT, null, locale)));
                     }
 
@@ -400,6 +415,7 @@ public class OtpServiceImpl implements OtpService {
         log.info("Update otp validation request otp records");
         try {
             applicationUser.setOtpAttemptCount(0);
+            applicationUser.setOtpAttemptResetTime(null);
             applicationOtpSession.setValidated(true);
             applicationUserRepository.saveAndFlush(applicationUser);
             applicationOtpSessionRepository.saveAndFlush(applicationOtpSession);
@@ -414,6 +430,7 @@ public class OtpServiceImpl implements OtpService {
         log.info("Update sign up otp validation request otp records");
         try {
             applicationOtpSession.setValidated(true);
+            applicationOtpSession.setConsumed(true);
             onboardingVerifiedMobile.setVerified(true);
             applicationOtpSessionRepository.saveAndFlush(applicationOtpSession);
             onboardingVerifiedMobileRepository.saveAndFlush(onboardingVerifiedMobile);
@@ -421,5 +438,89 @@ public class OtpServiceImpl implements OtpService {
             log.error(e);
             throw e;
         }
+    }
+
+    private Optional<ApplicationOtpSession> findSignupOtpSession(OtpValidationDTO request) {
+        if (request.getOtpSessionId() != null) {
+            return applicationOtpSessionRepository.findById(request.getOtpSessionId())
+                    .filter(session -> OtpPurpose.SIGNUP.name().equals(session.getPurpose()));
+        }
+        return applicationOtpSessionRepository
+                .findTopByOtpAndPurposeAndValidatedAndConsumedFalseOrderByCreatedDateDesc(
+                        request.getOtp(), OtpPurpose.SIGNUP.name(), false);
+    }
+
+    private boolean isValidForInitialValidation(ApplicationOtpSession session, String otp) {
+        return session.isSuccess()
+                && !session.isValidated()
+                && !session.isConsumed()
+                && session.getOtp().equals(otp)
+                && isWithinSeconds(session, otpValiditySeconds);
+    }
+
+    private boolean matchesRequestedSession(ApplicationOtpSession session, Long requestedSessionId) {
+        return requestedSessionId == null || requestedSessionId.equals(session.getId());
+    }
+
+    private boolean isWithinSeconds(ApplicationOtpSession session, int seconds) {
+        return session.getCreatedDate() != null
+                && DateTimeUtil.getSeconds(session.getCreatedDate(), seconds).after(DateTimeUtil.getCurrentDateTime());
+    }
+
+    private void resetAttemptCounterAfterLockout(ApplicationUser user, int maximumAttempts) {
+        if (maximumAttempts <= 0 || user.getOtpAttemptCount() <= 0) {
+            return;
+        }
+        if (user.getOtpAttemptResetTime() == null
+                || !DateTimeUtil.getSeconds(user.getOtpAttemptResetTime(), otpLockoutSeconds)
+                .after(DateTimeUtil.getCurrentDateTime())) {
+            user.setOtpAttemptCount(0);
+            user.setOtpAttemptResetTime(null);
+            applicationUserRepository.saveAndFlush(user);
+        }
+    }
+
+    private long remainingLockoutMinutes(ApplicationUser user) {
+        if (user.getOtpAttemptResetTime() == null) {
+            return 1;
+        }
+        long lockUntil = DateTimeUtil.getSeconds(user.getOtpAttemptResetTime(), otpLockoutSeconds).getTime();
+        long remainingMillis = Math.max(0, lockUntil - DateTimeUtil.getCurrentDateTime().getTime());
+        return Math.max(1, (remainingMillis + 59_999) / 60_000);
+    }
+
+    private String resolvePurpose(String message) {
+        if (Messages.SIGNUP_OTP_REQUEST.name().equalsIgnoreCase(message)
+                || Messages.SIGNUP_OTP_VALIDATION.name().equalsIgnoreCase(message)) {
+            return OtpPurpose.SIGNUP.name();
+        }
+        if (Messages.RESET_PASSWORD_OTP_REQUEST.name().equalsIgnoreCase(message)
+                || Messages.RESET_PASSWORD_OTP_VALIDATION.name().equalsIgnoreCase(message)) {
+            return OtpPurpose.RESET_PASSWORD.name();
+        }
+        if (Messages.CLAIM_REQUEST_OTP_REQUEST.name().equalsIgnoreCase(message)
+                || Messages.CLAIM_REQUEST_OTP_VALIDATION.name().equalsIgnoreCase(message)) {
+            return OtpPurpose.CLAIM_REQUEST.name();
+        }
+        if (Messages.PROFILE_UPDATE_OTP_REQUEST.name().equalsIgnoreCase(message)
+                || Messages.PROFILE_UPDATE_OTP_VALIDATION.name().equalsIgnoreCase(message)) {
+            return OtpPurpose.PROFILE_UPDATE.name();
+        }
+        throw new IllegalArgumentException("Unsupported OTP message: " + message);
+    }
+
+    private String signupContextKey(OtpRequestDTO request) {
+        return String.join("|",
+                request.getSignupOtp().getEpfNo().trim().toLowerCase(Locale.ROOT),
+                request.getSignupOtp().getNic().trim().toLowerCase(Locale.ROOT),
+                request.getPrimaryMobile().trim());
+    }
+
+    private Map<String, Object> otpResponse(ApplicationOtpSession session) {
+        Map<String, Object> response = new HashMap<>();
+        response.put("otpSessionId", session.getId());
+        response.put("expiresInSeconds", otpValiditySeconds);
+        response.put("resendAfterSeconds", otpResendCooldownSeconds);
+        return response;
     }
 }

@@ -30,10 +30,22 @@ public class ApplicationOtpSession extends Audit implements Serializable {
     @Column(name = "otp",nullable = false)
     private String otp;
 
+    @Column(name = "purpose", length = 50)
+    private String purpose;
+
+    @Column(name = "application_user_id")
+    private Long applicationUserId;
+
+    @Column(name = "context_key")
+    private String contextKey;
+
     @Column(name = "success",nullable = false)
     private boolean success;
 
     @Column(name = "validated",nullable = false)
     private boolean validated;
+
+    @Column(name = "consumed", nullable = false)
+    private boolean consumed;
 
 }

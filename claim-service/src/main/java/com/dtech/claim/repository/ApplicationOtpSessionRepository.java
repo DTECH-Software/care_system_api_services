@@ -9,5 +9,6 @@ import java.util.Optional;
 
 @Repository
 public interface ApplicationOtpSessionRepository extends JpaRepository<ApplicationOtpSession, Long> {
-    Optional<ApplicationOtpSession> findByOtpAndValidated(String otp, boolean validated);
+    Optional<ApplicationOtpSession> findTopByApplicationUserIdAndPurposeOrderByCreatedDateDesc(
+            Long applicationUserId, String purpose);
 }

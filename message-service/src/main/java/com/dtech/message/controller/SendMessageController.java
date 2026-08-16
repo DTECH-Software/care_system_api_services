@@ -38,8 +38,15 @@ public class SendMessageController {
     @PostMapping(path = "/send",produces = MediaType.APPLICATION_JSON_VALUE,consumes = MediaType.APPLICATION_JSON_VALUE)
     @ApiOperation(value = "Handle send message request ",notes = "Send message request success or failed")
     public ResponseEntity<ApiResponse<Object>> sendMessage(@RequestBody @Valid  MessageRequestValidatorDTO messageRequestValidatorDTO, Locale locale) {
-        log.info("OTP send via txt request  controller {} ", messageRequestValidatorDTO);
+        log.info("Message send request type={} mobile={}", messageRequestValidatorDTO.getType(), maskMobile(messageRequestValidatorDTO.getMobileNo()));
         return sendMessageService.sendMessage(gson.fromJson(gson.toJson(messageRequestValidatorDTO), MessageRequestDTO.class), locale);
+    }
+
+    private String maskMobile(String mobile) {
+        if (mobile == null || mobile.length() < 4) {
+            return "****";
+        }
+        return "****" + mobile.substring(mobile.length() - 4);
     }
 
 }

@@ -31,6 +31,7 @@ import lombok.extern.log4j.Log4j2;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.MessageSource;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -52,6 +53,7 @@ import java.util.stream.Collectors;
 @Log4j2
 @RequiredArgsConstructor
 public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestService {
+    private static final String CLAIM_OTP_PURPOSE = "CLAIM_REQUEST";
     private static final int NORMAL_STAFF_PARENT_MAX_CLAIM_AGE = 65;
     private static final int NORMAL_STAFF_PARENT_EXTRA_ELIGIBLE_DAYS = 14;
     private static final int CHILD_MAX_CLAIM_AGE = 25;
@@ -65,6 +67,9 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
     private static final int OTHER_STAFF_SPOUSE_MAX_CLAIM_AGE = 70;
     private static final int OTHER_STAFF_SPOUSE_EXTRA_ELIGIBLE_DAYS = 14;
     private static final int NORMAL_STAFF_CRIC_MIN_PERMANENT_YEARS = 3;
+
+    @Value("${otp.validity-seconds:300}")
+    private int otpValiditySeconds;
 
 
     @Autowired
@@ -140,7 +145,7 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
     @Transactional
     public ResponseEntity<ApiResponse<Object>> insuranceClaimRequest(ClaimRequestDTO claimRequestDTO, Locale locale) {
         try {
-            log.info("Claim request processing started {}", claimRequestDTO);
+            log.info("Claim request processing started username={}", claimRequestDTO.getUsername());
 
             return assistedUserResolver.resolve(claimRequestDTO).map((user) -> {
 
@@ -498,13 +503,12 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
                                                         return ResponseEntity.ok().body(responseUtil.success(null, messageSource.getMessage(ResponseMessageUtil.INSURANCE_CLAIM_REQUEST_VALIDATION_SUCCESS, null, locale)));
                                                     } else {
 
-                                                        if (user.getApplicationOtpSession() != null) {
-                                                            log.info("Otp request otp session  {} ", user.getApplicationOtpSession());
-
-                                                            if (DateTimeUtil.getSeconds(user.getApplicationOtpSession().getCreatedDate(), 600).after(DateTimeUtil.getCurrentDateTime()) &&
-                                                                    user.getApplicationOtpSession().getOtp().equals(claimRequestDTO.getOtp()) && user.getApplicationOtpSession().isValidated()) {
-                                                                log.info("Otp request valid {} ", user.getApplicationOtpSession());
-                                                                updateApplicationUserOtpData(user, user.getApplicationOtpSession());
+                                                        Optional<ApplicationOtpSession> claimOtpSession = findClaimOtpSession(user);
+                                                        if (claimOtpSession.isPresent()) {
+                                                            ApplicationOtpSession otpSession = claimOtpSession.get();
+                                                            if (isValidatedClaimOtp(otpSession, claimRequestDTO.getOtp())) {
+                                                                log.info("Claim OTP valid sessionId={}", otpSession.getId());
+                                                                updateApplicationUserOtpData(user, otpSession);
                                                                 ApprovalWorkFlow approvalWorkFlow = updateApprovalData();
                                                                 String claimRequestId = saveClaimRequest(claimRequestDTO, user, claimsDependents, treatment, tc, approvalWorkFlow, insuranceYear, insuranceDetailsLimit, treatmentQuarter);
                                                                 notifyMessage(assistedUserResolver.resolveNotificationMobile(claimRequestDTO, user), claimRequestId);
@@ -522,7 +526,7 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
                                                                 }
                                                                 return ResponseEntity.ok().body(responseUtil.success(null, messageSource.getMessage(messageUtil, null, locale)));
                                                             } else {
-                                                                log.info("Otp request validation fail otp or invalid session {}", user.getApplicationOtpSession());
+                                                                log.info("Claim OTP invalid, consumed, or expired sessionId={}", otpSession.getId());
                                                                 return ResponseEntity.ok().body(responseUtil.error(null, 1016, messageSource.getMessage(ResponseMessageUtil.OTP_INVALID_OR_SESSION_TIME_OUT, null, locale)));
                                                             }
                                                         } else {
@@ -595,14 +599,13 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
                                                         return ResponseEntity.ok().body(responseUtil.success(null, messageSource.getMessage(ResponseMessageUtil.INSURANCE_CLAIM_REQUEST_VALIDATION_SUCCESS, null, locale)));
                                                     } else {
 
-                                                        if (user.getApplicationOtpSession() != null) {
-                                                            log.info("Otp request otp session  {} ", user.getApplicationOtpSession());
-
-                                                            if (DateTimeUtil.getSeconds(user.getApplicationOtpSession().getCreatedDate(), 600).after(DateTimeUtil.getCurrentDateTime()) &&
-                                                                    user.getApplicationOtpSession().getOtp().equals(claimRequestDTO.getOtp()) && user.getApplicationOtpSession().isValidated()) {
-                                                                log.info("Otp request valid {} ", user.getApplicationOtpSession());
+                                                        Optional<ApplicationOtpSession> claimOtpSession = findClaimOtpSession(user);
+                                                        if (claimOtpSession.isPresent()) {
+                                                            ApplicationOtpSession otpSession = claimOtpSession.get();
+                                                            if (isValidatedClaimOtp(otpSession, claimRequestDTO.getOtp())) {
+                                                                log.info("Claim OTP valid sessionId={}", otpSession.getId());
                                                                 ApprovalWorkFlow approvalWorkFlow = updateApprovalData();
-                                                                updateApplicationUserOtpData(user, user.getApplicationOtpSession());
+                                                                updateApplicationUserOtpData(user, otpSession);
                                                                 String claimRequestId = saveClaimRequest(claimRequestDTO, user, claimsDependents, treatment, tc, approvalWorkFlow, insuranceYear, insuranceDetailsLimit, treatmentQuarter);
                                                                 notifyMessage(assistedUserResolver.resolveNotificationMobile(claimRequestDTO, user), claimRequestId);
 
@@ -620,7 +623,7 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
 
                                                                 return ResponseEntity.ok().body(responseUtil.success(null, messageSource.getMessage(messageUtil, null, locale)));
                                                             } else {
-                                                                log.info("Otp request validation fail otp or invalid session {}", user.getApplicationOtpSession());
+                                                                log.info("Claim OTP invalid, consumed, or expired sessionId={}", otpSession.getId());
                                                                 return ResponseEntity.ok().body(responseUtil.error(null, 1016, messageSource.getMessage(ResponseMessageUtil.OTP_INVALID_OR_SESSION_TIME_OUT, null, locale)));
                                                             }
                                                         } else {
@@ -648,7 +651,7 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
                         });
 
             }).orElseGet(() -> {
-                log.info("User claim request user not found {} ", claimRequestDTO);
+                log.info("Claim request user not found username={}", claimRequestDTO.getUsername());
                 return ResponseEntity.ok().body(responseUtil.error(null, 1014, messageSource.getMessage(ResponseMessageUtil.APPLICATION_USER_NOT_FOUND, null, locale)));
             });
 
@@ -1460,12 +1463,27 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
         }
     }
 
+    private Optional<ApplicationOtpSession> findClaimOtpSession(ApplicationUser user) {
+        return applicationOtpSessionRepository
+                .findTopByApplicationUserIdAndPurposeOrderByCreatedDateDesc(user.getId(), CLAIM_OTP_PURPOSE);
+    }
+
+    private boolean isValidatedClaimOtp(ApplicationOtpSession session, String otp) {
+        return session.isSuccess()
+                && session.isValidated()
+                && !session.isConsumed()
+                && session.getOtp().equals(otp)
+                && DateTimeUtil.getSeconds(session.getCreatedDate(), otpValiditySeconds)
+                .after(DateTimeUtil.getCurrentDateTime());
+    }
+
     @Transactional
     protected void updateApplicationUserOtpData(ApplicationUser applicationUser,
                                                 ApplicationOtpSession applicationOtpSession) {
         log.info("Update otp validation request otp records");
         applicationUser.setOtpAttemptCount(0);
-        applicationOtpSession.setValidated(true);
+        applicationUser.setOtpAttemptResetTime(null);
+        applicationOtpSession.setConsumed(true);
         applicationUserRepository.saveAndFlush(applicationUser);
         applicationOtpSessionRepository.saveAndFlush(applicationOtpSession);
     }
@@ -1482,7 +1500,7 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
     @Transactional
     protected InsuranceClaimsDetails saveClaimRequestDetails(ClaimRequestDTO claimRequestDTO, Treatment treatment, com.dtech.claim.model.TreatmentCategory treatmentCategory, InsuranceStaffCategoryPeriod insuranceYear) {
         try {
-            log.info("Claim request details save started {}", claimRequestDTO);
+            log.info("Claim request details save started username={}", claimRequestDTO.getUsername());
             InsuranceClaimsDetails insuranceClaimsDetails = new InsuranceClaimsDetails();
             insuranceClaimsDetails.setTreatment(treatment);
             insuranceClaimsDetails.setTreatmentCategory(treatmentCategory);
@@ -1538,7 +1556,7 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
                                       InsuranceStaffCategoryPeriod insuranceYear,
                                       InsuranceDetailsLimit insuranceDetailsLimit, InsuranceQuarter insuranceQuarter) {
         try {
-            log.info("Claim request save started {}", claimRequestDTO);
+            log.info("Claim request save started username={}", claimRequestDTO.getUsername());
 
             InsuranceClaimsDetails insuranceClaimsDetails = saveClaimRequestDetails(claimRequestDTO, treatment, treatmentCategory, insuranceYear);
 

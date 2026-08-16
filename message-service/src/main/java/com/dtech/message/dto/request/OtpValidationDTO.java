@@ -14,4 +14,5 @@ import lombok.EqualsAndHashCode;
 @Data
 public class OtpValidationDTO extends ChannelRequestDTO {
     private String otp;
+    private Long otpSessionId;
 }

@@ -29,6 +29,7 @@ import lombok.extern.log4j.Log4j2;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.MessageSource;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -50,6 +51,10 @@ import java.util.stream.Collectors;
 @Log4j2
 @RequiredArgsConstructor
 public class DeathClaimRequestServiceImpl implements DeathClaimRequestService {
+    private static final String CLAIM_OTP_PURPOSE = "CLAIM_REQUEST";
+
+    @Value("${otp.validity-seconds:300}")
+    private int otpValiditySeconds;
 
     @Autowired
     private final ApplicationUserRepository applicationUserRepository;
@@ -86,6 +91,9 @@ public class DeathClaimRequestServiceImpl implements DeathClaimRequestService {
 
     @Autowired
     private final ApprovalWorkFlowRepository approvalWorkFlowRepository;
+
+    @Autowired
+    private final ApplicationOtpSessionRepository applicationOtpSessionRepository;
 
     @Override
     @Transactional(readOnly = true)
@@ -226,7 +234,7 @@ public class DeathClaimRequestServiceImpl implements DeathClaimRequestService {
                             return deathCertification;
                         }
 
-                        log.info("Otp request valid {} ", user.getApplicationOtpSession());
+                        log.info("Proceeding with death claim validation username={}", deathClaimRequestDTO.getUsername());
                         return commonParameterRepository.findByCode(CommonParam.DEATH_CLAIM_REQUEST_PERIOD.name())
                                 .map((param) -> {
                                     log.info("get - date from death claim request {}", param);
@@ -303,10 +311,12 @@ public class DeathClaimRequestServiceImpl implements DeathClaimRequestService {
                                                                             return ResponseEntity.ok().body(responseUtil.success(null, messageSource.getMessage(ResponseMessageUtil.DEATH_CLAIM_REQUEST_VALIDATION_SUCCESS, null, locale)));
                                                                         } else {
                                                                             log.info("Death claim request insert process {}", true);
-                                                                            if (user.getApplicationOtpSession() != null) {
-
-                                                                                if (DateTimeUtil.getSeconds(user.getApplicationOtpSession().getCreatedDate(), 600).after(DateTimeUtil.getCurrentDateTime()) &&
-                                                                                        user.getApplicationOtpSession().getOtp().equals(deathClaimRequestDTO.getOtp()) && user.getApplicationOtpSession().isValidated()) {
+                                                                            Optional<ApplicationOtpSession> claimOtpSession = applicationOtpSessionRepository
+                                                                                    .findTopByApplicationUserIdAndPurposeOrderByCreatedDateDesc(user.getId(), CLAIM_OTP_PURPOSE);
+                                                                            if (claimOtpSession.isPresent()) {
+                                                                                ApplicationOtpSession otpSession = claimOtpSession.get();
+                                                                                if (isValidatedClaimOtp(otpSession, deathClaimRequestDTO.getOtp())) {
+                                                                                    consumeOtpSession(user, otpSession);
 
                                                                                //     Date halfDays = DateTimeUtil.getMinuesDate(half.getValue());
                                                                                     PaymentType paymentType = PaymentType.FULL;
@@ -317,10 +327,10 @@ public class DeathClaimRequestServiceImpl implements DeathClaimRequestService {
 //                                                                                        amount = deathBeneficiary.getClaimLimit().multiply(fiftyPercent);
 //                                                                                    }
 
-                                                                                    log.info("Other document {} ",deathClaimRequestDTO.toString());
+                                                                                    log.info("Processing death claim documents username={}", deathClaimRequestDTO.getUsername());
 
                                                                                     List<Document> uploadSupportingDocument = deathClaimRequestDTO.getDocuments().stream().map(doc -> {
-                                                                                        log.info("Upload supporting document from death request {}", deathClaimRequestDTO);
+                                                                                        log.info("Uploading death claim supporting document type={}", doc.getType());
                                                                                         try {
                                                                                             return uploadImage(doc.getType(), doc.getFile(), doc.getFileType(), doc.getFileName());
                                                                                         } catch (
@@ -334,7 +344,7 @@ public class DeathClaimRequestServiceImpl implements DeathClaimRequestService {
                                                                                     notifyMessage(user.getPrimaryMobile(), claimRequestId);
                                                                                     return ResponseEntity.ok().body(responseUtil.success(null, messageSource.getMessage(ResponseMessageUtil.DEATH_CLAIM_REQUEST_SUBMIT_SUCCESS, null, locale)));
                                                                                 } else {
-                                                                                    log.info("Otp request validation fail otp or invalid session {}", user.getApplicationOtpSession());
+                                                                                    log.info("Claim OTP invalid, consumed, or expired sessionId={}", otpSession.getId());
                                                                                     return ResponseEntity.ok().body(responseUtil.error(null, 1016, messageSource.getMessage(ResponseMessageUtil.OTP_INVALID_OR_SESSION_TIME_OUT, null, locale)));
                                                                                 }
 
@@ -361,7 +371,7 @@ public class DeathClaimRequestServiceImpl implements DeathClaimRequestService {
                                 });
 
                     }).orElseGet(() -> {
-                        log.info("User claim request user not found {} ", deathClaimRequestDTO);
+                        log.info("Death claim user not found username={}", deathClaimRequestDTO.getUsername());
                         return ResponseEntity.ok().body(responseUtil.error(null, 1014, messageSource.getMessage(ResponseMessageUtil.APPLICATION_USER_NOT_FOUND, null, locale)));
                     });
         } catch (Exception e) {
@@ -504,7 +514,7 @@ public class DeathClaimRequestServiceImpl implements DeathClaimRequestService {
                                            ApprovalWorkFlow approvalWorkFlow,
                                            com.dtech.claim.model.DeathBeneficiary deathBeneficiary, List<Document> uploadSupportingDocument) {
         try {
-            log.info("Save death claim request death{}", deathClaimRequestDTO);
+            log.info("Saving death claim request username={}", deathClaimRequestDTO.getUsername());
             ClaimRequestIdGen claimRequestIdGen = ClaimRequestIdGen
                     .builder().year(String.valueOf(LocalDate.now().getYear()))
                     .company(applicationUser.getUserPersonalDetails().getUserCompanyDetails().getCompanyTypes().getCode())
@@ -527,13 +537,30 @@ public class DeathClaimRequestServiceImpl implements DeathClaimRequestService {
             deathClaimRequest.setDocuments(uploadSupportingDocument);
             deathClaimRequest.setApprovalWorkFlows(List.of(approvalWorkFlow));
             deathClaimRequest.setApprovalLevel(ApprovalLevel.LEVEL01);
-            log.info("Save death claim request {}", deathClaimRequestDTO);
+            log.info("Death claim request ready to persist username={}", deathClaimRequestDTO.getUsername());
             deathClaimRequestRepository.saveAndFlush(deathClaimRequest);
             return claimRequestId;
         } catch (Exception e) {
             log.error(e);
             throw e;
         }
+    }
+
+    private boolean isValidatedClaimOtp(ApplicationOtpSession session, String otp) {
+        return session.isSuccess()
+                && session.isValidated()
+                && !session.isConsumed()
+                && session.getOtp().equals(otp)
+                && DateTimeUtil.getSeconds(session.getCreatedDate(), otpValiditySeconds)
+                .after(DateTimeUtil.getCurrentDateTime());
+    }
+
+    private void consumeOtpSession(ApplicationUser user, ApplicationOtpSession session) {
+        user.setOtpAttemptCount(0);
+        user.setOtpAttemptResetTime(null);
+        session.setConsumed(true);
+        applicationUserRepository.saveAndFlush(user);
+        applicationOtpSessionRepository.saveAndFlush(session);
     }
 
     protected Document uploadImage(String tye, String file, String fileType, String fileName) throws IOException {

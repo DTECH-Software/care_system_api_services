@@ -58,7 +58,7 @@ public class SendMessageServiceImpl implements SendMessageService {
     public ResponseEntity<ApiResponse<Object>> sendMessage(MessageRequestDTO messageRequestDTO, Locale locale) {
 
         try {
-            log.info("Processing send message {}", messageRequestDTO);
+            log.info("Processing message send type={} mobile={}", messageRequestDTO.getType(), maskMobile(messageRequestDTO.getMobileNo()));
             MessageResponseDTO sendCustomer = sendToCustomer(messageRequestDTO);
             if(sendCustomer.isSuccess()){
                 return ResponseEntity.ok().body(responseUtil.success(null, sendCustomer.getMessage()));
@@ -77,7 +77,7 @@ public class SendMessageServiceImpl implements SendMessageService {
     @Transactional
     public MessageResponseDTO sendToCustomer(MessageRequestDTO messageRequestDTO) {
         try {
-            log.info("Processing send message {}", messageRequestDTO);
+            log.info("Sending message type={} mobile={}", messageRequestDTO.getType(), maskMobile(messageRequestDTO.getMobileNo()));
             return notificationTemplateRepository
                     .findByType(MessageType.valueOf(messageRequestDTO.getType())).map((template) -> {
 
@@ -90,7 +90,7 @@ public class SendMessageServiceImpl implements SendMessageService {
                         headers.set(HttpHeaders.AUTHORIZATION, "Basic " + apiKey);
                         headers.set("X-API-VERSION", "v1");
                         HttpEntity<ITextMessageRequestDTO> entity = new HttpEntity<>(iTextMessageRequestDTO, headers);
-                        log.info("Before send message {}", messageRequestDTO);
+                        log.info("Submitting message to provider type={} mobile={}", messageRequestDTO.getType(), maskMobile(messageRequestDTO.getMobileNo()));
                         ResponseEntity<String> response = restTemplate.exchange(messageURI, HttpMethod.POST, entity, String.class);
                         if (response.getBody() == null || response.getBody().isEmpty()) {
                             log.error("Received empty response body from the API");
@@ -118,13 +118,9 @@ public class SendMessageServiceImpl implements SendMessageService {
     @Transactional(readOnly = true)
     protected MessageResponseDTO getResponseState(ResponseEntity<String> response) {
         try {
-            log.info("Response state for send otp: {}", response.getBody());
+            log.info("Message provider response status={}", response.getStatusCode());
             HttpStatusCode statusCode = response.getStatusCode();
-
-            boolean b = switch (statusCode) {
-                case HttpStatus.OK -> true;
-                default -> false;
-            };
+            boolean b = statusCode.is2xxSuccessful();
 
             MessageResponseDTO messageResponseDTO = new MessageResponseDTO();
             messageResponseDTO.setSuccess(b);
@@ -134,6 +130,13 @@ public class SendMessageServiceImpl implements SendMessageService {
             log.error(e);
             throw e;
         }
+    }
+
+    private String maskMobile(String mobile) {
+        if (mobile == null || mobile.length() < 4) {
+            return "****";
+        }
+        return "****" + mobile.substring(mobile.length() - 4);
     }
 }
 

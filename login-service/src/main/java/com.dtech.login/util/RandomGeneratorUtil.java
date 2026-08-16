@@ -7,22 +7,17 @@
 
 package com.dtech.login.util;
 
-import lombok.extern.log4j.Log4j2;
+import java.security.SecureRandom;
 
-import java.util.Random;
-
-@Log4j2
 public class RandomGeneratorUtil {
 
+    private static final SecureRandom SECURE_RANDOM = new SecureRandom();
+
+    private RandomGeneratorUtil() {
+    }
+
     public static String getRandom6DigitNumber() {
-        try {
-            log.error("called random 6 digit generation number");
-            Random rnd = new Random();
-            int number = rnd.nextInt(999999);
-            return String.format("%06d", number);
-        } catch (Exception e) {
-            log.error(e);
-            throw e;
-        }
+        int number = SECURE_RANDOM.nextInt(1_000_000);
+        return String.format("%06d", number);
     }
 }

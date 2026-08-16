@@ -532,9 +532,8 @@ public class SignupServiceImpl implements SignupService {
     @Transactional
     protected ResponseEntity<ApiResponse<Object>> sendMessage(SignupOtpRequestDTO signupOtpRequestDTO, Locale locale) {
         try {
-            log.info("Processing onboarding otp request gen otp {} ", signupOtpRequestDTO);
+            log.info("Processing legacy onboarding OTP request");
             String otp = RandomGeneratorUtil.getRandom6DigitNumber();
-            log.info("Generate otp - onboarding verified {} ", otp);
             MessageRequestDTO messageRequestDTO = new MessageRequestDTO();
             messageRequestDTO.setValue(otp);
             messageRequestDTO.setMobileNo(signupOtpRequestDTO.getMobileNo());
@@ -550,7 +549,7 @@ public class SignupServiceImpl implements SignupService {
             log.info("Otp send status {}", messageResponseDTO);
             ApplicationOtpSession applicationOtpSession = updateOtpSession(otp, messageResponseDTO != null ? messageResponseDTO.isSuccess() : false);
             updateOnboardingVerifiedMobile(signupOtpRequestDTO, applicationOtpSession);
-            log.info("Application OTP session updated successfully - onboarding verified mobile {}", otp);
+            log.info("Application OTP session updated successfully for onboarding");
             if (objectApiResponse != null) {
                 return ResponseEntity.ok().body(responseUtil.success(null, messageSource.getMessage(ResponseMessageUtil.OTP_SEND_SUCCESS, null, locale)));
             }
@@ -581,12 +580,12 @@ public class SignupServiceImpl implements SignupService {
     @Transactional
     protected ApplicationOtpSession updateOtpSession(String otp, boolean state) {
         try {
-            log.info("Processing onboarding otp request  application otp session update {} ", otp);
+            log.info("Updating onboarding OTP session");
             ApplicationOtpSession applicationOtpSession = new ApplicationOtpSession();
             applicationOtpSession.setOtp(otp);
             applicationOtpSession.setSuccess(state);
             ApplicationOtpSession otpSession = applicationOtpSessionRepository.saveAndFlush(applicationOtpSession);
-            log.info("Processing onboarding otp request otp session update {} ", otpSession);
+            log.info("Onboarding OTP session updated id={}", otpSession.getId());
             return otpSession;
         } catch (Exception e) {
             log.error(e);

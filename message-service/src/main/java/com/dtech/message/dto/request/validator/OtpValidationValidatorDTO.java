@@ -18,4 +18,5 @@ public class OtpValidationValidatorDTO extends ChannelRequestValidatorDTO{
     @NotEmpty(message = "OTP is required")
     @Size(min = 6, max = 6, message = "OTP length must be exactly 6")
     private String otp;
+    private Long otpSessionId;
 }

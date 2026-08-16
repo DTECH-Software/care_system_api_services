@@ -56,6 +56,7 @@ import java.util.stream.Collectors;
 @Log4j2
 @RequiredArgsConstructor
 public class ProfileServiceImpl implements ProfileService {
+    private static final String PROFILE_OTP_PURPOSE = "PROFILE_UPDATE";
 
     private static final List<String> HR_TEAM_ROLE_CODES = List.of(
             "HRADMIN"
@@ -75,6 +76,9 @@ public class ProfileServiceImpl implements ProfileService {
 
     @Value("${client.mobile}")
     private String clientMobile;
+
+    @Value("${otp.validity-seconds:300}")
+    private int otpValiditySeconds;
 
     @Autowired
     private final Gson gson;
@@ -99,6 +103,9 @@ public class ProfileServiceImpl implements ProfileService {
 
     @Autowired
     private final EmailNotificationService emailNotificationService;
+
+    @Autowired
+    private final ApplicationOtpSessionRepository applicationOtpSessionRepository;
 
 
     @Override
@@ -397,26 +404,28 @@ public class ProfileServiceImpl implements ProfileService {
     @Transactional
     public ResponseEntity<ApiResponse<Object>> updateProfileDetails(ProfileEditRequestDTO profileEditRequestDTO, Locale locale) {
         try {
-            log.info("User profile update details request {} ", profileEditRequestDTO);
+            log.info("User profile update request username={}", profileEditRequestDTO.getUsername());
             String username = profileEditRequestDTO.getUsername().trim();
             return applicationUserRepository.findByUsernameAndUserPersonalDetails_UserStatus(username, Status.ACTIVE).map(user -> {
 
                 String primaryEmail = profileEditRequestDTO.getPrimaryEmail().trim();
                 String primaryMobile = profileEditRequestDTO.getPrimaryMobile().trim();
                 if (user.getPrimaryEmail().equalsIgnoreCase(primaryEmail) && user.getPrimaryMobile().equalsIgnoreCase(primaryMobile)) {
-                    log.info("User profile update request details not change {} ", profileEditRequestDTO);
+                    log.info("Profile update contains no changes username={}", username);
                     return ResponseEntity.ok().body(responseUtil.error(null, 1027, messageSource.getMessage(ResponseMessageUtil.APPLICATION_USER_DETAILS_NOT_CHANGE, null, locale)));
-                } else if (user.getApplicationOtpSession() != null) {
-                    ApplicationOtpSession applicationOtpSession = user.getApplicationOtpSession();
-                    if (!applicationOtpSession.getOtp().equalsIgnoreCase(profileEditRequestDTO.getOtp()) || !applicationOtpSession.isValidated()) {
-                        log.info("User profile update request details not change {} ", profileEditRequestDTO);
+                } else {
+                    Optional<ApplicationOtpSession> currentSession = applicationOtpSessionRepository
+                            .findTopByApplicationUserIdAndPurposeOrderByCreatedDateDesc(user.getId(), PROFILE_OTP_PURPOSE);
+                    if (currentSession.isEmpty() || !isValidatedProfileOtp(currentSession.get(), profileEditRequestDTO.getOtp())) {
+                        log.info("Profile update OTP verification failed username={}", username);
                         return ResponseEntity.ok().body(responseUtil.error(null, 1028, messageSource.getMessage(ResponseMessageUtil.APPLICATION_USER_DETAILS_OTP_VERIFICATION_FAILED, null, locale)));
                     }
+                    consumeProfileOtp(user, currentSession.get());
                 }
                 updateDetailsApplicationUser(user, primaryEmail, primaryMobile);
                 return ResponseEntity.ok().body(responseUtil.success(null, messageSource.getMessage(ResponseMessageUtil.APPLICATION_USER_DETAILS_UPDATE_SUCCESS, null, locale)));
             }).orElseGet(() -> {
-                log.info("User profile add dependant request application user not found {} ", profileEditRequestDTO);
+                log.info("Profile update user not found username={}", username);
                 return ResponseEntity.ok().body(responseUtil.error(null, 1014, messageSource.getMessage(ResponseMessageUtil.APPLICATION_USER_NOT_FOUND, null, locale)));
             });
         } catch (Exception e) {
@@ -708,6 +717,23 @@ public class ProfileServiceImpl implements ProfileService {
                 List.of(Workflow.APPROVED, Workflow.UNDER_REVIEW),
                 true
         );
+    }
+
+    private boolean isValidatedProfileOtp(ApplicationOtpSession session, String otp) {
+        return session.isSuccess()
+                && session.isValidated()
+                && !session.isConsumed()
+                && session.getOtp().equals(otp)
+                && DateTimeUtil.getSeconds(session.getCreatedDate(), otpValiditySeconds)
+                .after(DateTimeUtil.getCurrentDateTime());
+    }
+
+    private void consumeProfileOtp(ApplicationUser user, ApplicationOtpSession session) {
+        user.setOtpAttemptCount(0);
+        user.setOtpAttemptResetTime(null);
+        session.setConsumed(true);
+        applicationUserRepository.saveAndFlush(user);
+        applicationOtpSessionRepository.saveAndFlush(session);
     }
 
     @Scheduled(fixedRate = 10000)
