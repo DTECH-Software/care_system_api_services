@@ -11,18 +11,27 @@ import java.util.*;
 @Log4j2
 @RequiredArgsConstructor
 public class DependentEmailRecipientConfigService {
-    private static final String EVENT_CODE = "DEPENDENT_SUBMITTED";
+    private static final String DEPENDENT_SUBMITTED = "DEPENDENT_SUBMITTED";
+    private static final String CIVIL_STATUS_SUBMITTED = "CIVIL_STATUS_SUBMITTED";
 
     private final JdbcTemplate jdbcTemplate;
 
     public List<String> resolveSubmittedRecipients(String companyCode) {
+        return resolveRecipients(DEPENDENT_SUBMITTED, companyCode);
+    }
+
+    public List<String> resolveCivilStatusSubmittedRecipients(String companyCode) {
+        return resolveRecipients(CIVIL_STATUS_SUBMITTED, companyCode);
+    }
+
+    private List<String> resolveRecipients(String eventCode, String companyCode) {
         if (companyCode == null || companyCode.isBlank()) return List.of();
         try {
             List<String> eventStatuses = jdbcTemplate.queryForList(
                     "SELECT status FROM email_notification_event WHERE code = ?",
                     String.class,
-                    EVENT_CODE);
-            if (eventStatuses.isEmpty()) return legacyFallback(companyCode, "event is not configured");
+                    eventCode);
+            if (eventStatuses.isEmpty()) return legacyFallback(eventCode, companyCode, "event is not configured");
             if (!"ACTIVE".equalsIgnoreCase(eventStatuses.get(0))) return List.of();
 
             List<Map<String, Object>> rules = jdbcTemplate.queryForList("""
@@ -30,7 +39,7 @@ public class DependentEmailRecipientConfigService {
                     FROM email_notification_recipient_rule r
                     JOIN email_notification_event e ON e.id = r.event_id
                     WHERE e.code = ? AND e.status = 'ACTIVE' AND r.status = 'ACTIVE'
-                    """, EVENT_CODE);
+                    """, eventCode);
             if (rules.isEmpty()) return List.of();
 
             Set<String> emails = new LinkedHashSet<>();
@@ -45,8 +54,8 @@ public class DependentEmailRecipientConfigService {
             }
             return new ArrayList<>(emails);
         } catch (RuntimeException ex) {
-            log.error("Unable to load DB recipients for {}. Using existing HRADMIN routing.", EVENT_CODE, ex);
-            return legacyFallback(companyCode, "configuration lookup failed");
+            log.error("Unable to load DB recipients for {}. Using existing HRADMIN routing.", eventCode, ex);
+            return legacyFallback(eventCode, companyCode, "configuration lookup failed");
         }
     }
 
@@ -107,8 +116,8 @@ public class DependentEmailRecipientConfigService {
                 (rs, rowNum) -> rs.getString("email"));
     }
 
-    private List<String> legacyFallback(String companyCode, String reason) {
-        log.warn("Using legacy recipient routing for {} because {}", EVENT_CODE, reason);
+    private List<String> legacyFallback(String eventCode, String companyCode, String reason) {
+        log.warn("Using legacy recipient routing for {} because {}", eventCode, reason);
         return jdbcTemplate.query("""
                         SELECT DISTINCT wu.email
                         FROM web_user wu

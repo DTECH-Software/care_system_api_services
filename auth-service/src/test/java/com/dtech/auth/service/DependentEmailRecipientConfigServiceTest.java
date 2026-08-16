@@ -56,4 +56,20 @@ class DependentEmailRecipientConfigServiceTest {
         assertTrue(service.resolveSubmittedRecipients("SGCS").isEmpty());
         verify(jdbcTemplate, never()).query(anyString(), any(Object[].class), any(RowMapper.class));
     }
+
+    @Test
+    void civilStatusSubmissionUsesItsOwnConfiguredEvent() {
+        when(jdbcTemplate.queryForList(anyString(), eq(String.class), eq("CIVIL_STATUS_SUBMITTED")))
+                .thenReturn(List.of("ACTIVE"));
+        when(jdbcTemplate.queryForList(contains("recipient_type"), eq("CIVIL_STATUS_SUBMITTED")))
+                .thenReturn(List.of(Map.of(
+                        "recipient_type", "USER_ROLE",
+                        "recipient_code", "HRADMIN",
+                        "company_scope", "SAME_COMPANY")));
+        when(jdbcTemplate.query(anyString(), any(Object[].class), any(RowMapper.class)))
+                .thenReturn(List.of("civil-hr@sgcs.lk"));
+
+        assertEquals(List.of("civil-hr@sgcs.lk"),
+                service.resolveCivilStatusSubmittedRecipients("SGCS"));
+    }
 }

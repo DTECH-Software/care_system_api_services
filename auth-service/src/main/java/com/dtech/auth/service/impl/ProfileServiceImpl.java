@@ -34,7 +34,6 @@ import org.springframework.core.io.Resource;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -58,10 +57,6 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class ProfileServiceImpl implements ProfileService {
     private static final String PROFILE_OTP_PURPOSE = "PROFILE_UPDATE";
-
-    private static final List<String> HR_TEAM_ROLE_CODES = List.of(
-            "HRADMIN"
-    );
 
     @Autowired
     private final ApplicationUserRepository applicationUserRepository;
@@ -98,9 +93,6 @@ public class ProfileServiceImpl implements ProfileService {
 
     @Autowired
     private final DocumentStoreRepository documentStoreRepository;
-
-    @Autowired
-    private final JdbcTemplate jdbcTemplate;
 
     @Autowired
     private final EmailNotificationService emailNotificationService;
@@ -541,38 +533,6 @@ public class ProfileServiceImpl implements ProfileService {
         emailNotificationService.notifyHrTeamOnDependentPendingApproval(recipientEmails, applicationUser, savedDependents);
     }
 
-    private List<String> findHrTeamEmailsByCompany(String companyCode) {
-        if (companyCode == null || companyCode.isBlank()) {
-            return List.of();
-        }
-
-        String placeholders = String.join(",", Collections.nCopies(HR_TEAM_ROLE_CODES.size(), "?"));
-        String sql = """
-                SELECT DISTINCT wu.email
-                FROM web_user wu
-                JOIN web_user_role wur ON wu.user_role = wur.code
-                JOIN web_user_company wuc ON wu.id = wuc.web_user_id
-                JOIN company_types ct ON wuc.company_id = ct.id
-                WHERE wu.status = 'ACTIVE'
-                  AND wur.status = 'ACTIVE'
-                  AND ct.status = 'ACTIVE'
-                  AND ct.code = ?
-                  AND UPPER(wur.code) IN (%s)
-                  AND wu.email IS NOT NULL
-                  AND TRIM(wu.email) <> ''
-                """.formatted(placeholders);
-
-        List<Object> params = new ArrayList<>();
-        params.add(companyCode);
-        HR_TEAM_ROLE_CODES.forEach(role -> params.add(role.toUpperCase(Locale.ROOT)));
-
-        return jdbcTemplate.query(
-                sql,
-                params.toArray(),
-                (rs, rowNum) -> rs.getString("email")
-        );
-    }
-
     private void notifyHrTeamOnCivilStatusPendingApproval(ApplicationUser applicationUser,
                                                           MaritalStatusRequestDTO maritalStatusRequestDTO) {
         if (applicationUser == null
@@ -592,7 +552,7 @@ public class ProfileServiceImpl implements ProfileService {
             return;
         }
 
-        List<String> recipientEmails = findHrTeamEmailsByCompany(companyCode);
+        List<String> recipientEmails = dependentEmailRecipientConfigService.resolveCivilStatusSubmittedRecipients(companyCode);
         emailNotificationService.notifyHrTeamOnCivilStatusPendingApproval(
                 recipientEmails,
                 applicationUser,
