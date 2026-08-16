@@ -73,6 +73,7 @@ services:
       - "8086:8086"
     environment:
       SPRING_PROFILES_ACTIVE: uat
+      WECARE_OBJECT_STORAGE_RETAIN_DATABASE_COPY: "false"
       JAVA_TOOL_OPTIONS: "-Xms128m -Xmx384m -Duser.timezone=Asia/Colombo"
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: "http://registry-service:8081/eureka/"
       EUREKA_INSTANCE_HOSTNAME: document-service

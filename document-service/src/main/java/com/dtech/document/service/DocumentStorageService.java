@@ -38,7 +38,7 @@ public class DocumentStorageService {
     @Value("${wecare.object-storage.app-write-enabled:false}")
     private boolean appWriteEnabled;
 
-    @Value("${wecare.object-storage.retain-database-copy:true}")
+    @Value("${wecare.object-storage.retain-database-copy:false}")
     private boolean retainDatabaseCopy;
 
     @Value("${wecare.object-storage.bucket:}")

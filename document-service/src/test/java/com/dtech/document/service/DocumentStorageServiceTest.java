@@ -75,6 +75,19 @@ class DocumentStorageServiceTest {
     }
 
     @Test
+    void uploadsWithoutKeepingDatabaseContentWhenRetentionIsDisabled() {
+        ReflectionTestUtils.setField(service, "appWriteEnabled", true);
+        ReflectionTestUtils.setField(service, "retainDatabaseCopy", false);
+
+        Document saved = service.saveAppDocument(document(), "app-document".getBytes(StandardCharsets.UTF_8));
+
+        assertEquals(DocumentStorageProvider.LINODE_OBJECT_STORAGE, saved.getStorageProvider());
+        assertNull(saved.getDoc());
+        assertNotNull(saved.getObjectKey());
+        verify(s3Client).putObject(any(PutObjectRequest.class), any(RequestBody.class));
+    }
+
+    @Test
     void readsObjectWhenDatabaseCopyIsAbsent() {
         byte[] content = "downloaded-app-document".getBytes(StandardCharsets.UTF_8);
         Document document = document();
