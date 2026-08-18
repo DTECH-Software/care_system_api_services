@@ -103,6 +103,9 @@ public class ProfileServiceImpl implements ProfileService {
     @Autowired
     private final ApplicationOtpSessionRepository applicationOtpSessionRepository;
 
+    @Autowired
+    private final MaritalStatusRepository maritalStatusRepository;
+
 
     @Override
     @Transactional(readOnly = true)
@@ -149,7 +152,7 @@ public class ProfileServiceImpl implements ProfileService {
 
                         for (ClaimDependentDetailsRequestDTO detailsRequestDTO : claimDependentRequestDTO.getDependents()) {
 
-                            if (applicationUser.getUserPersonalDetails().getMaritalStatus().equals(MaritalStatus.UNMARRIED)) {
+                            if (!MaritalStatus.MARRIED.equals(applicationUser.getUserPersonalDetails().getMaritalStatus())) {
                                 if (detailsRequestDTO.getRelationCategory().equalsIgnoreCase(RelationCategory.WIFE.name())
                                         || detailsRequestDTO.getRelationCategory().equalsIgnoreCase(RelationCategory.HUSBAND.name())
                                         || detailsRequestDTO.getRelationCategory().equalsIgnoreCase(RelationCategory.FATHER_IN_LAW.name())
@@ -535,9 +538,7 @@ public class ProfileServiceImpl implements ProfileService {
 
     private void notifyHrTeamOnCivilStatusPendingApproval(ApplicationUser applicationUser,
                                                           MaritalStatusRequestDTO maritalStatusRequestDTO) {
-        if (applicationUser == null
-                || maritalStatusRequestDTO == null
-                || !RequestType.MARRIED.name().equalsIgnoreCase(maritalStatusRequestDTO.getRequestType())) {
+        if (applicationUser == null || maritalStatusRequestDTO == null) {
             return;
         }
 
@@ -642,6 +643,12 @@ public class ProfileServiceImpl implements ProfileService {
                     return ResponseEntity.ok().body(responseUtil.error(null, 1036, messageSource.getMessage(ResponseMessageUtil.UNMARRIED_EMPLOYEE_CANT_DIVORCE, null, locale)));
                 }
 
+                if (maritalStatusRepository.existsByApplicationUserAndStatus(user, Workflow.UNDER_REVIEW)) {
+                    log.info("User already has a pending marital status request: {}", user.getUsername());
+                    return ResponseEntity.ok().body(responseUtil.error(null, 1045,
+                            messageSource.getMessage(ResponseMessageUtil.MARITAL_STATUS_REQUEST_PENDING, null, locale)));
+                }
+
                 List<Document> uploadSupportingDocument = maritalStatusRequestDTO.getDocuments().stream().map(doc -> {
                     log.info("Upload supporting document from dependent");
                     try {
@@ -658,7 +665,10 @@ public class ProfileServiceImpl implements ProfileService {
                 maritalStatus.setApplicationUser(user);
                 log.info(uploadSupportingDocument.stream().toList());
                 maritalStatus.setDocuments(uploadSupportingDocument);
-                maritalStatus.setMaritalStatus(maritalStatusRequestDTO.getRequestType().equals(RequestType.MARRIED.name()) ? MaritalStatus.MARRIED : MaritalStatus.UNMARRIED);
+                maritalStatus.setMaritalStatus(
+                        maritalStatusRequestDTO.getRequestType().equals(RequestType.MARRIED.name())
+                                ? MaritalStatus.MARRIED
+                                : MaritalStatus.DIVORCE);
                 user.setMaritalStatus(maritalStatus);
                 applicationUserRepository.saveAndFlush(user);
                 notifyHrTeamOnCivilStatusPendingApproval(user, maritalStatusRequestDTO);
@@ -718,7 +728,7 @@ public class ProfileServiceImpl implements ProfileService {
 
             if(de.getApplicationUser().getUserPersonalDetails().getUserCompanyDetails()
                     .getStaffCategories().getCode().equals("NS") &&
-                    de.getApplicationUser().getUserPersonalDetails().getMaritalStatus().equals(MaritalStatus.UNMARRIED)
+                    !MaritalStatus.MARRIED.equals(de.getApplicationUser().getUserPersonalDetails().getMaritalStatus())
             && de.getDependentCategory().equals(DependentCategory.PARENTS)){
                 int age = DateTimeUtil.getAge(String.valueOf(de.getDob()));
                 if(age > 65){

@@ -193,7 +193,7 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
                             responseUtil.error(null, 1049,
                                     messageSource.getMessage(ResponseMessageUtil.DEPENDENT_NOT_ELIGIBLE_TO_CLAIM_REQUEST, null, locale))
                     );
-                } else if (isForDependent && user.getUserPersonalDetails().getMaritalStatus().equals(MaritalStatus.UNMARRIED) && !staffCategoryCode.equals("NS")) {
+                } else if (isForDependent && !MaritalStatus.MARRIED.equals(user.getUserPersonalDetails().getMaritalStatus()) && !staffCategoryCode.equals("NS")) {
                     log.info("Dependent not eligible due to staff category and marital status");
                     return ResponseEntity.ok().body(
                             responseUtil.error(null, 1050,
@@ -307,7 +307,7 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
                                                         return ResponseEntity.ok().body(responseUtil.error(null, 1049, messageSource.getMessage(ResponseMessageUtil.DEPENDENT_NOT_ELIGIBLE_TO_CLAIM_REQUEST, null, locale)));
                                                     }
 
-                                                    if (user.getUserPersonalDetails().getUserCompanyDetails().getStaffCategories().getCode().equals("NS") && user.getUserPersonalDetails().getMaritalStatus().equals(MaritalStatus.UNMARRIED) && claimsDependents.get().getDependentCategory().equals(DependentCategory.PARENTS)) {
+                                                    if (user.getUserPersonalDetails().getUserCompanyDetails().getStaffCategories().getCode().equals("NS") && !MaritalStatus.MARRIED.equals(user.getUserPersonalDetails().getMaritalStatus()) && claimsDependents.get().getDependentCategory().equals(DependentCategory.PARENTS)) {
                                                         if (!isParentWithinNormalStaffMedicalAgeLimit(user, claimsDependents.get())) {
                                                             log.info("Claim dependent parent age limit exceeded");
                                                             return ResponseEntity.ok().body(responseUtil.error(null, 1047, messageSource.getMessage(ResponseMessageUtil.CLAIM_DEPENDENT_INSURANCE_REQUEST_PARENT_AGE_LIMIT_EXCEED, new Object[]{NORMAL_STAFF_PARENT_MAX_CLAIM_AGE}, locale)));
@@ -914,7 +914,7 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
         }
         String staffCategoryCode = user.getUserPersonalDetails().getUserCompanyDetails().getStaffCategories().getCode();
         if (!"NS".equalsIgnoreCase(staffCategoryCode)
-                || !MaritalStatus.UNMARRIED.equals(user.getUserPersonalDetails().getMaritalStatus())) {
+                || MaritalStatus.MARRIED.equals(user.getUserPersonalDetails().getMaritalStatus())) {
             return true;
         }
         return isDateWithinAgeLimit(

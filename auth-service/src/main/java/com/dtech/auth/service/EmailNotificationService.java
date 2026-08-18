@@ -115,11 +115,15 @@ public class EmailNotificationService {
     }
 
     private String buildCivilStatusPendingApprovalBody(ApplicationUser employee, List<ClaimsDependents> dependents) {
+        String requestedStatus = employee.getMaritalStatus() != null
+                && employee.getMaritalStatus().getMaritalStatus() != null
+                ? employee.getMaritalStatus().getMaritalStatus().getDescription()
+                : "Not specified";
         return """
                 <html>
                 <body style="font-family: Arial, sans-serif; color: #222;">
                     <p>Dear HR team,</p>
-                    <p>A marriage certificate has been added by the following employee and is pending your approval. The details are as follows:</p>
+                    <p>A civil status change to <strong>%s</strong> has been submitted by the following employee and is pending your approval. The details are as follows:</p>
                     <p><strong>Employee details</strong></p>
                     %s
                     <p><strong>Dependent details</strong></p>
@@ -131,6 +135,7 @@ public class EmailNotificationService {
                 </body>
                 </html>
                 """.formatted(
+                escapeHtml(requestedStatus),
                 buildEmployeeDetailsTable(employee),
                 buildDependentDetailsTable(dependents)
         );
