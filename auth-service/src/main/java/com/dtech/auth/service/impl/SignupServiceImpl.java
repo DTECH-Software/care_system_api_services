@@ -323,13 +323,20 @@ public class SignupServiceImpl implements SignupService {
             log.info("Processing signup application user {}", userPersonalDetailsRequestDTO);
 
             String facilityId  =(String)facilityIdGenUtil.generate(entityManager.unwrap(SharedSessionContractImplementor.class),null);
+            String primaryEmail = userPersonalDetailsRequestDTO.getEmail().trim().toLowerCase();
+            String primaryMobile = userPersonalDetailsRequestDTO.getMobileNo().trim();
+
+            userPersonalDetails.setEmail(primaryEmail);
+            userPersonalDetails.setMobileNo(primaryMobile);
+            userPersonalDetailsRepository.saveAndFlush(userPersonalDetails);
+
             ApplicationUser applicationUser = new ApplicationUser();
             applicationUser.setUsername(userPersonalDetailsRequestDTO.getUsername().trim());
             applicationUser.setFacilityId(facilityId);
             applicationUser.setPassword(hashPassword);
             applicationUser.setUserKey(saltKey);
-            applicationUser.setPrimaryEmail(userPersonalDetailsRequestDTO.getEmail().trim().toLowerCase());
-            applicationUser.setPrimaryMobile(userPersonalDetailsRequestDTO.getMobileNo().trim());
+            applicationUser.setPrimaryEmail(primaryEmail);
+            applicationUser.setPrimaryMobile(primaryMobile);
             applicationUser.setLoginStatus(Status.ACTIVE);
             applicationUser.setReset(false);
             applicationUser.setPasswordExpiredDate(DateTimeUtil.get30FutureDate());

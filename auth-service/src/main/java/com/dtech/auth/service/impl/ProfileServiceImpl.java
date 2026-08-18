@@ -405,7 +405,7 @@ public class ProfileServiceImpl implements ProfileService {
         try {
             log.info("User profile update request username={}", profileEditRequestDTO.getUsername());
             String username = profileEditRequestDTO.getUsername().trim();
-            return applicationUserRepository.findByUsernameAndUserPersonalDetails_UserStatus(username, Status.ACTIVE).map(user -> {
+            return findActiveUserByUsernameOrEmail(username).map(user -> {
 
                 String primaryEmail = profileEditRequestDTO.getPrimaryEmail().trim();
                 String primaryMobile = profileEditRequestDTO.getPrimaryMobile().trim();
@@ -413,9 +413,26 @@ public class ProfileServiceImpl implements ProfileService {
                     log.info("Profile update contains no changes username={}", username);
                     return ResponseEntity.ok().body(responseUtil.error(null, 1027, messageSource.getMessage(ResponseMessageUtil.APPLICATION_USER_DETAILS_NOT_CHANGE, null, locale)));
                 } else {
+                    if (!user.getPrimaryMobile().equals(primaryMobile)
+                            && applicationUserRepository.existsByPrimaryMobileAndUserPersonalDetails_UserStatusAndIdNot(
+                            primaryMobile, Status.ACTIVE, user.getId())) {
+                        log.info("Profile update mobile already in use username={}", user.getUsername());
+                        return ResponseEntity.ok().body(responseUtil.error(null, 1025,
+                                messageSource.getMessage(ResponseMessageUtil.PRIMARY_MOBILE_ALREADY_IN_USE, null, locale)));
+                    }
+                    if (!user.getPrimaryEmail().equalsIgnoreCase(primaryEmail)
+                            && applicationUserRepository.existsByPrimaryEmailIgnoreCaseAndUserPersonalDetails_UserStatusAndIdNot(
+                            primaryEmail, Status.ACTIVE, user.getId())) {
+                        log.info("Profile update email already in use username={}", user.getUsername());
+                        return ResponseEntity.ok().body(responseUtil.error(null, 1026,
+                                messageSource.getMessage(ResponseMessageUtil.PRIMARY_EMAIL_ALREADY_IN_USE, null, locale)));
+                    }
+
                     Optional<ApplicationOtpSession> currentSession = applicationOtpSessionRepository
-                            .findTopByApplicationUserIdAndPurposeOrderByCreatedDateDesc(user.getId(), PROFILE_OTP_PURPOSE);
-                    if (currentSession.isEmpty() || !isValidatedProfileOtp(currentSession.get(), profileEditRequestDTO.getOtp())) {
+                            .findTopByApplicationUserIdAndPurposeOrderByCreatedDateDesc(
+                                    user.getId(), PROFILE_OTP_PURPOSE);
+                    if (currentSession.isEmpty()
+                            || !isValidatedProfileOtp(currentSession.get(), profileEditRequestDTO.getOtp())) {
                         log.info("Profile update OTP verification failed username={}", username);
                         return ResponseEntity.ok().body(responseUtil.error(null, 1028, messageSource.getMessage(ResponseMessageUtil.APPLICATION_USER_DETAILS_OTP_VERIFICATION_FAILED, null, locale)));
                     }
@@ -700,6 +717,16 @@ public class ProfileServiceImpl implements ProfileService {
                 && session.getOtp().equals(otp)
                 && DateTimeUtil.getSeconds(session.getCreatedDate(), otpValiditySeconds)
                 .after(DateTimeUtil.getCurrentDateTime());
+    }
+
+    private Optional<ApplicationUser> findActiveUserByUsernameOrEmail(String usernameOrEmail) {
+        Optional<ApplicationUser> user = applicationUserRepository
+                .findByUsernameAndUserPersonalDetails_UserStatus(usernameOrEmail, Status.ACTIVE);
+        if (user.isEmpty()) {
+            user = applicationUserRepository
+                    .findByPrimaryEmailIgnoreCaseAndUserPersonalDetails_UserStatus(usernameOrEmail, Status.ACTIVE);
+        }
+        return user;
     }
 
     private void consumeProfileOtp(ApplicationUser user, ApplicationOtpSession session) {
