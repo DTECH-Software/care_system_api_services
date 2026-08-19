@@ -4,7 +4,9 @@ import com.dtech.claim.model.InsuranceStaffCategoryPeriod;
 import org.junit.jupiter.api.Test;
 
 import java.sql.Date;
+import java.util.List;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -40,8 +42,44 @@ class DashboardServiceImplTest {
         ));
     }
 
+    @Test
+    void shouldIncludeCurrentAndPreviousPeriodIdsForTransferYear() {
+        InsuranceStaffCategoryPeriod currentPeriod = policyPeriod(14L, "2026-07-01", "2027-06-30");
+        InsuranceStaffCategoryPeriod previousOverlappingPeriod = policyPeriod(4L, "2026-07-01", "2027-06-30");
+        InsuranceStaffCategoryPeriod previousCompletedPeriod = policyPeriod(3L, "2025-07-01", "2026-06-30");
+
+        assertEquals(
+                List.of(14L, 4L),
+                DashboardServiceImpl.collectDashboardPolicyPeriodIds(
+                        currentPeriod,
+                        Date.valueOf("2026-08-01"),
+                        List.of(previousCompletedPeriod, previousOverlappingPeriod)
+                )
+        );
+    }
+
+    @Test
+    void shouldUseOnlySelectedPeriodOutsideTransferYear() {
+        InsuranceStaffCategoryPeriod currentPeriod = policyPeriod(14L, "2026-07-01", "2027-06-30");
+        InsuranceStaffCategoryPeriod previousPeriod = policyPeriod(4L, "2025-07-01", "2026-06-30");
+
+        assertEquals(
+                List.of(14L),
+                DashboardServiceImpl.collectDashboardPolicyPeriodIds(
+                        currentPeriod,
+                        Date.valueOf("2028-01-01"),
+                        List.of(previousPeriod)
+                )
+        );
+    }
+
     private InsuranceStaffCategoryPeriod policyPeriod(String fromDate, String toDate) {
+        return policyPeriod(null, fromDate, toDate);
+    }
+
+    private InsuranceStaffCategoryPeriod policyPeriod(Long id, String fromDate, String toDate) {
         InsuranceStaffCategoryPeriod period = new InsuranceStaffCategoryPeriod();
+        period.setId(id);
         period.setFromDate(Date.valueOf(fromDate));
         period.setToDate(Date.valueOf(toDate));
         return period;

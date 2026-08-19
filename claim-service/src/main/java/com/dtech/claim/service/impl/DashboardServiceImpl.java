@@ -82,6 +82,7 @@ public class DashboardServiceImpl implements DashboardService {
                 List<InsuranceStaffCategoryPeriod> activePeriods = resolveApplicablePolicyPeriods(user);
                 InsuranceStaffCategoryPeriod selectedPolicyPeriod = resolvePeriodByYear(activePeriods, dashboardSummaryDTO.getYear());
                 Long selectedPolicyPeriodId = selectedPolicyPeriod != null ? selectedPolicyPeriod.getId() : null;
+                List<Long> selectedPolicyPeriodIds = resolveDashboardPolicyPeriodIds(user, selectedPolicyPeriod);
 
                 /*Insurance*/
                 log.info("insurance claims");
@@ -93,8 +94,11 @@ public class DashboardServiceImpl implements DashboardService {
 
                 if (user.getUserPersonalDetails().getUserCompanyDetails().getFacility().name().equals(Facility.INSURANCE.name()) ||
                         user.getUserPersonalDetails().getUserCompanyDetails().getFacility().name().equals(Facility.BOTH.name())) {
-                    CountTypeResponseDTO countOfInsurance = insuranceClaimsRequestRepository.
-                            findSummary(dashboardSummaryDTO, user.getId(), selectedPolicyPeriodId);
+                    CountTypeResponseDTO countOfInsurance = selectedPolicyPeriodIds.size() > 1
+                            ? insuranceClaimsRequestRepository.findSummaryByPolicyPeriodIds(
+                                    dashboardSummaryDTO, user.getId(), selectedPolicyPeriodIds)
+                            : insuranceClaimsRequestRepository.findSummary(
+                                    dashboardSummaryDTO, user.getId(), selectedPolicyPeriodId);
                     log.info("insurance claims counts success");
 
                     AmountResponseDTO indoor = buildAmountSummary(user, selectedPolicyPeriod, TreatmentType.INDOOR.name());
@@ -127,9 +131,12 @@ public class DashboardServiceImpl implements DashboardService {
                     }
 
                     //get latest updated insurance
-                    approved = insuranceClaimsRequestRepository.getLatestUpdatedRecordSummary(user.getId(), Workflow.APPROVED.name(), selectedPolicyPeriodId);
-                    rejected = insuranceClaimsRequestRepository.getLatestUpdatedRecordSummary(user.getId(), Workflow.REJECTED.name(), selectedPolicyPeriodId);
-                    underReview = insuranceClaimsRequestRepository.getLatestUpdatedRecordSummary(user.getId(), Workflow.UNDER_REVIEW.name(), selectedPolicyPeriodId);
+                    approved = getLatestUpdatedInsuranceClaims(
+                            user.getId(), Workflow.APPROVED, selectedPolicyPeriodId, selectedPolicyPeriodIds);
+                    rejected = getLatestUpdatedInsuranceClaims(
+                            user.getId(), Workflow.REJECTED, selectedPolicyPeriodId, selectedPolicyPeriodIds);
+                    underReview = getLatestUpdatedInsuranceClaims(
+                            user.getId(), Workflow.UNDER_REVIEW, selectedPolicyPeriodId, selectedPolicyPeriodIds);
                     log.info("insurance claims list success");
                     insurance = CountResponseDTO.builder()
                             .approved(approved)
@@ -315,6 +322,70 @@ public class DashboardServiceImpl implements DashboardService {
                         InsuranceStaffCategoryPeriod::getFromDate,
                         Comparator.nullsLast(Comparator.naturalOrder())))
                 .toList();
+    }
+
+    private List<Long> resolveDashboardPolicyPeriodIds(ApplicationUser user,
+                                                       InsuranceStaffCategoryPeriod selectedPolicyPeriod) {
+        if (selectedPolicyPeriod == null || selectedPolicyPeriod.getId() == null) {
+            return List.of();
+        }
+
+        UserCompanyDetails companyDetails = user.getUserPersonalDetails().getUserCompanyDetails();
+        Date transferDate = companyDetails.getTransferDate();
+        List<InsuranceStaffCategoryPeriod> previousPeriods = List.of();
+        if (companyDetails.getPreviousStaffCategories() != null
+                && isDateWithinPolicyPeriod(transferDate, selectedPolicyPeriod)) {
+            previousPeriods = insuranceStaffCategoryPeriodRepository
+                    .findAllByStaffCategories_CodeAndStatus(
+                            companyDetails.getPreviousStaffCategories().getCode(), Status.ACTIVE);
+        }
+
+        return collectDashboardPolicyPeriodIds(selectedPolicyPeriod, transferDate, previousPeriods);
+    }
+
+    static List<Long> collectDashboardPolicyPeriodIds(InsuranceStaffCategoryPeriod selectedPolicyPeriod,
+                                                       Date transferDate,
+                                                       Collection<InsuranceStaffCategoryPeriod> previousPeriods) {
+        if (selectedPolicyPeriod == null || selectedPolicyPeriod.getId() == null) {
+            return List.of();
+        }
+
+        LinkedHashSet<Long> periodIds = new LinkedHashSet<>();
+        periodIds.add(selectedPolicyPeriod.getId());
+        if (!isDateWithinPolicyPeriod(transferDate, selectedPolicyPeriod) || previousPeriods == null) {
+            return List.copyOf(periodIds);
+        }
+
+        previousPeriods.stream()
+                .filter(Objects::nonNull)
+                .filter(period -> period.getId() != null)
+                .filter(period -> isOverlappingPeriod(period, selectedPolicyPeriod))
+                .map(InsuranceStaffCategoryPeriod::getId)
+                .forEach(periodIds::add);
+        return List.copyOf(periodIds);
+    }
+
+    private static boolean isDateWithinPolicyPeriod(Date date,
+                                                    InsuranceStaffCategoryPeriod period) {
+        return date != null
+                && period != null
+                && period.getFromDate() != null
+                && period.getToDate() != null
+                && !date.before(period.getFromDate())
+                && !date.after(period.getToDate());
+    }
+
+    private List<LatestUpdatedResponseDTO> getLatestUpdatedInsuranceClaims(
+            Long userId,
+            Workflow requestStatus,
+            Long selectedPolicyPeriodId,
+            List<Long> selectedPolicyPeriodIds) {
+        if (selectedPolicyPeriodIds.size() > 1) {
+            return insuranceClaimsRequestRepository.getLatestUpdatedRecordSummaryByPolicyPeriodIds(
+                    userId, requestStatus.name(), selectedPolicyPeriodIds);
+        }
+        return insuranceClaimsRequestRepository.getLatestUpdatedRecordSummary(
+                userId, requestStatus.name(), selectedPolicyPeriodId);
     }
 
     private int getYear(Date date) {
@@ -538,8 +609,8 @@ public class DashboardServiceImpl implements DashboardService {
         return null;
     }
 
-    private boolean isOverlappingPeriod(InsuranceStaffCategoryPeriod candidate,
-                                        InsuranceStaffCategoryPeriod currentPeriod) {
+    private static boolean isOverlappingPeriod(InsuranceStaffCategoryPeriod candidate,
+                                               InsuranceStaffCategoryPeriod currentPeriod) {
         if (candidate.getFromDate() == null || candidate.getToDate() == null
                 || currentPeriod.getFromDate() == null || currentPeriod.getToDate() == null) {
             return true;
