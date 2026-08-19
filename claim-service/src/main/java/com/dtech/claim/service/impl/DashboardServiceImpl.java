@@ -293,14 +293,12 @@ public class DashboardServiceImpl implements DashboardService {
                         companyDetails.getStaffCategories().getCode(), Status.ACTIVE));
 
         if (transferDate != null && companyDetails.getPreviousStaffCategories() != null) {
-            periods.removeIf(period -> period.getFromDate() != null
-                    && period.getFromDate().before(transferDate));
+            periods.removeIf(period -> isPolicyPeriodEntirelyBeforeTransfer(period, transferDate));
             periods.addAll(insuranceStaffCategoryPeriodRepository
                     .findAllByStaffCategories_CodeAndStatus(
                             companyDetails.getPreviousStaffCategories().getCode(), Status.ACTIVE)
                     .stream()
-                    .filter(period -> period.getFromDate() != null
-                            && period.getFromDate().before(transferDate))
+                    .filter(period -> isPolicyPeriodEntirelyBeforeTransfer(period, transferDate))
                     .toList());
         }
 
@@ -484,12 +482,19 @@ public class DashboardServiceImpl implements DashboardService {
     private InsurancePolicy resolveInsurancePolicyForPeriod(UserCompanyDetails companyDetails,
                                                              InsuranceStaffCategoryPeriod period) {
         if (companyDetails.getTransferDate() != null
-                && period.getFromDate() != null
-                && period.getFromDate().before(companyDetails.getTransferDate())
+                && isPolicyPeriodEntirelyBeforeTransfer(period, companyDetails.getTransferDate())
                 && companyDetails.getPreviousInsurancePolicy() != null) {
             return companyDetails.getPreviousInsurancePolicy();
         }
         return companyDetails.getInsurancePolicy();
+    }
+
+    static boolean isPolicyPeriodEntirelyBeforeTransfer(InsuranceStaffCategoryPeriod period,
+                                                         Date transferDate) {
+        return period != null
+                && period.getToDate() != null
+                && transferDate != null
+                && period.getToDate().before(transferDate);
     }
 
     private InsuranceStaffCategoryPeriod resolvePreviousPeriodFromClaimHistory(ApplicationUser applicationUser,
