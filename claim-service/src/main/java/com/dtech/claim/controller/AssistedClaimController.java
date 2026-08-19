@@ -68,8 +68,9 @@ public class AssistedClaimController {
         response.put("actingEmployeeId", user.getId());
         response.put("username", user.getUsername());
         response.put("primaryEmail", user.getPrimaryEmail());
-        response.put("primaryMobile", user.getPrimaryMobile());
-        response.put("hasRealMobile", assistedUserResolver.hasRealMobile(user.getPrimaryMobile()));
+        boolean hasRealMobile = assistedUserResolver.hasRealMobile(user.getPrimaryMobile());
+        response.put("primaryMobile", mobileForResponse(user.getPrimaryMobile(), hasRealMobile));
+        response.put("hasRealMobile", hasRealMobile);
         response.put("lastPasswordChangeDate", formatDateTime(user.getLastPasswordChangeDate()));
         response.put("lastLoggedDate", formatDateTime(user.getLastLoggedDate()));
         response.put("expectingFirstTimeLogging", user.isExpectingFirstTimeLogging());
@@ -92,6 +93,10 @@ public class AssistedClaimController {
         response.put("roleDescription", null);
         response.put("reset", user.isReset());
         return response;
+    }
+
+    static String mobileForResponse(String mobile, boolean hasRealMobile) {
+        return hasRealMobile ? mobile : null;
     }
 
     private Map<String, Object> buildUserPersonalDetails(ApplicationUser user) {
