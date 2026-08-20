@@ -1,0 +1,198 @@
+name: Care App CI/CD (Production)
+
+on:
+  push:
+    branches: ["production"]
+    paths:
+      - "auth-service/**"
+      - "claim-service/**"
+      - "cloud-service/**"
+      - "document-service/**"
+      - "login-service/**"
+      - "message-service/**"
+      - "notification-service/**"
+      - "registry-service/**"
+      - "token-service/**"
+      - "docker-compose-prod.yml"
+      - ".github/workflows/care-app-production.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: care-app-production
+  cancel-in-progress: false
+
+env:
+  SERVICES: registry-service token-service message-service document-service notification-service auth-service login-service claim-service cloud-service
+  SERVICE_DIR: care-app
+
+jobs:
+  build:
+    name: Build ${{ matrix.service }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        service:
+          - registry-service
+          - token-service
+          - message-service
+          - document-service
+          - notification-service
+          - auth-service
+          - login-service
+          - claim-service
+          - cloud-service
+    steps:
+      - name: Checkout production branch
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+          cache-dependency-path: ${{ matrix.service }}/pom.xml
+
+      - name: Build application JAR
+        working-directory: ${{ matrix.service }}
+        run: mvn -B -DskipTests clean package -Dspring.profiles.active=prod
+
+      - name: Build production Docker image
+        run: docker build --tag "care/${{ matrix.service }}:production" "${{ matrix.service }}"
+
+      - name: Export Docker image
+        run: docker save "care/${{ matrix.service }}:production" | gzip -1 > "${{ matrix.service }}-image.tar.gz"
+
+      - name: Upload production image
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.service }}-production-image
+          path: ${{ matrix.service }}-image.tar.gz
+          if-no-files-found: error
+          retention-days: 14
+
+  deploy:
+    name: Deploy Care App to production
+    needs: build
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Checkout deployment configuration
+        uses: actions/checkout@v4
+
+      - name: Download production images
+        uses: actions/download-artifact@v4
+        with:
+          pattern: "*-production-image"
+          path: artifacts
+
+      - name: Prepare deployment bundle
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p deployment
+          cp docker-compose-prod.yml deployment/docker-compose-prod.yml
+          find artifacts -type f -name '*-image.tar.gz' -exec cp {} deployment/ \;
+          for service in ${SERVICES}; do
+            test -f "deployment/${service}-image.tar.gz"
+          done
+
+      - name: Copy deployment bundle to production
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.PROD_HOST }}
+          username: ${{ secrets.PROD_USER }}
+          key: ${{ secrets.PROD_SSH_KEY }}
+          source: "deployment/*"
+          target: "${{ secrets.PROD_DEPLOY_DIR }}/${{ env.SERVICE_DIR }}"
+          strip_components: 1
+          overwrite: true
+
+      - name: Start production services
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.PROD_HOST }}
+          username: ${{ secrets.PROD_USER }}
+          key: ${{ secrets.PROD_SSH_KEY }}
+          command_timeout: 20m
+          script: |
+            set -eu
+            SERVICE_DIR="${{ secrets.PROD_DEPLOY_DIR }}/${{ env.SERVICE_DIR }}"
+            COMPOSE_FILE="$SERVICE_DIR/docker-compose-prod.yml"
+            ENV_FILE="/opt/wecare/secrets/care-app-production.env"
+            SERVICES="registry-service token-service message-service document-service notification-service auth-service login-service claim-service cloud-service"
+
+            test -f "$COMPOSE_FILE"
+            test -f "$ENV_FILE"
+
+            for service in $SERVICES; do
+              image_file="$SERVICE_DIR/${service}-image.tar.gz"
+              test -f "$image_file"
+              docker load < "$image_file"
+            done
+
+            docker compose -f "$COMPOSE_FILE" config --quiet
+
+            stop_manual_service() {
+              service="$1"
+              pgrep -f "java .*${service}.*\\.jar" | while read -r pid; do
+                if [ "$pid" != "$$" ]; then
+                  echo "Stopping manual production process for $service: $pid"
+                  kill "$pid" || true
+                fi
+              done || true
+            }
+
+            for service in $SERVICES; do
+              stop_manual_service "$service"
+            done
+
+            for attempt in $(seq 1 12); do
+              if ! ss -ltn | grep -Eq ':(8080|8081|8082|8083|8084|8085|8086|8087|8088) '; then
+                break
+              fi
+              echo "Waiting for manual Care App ports to close ($attempt/12)"
+              sleep 5
+            done
+
+            if ss -ltn | grep -Eq ':(8080|8081|8082|8083|8084|8085|8086|8087|8088) '; then
+              echo "One or more Care App ports are still occupied"
+              ss -ltnp | grep -E ':(8080|8081|8082|8083|8084|8085|8086|8087|8088) ' || true
+              exit 1
+            fi
+
+            docker compose -f "$COMPOSE_FILE" up -d --no-build
+
+            wait_for_health() {
+              name="$1"
+              url="$2"
+              for attempt in $(seq 1 48); do
+                if curl -fsS --max-time 5 -o /dev/null "$url"; then
+                  echo "$name production health check passed"
+                  return 0
+                fi
+                echo "Waiting for $name ($attempt/48)"
+                sleep 5
+              done
+              echo "$name production health check failed: $url"
+              docker logs "$name" --tail 150 || true
+              return 1
+            }
+
+            wait_for_health registry-service "http://127.0.0.1:8081/actuator/health"
+            wait_for_health token-service "http://127.0.0.1:8082/token-service/actuator/health"
+            wait_for_health message-service "http://127.0.0.1:8084/message-service/actuator/health"
+            wait_for_health document-service "http://127.0.0.1:8086/document-service/actuator/health"
+            wait_for_health notification-service "http://127.0.0.1:8088/notification-service/actuator/health"
+            wait_for_health auth-service "http://127.0.0.1:8085/auth-service/actuator/health"
+            wait_for_health login-service "http://127.0.0.1:8083/login-service/actuator/health"
+            wait_for_health claim-service "http://127.0.0.1:8087/claim-service/actuator/health"
+            wait_for_health cloud-service "http://127.0.0.1:8080/actuator/health"
+
+            docker compose -f "$COMPOSE_FILE" ps
+            rm -f "$SERVICE_DIR"/*-image.tar.gz
+            echo "Care App production deployment completed successfully"
