@@ -139,6 +139,10 @@ jobs:
 
             stop_manual_service() {
               service="$1"
+              if docker ps --format '{{.Names}}' | grep -qx "$service"; then
+                echo "$service is already Docker-managed; skipping manual-process shutdown"
+                return 0
+              fi
               pgrep -f "java .*${service}.*\\.jar" | while read -r pid; do
                 if [ "$pid" != "$$" ]; then
                   echo "Stopping manual production process for $service: $pid"
@@ -151,16 +155,32 @@ jobs:
               stop_manual_service "$service"
             done
 
+            unmanaged_ports() {
+              for mapping in \
+                registry-service:8081 token-service:8082 message-service:8084 \
+                document-service:8086 notification-service:8088 auth-service:8085 \
+                login-service:8083 claim-service:8087 cloud-service:8080; do
+                service="${mapping%%:*}"
+                port="${mapping##*:}"
+                if ! docker ps --format '{{.Names}}' | grep -qx "$service" \
+                   && ss -ltn | grep -q ":${port} "; then
+                  echo "$service:$port"
+                fi
+              done
+            }
+
             for attempt in $(seq 1 12); do
-              if ! ss -ltn | grep -Eq ':(8080|8081|8082|8083|8084|8085|8086|8087|8088) '; then
+              if [ -z "$(unmanaged_ports)" ]; then
                 break
               fi
               echo "Waiting for manual Care App ports to close ($attempt/12)"
               sleep 5
             done
 
-            if ss -ltn | grep -Eq ':(8080|8081|8082|8083|8084|8085|8086|8087|8088) '; then
-              echo "One or more Care App ports are still occupied"
+            remaining_unmanaged_ports="$(unmanaged_ports)"
+            if [ -n "$remaining_unmanaged_ports" ]; then
+              echo "One or more Care App ports are occupied by unmanaged processes:"
+              echo "$remaining_unmanaged_ports"
               ss -ltnp | grep -E ':(8080|8081|8082|8083|8084|8085|8086|8087|8088) ' || true
               exit 1
             fi
