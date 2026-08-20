@@ -1,0 +1,288 @@
+x-default-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "50m"
+    max-file: "5"
+
+x-database-environment: &database-environment
+  SPRING_PROFILES_ACTIVE: prod
+  EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://registry-service:8081/eureka/
+  TZ: Asia/Colombo
+
+services:
+  registry-service:
+    image: care/registry-service:production
+    container_name: registry-service
+    mem_limit: 768m
+    ports:
+      - "8081:8081"
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      JAVA_TOOL_OPTIONS: "-Xms128m -Xmx512m -Duser.timezone=Asia/Colombo"
+      TZ: Asia/Colombo
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8081/actuator/health >/dev/null || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 18
+      start_period: 45s
+    logging: *default-logging
+    networks:
+      - care-api-network
+
+  token-service:
+    image: care/token-service:production
+    container_name: token-service
+    env_file: /opt/wecare/secrets/care-app-production.env
+    mem_limit: 512m
+    ports:
+      - "8082:8082"
+    environment:
+      <<: *database-environment
+      JAVA_TOOL_OPTIONS: "-Xms128m -Xmx384m -Duser.timezone=Asia/Colombo"
+      EUREKA_INSTANCE_HOSTNAME: token-service
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      registry-service:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8082/token-service/actuator/health >/dev/null || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 18
+      start_period: 45s
+    logging: *default-logging
+    networks:
+      - care-api-network
+
+  message-service:
+    image: care/message-service:production
+    container_name: message-service
+    env_file: /opt/wecare/secrets/care-app-production.env
+    mem_limit: 512m
+    ports:
+      - "8084:8084"
+    environment:
+      <<: *database-environment
+      JAVA_TOOL_OPTIONS: "-Xms128m -Xmx384m -Duser.timezone=Asia/Colombo"
+      EUREKA_INSTANCE_HOSTNAME: message-service
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      registry-service:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8084/message-service/actuator/health >/dev/null || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 18
+      start_period: 45s
+    logging: *default-logging
+    networks:
+      - care-api-network
+
+  document-service:
+    image: care/document-service:production
+    container_name: document-service
+    env_file: /opt/wecare/secrets/care-app-production.env
+    mem_limit: 512m
+    ports:
+      - "8086:8086"
+    environment:
+      <<: *database-environment
+      JAVA_TOOL_OPTIONS: "-Xms128m -Xmx384m -Duser.timezone=Asia/Colombo"
+      EUREKA_INSTANCE_HOSTNAME: document-service
+      WECARE_OBJECT_STORAGE_RETAIN_DATABASE_COPY: "false"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      registry-service:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8086/document-service/actuator/health >/dev/null || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 18
+      start_period: 45s
+    logging: *default-logging
+    networks:
+      - care-api-network
+
+  notification-service:
+    image: care/notification-service:production
+    container_name: notification-service
+    env_file: /opt/wecare/secrets/care-app-production.env
+    mem_limit: 512m
+    ports:
+      - "8088:8088"
+    environment:
+      <<: *database-environment
+      JAVA_TOOL_OPTIONS: "-Xms128m -Xmx384m -Duser.timezone=Asia/Colombo"
+      EUREKA_INSTANCE_HOSTNAME: notification-service
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      registry-service:
+        condition: service_healthy
+      token-service:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8088/notification-service/actuator/health >/dev/null || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 18
+      start_period: 45s
+    logging: *default-logging
+    networks:
+      - care-api-network
+
+  auth-service:
+    image: care/auth-service:production
+    container_name: auth-service
+    env_file: /opt/wecare/secrets/care-app-production.env
+    mem_limit: 1g
+    ports:
+      - "8085:8085"
+    environment:
+      <<: *database-environment
+      JAVA_TOOL_OPTIONS: "-Xms256m -Xmx768m -Duser.timezone=Asia/Colombo"
+      EUREKA_INSTANCE_HOSTNAME: auth-service
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      registry-service:
+        condition: service_healthy
+      token-service:
+        condition: service_healthy
+      message-service:
+        condition: service_healthy
+      document-service:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8085/auth-service/actuator/health >/dev/null || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 18
+      start_period: 60s
+    logging: *default-logging
+    networks:
+      - care-api-network
+
+  login-service:
+    image: care/login-service:production
+    container_name: login-service
+    env_file: /opt/wecare/secrets/care-app-production.env
+    mem_limit: 512m
+    ports:
+      - "8083:8083"
+    environment:
+      <<: *database-environment
+      JAVA_TOOL_OPTIONS: "-Xms128m -Xmx384m -Duser.timezone=Asia/Colombo"
+      EUREKA_INSTANCE_HOSTNAME: login-service
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      registry-service:
+        condition: service_healthy
+      token-service:
+        condition: service_healthy
+      auth-service:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8083/login-service/actuator/health >/dev/null || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 18
+      start_period: 45s
+    logging: *default-logging
+    networks:
+      - care-api-network
+
+  claim-service:
+    image: care/claim-service:production
+    container_name: claim-service
+    env_file: /opt/wecare/secrets/care-app-production.env
+    mem_limit: 768m
+    ports:
+      - "8087:8087"
+    environment:
+      <<: *database-environment
+      JAVA_TOOL_OPTIONS: "-Xms256m -Xmx512m -Duser.timezone=Asia/Colombo"
+      EUREKA_INSTANCE_HOSTNAME: claim-service
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      registry-service:
+        condition: service_healthy
+      token-service:
+        condition: service_healthy
+      message-service:
+        condition: service_healthy
+      document-service:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8087/claim-service/actuator/health >/dev/null || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 18
+      start_period: 60s
+    logging: *default-logging
+    networks:
+      - care-api-network
+
+  cloud-service:
+    image: care/cloud-service:production
+    container_name: cloud-service
+    mem_limit: 512m
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      JAVA_TOOL_OPTIONS: "-Xms128m -Xmx384m -Duser.timezone=Asia/Colombo"
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://registry-service:8081/eureka/
+      EUREKA_INSTANCE_HOSTNAME: cloud-service
+      TZ: Asia/Colombo
+    depends_on:
+      registry-service:
+        condition: service_healthy
+      token-service:
+        condition: service_healthy
+      message-service:
+        condition: service_healthy
+      document-service:
+        condition: service_healthy
+      notification-service:
+        condition: service_healthy
+      auth-service:
+        condition: service_healthy
+      login-service:
+        condition: service_healthy
+      claim-service:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8080/actuator/health >/dev/null || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 18
+      start_period: 45s
+    logging: *default-logging
+    networks:
+      - care-api-network
+
+networks:
+  care-api-network:
+    name: care-api-production
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.29.0.0/24
