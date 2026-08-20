@@ -261,6 +261,7 @@ jobs:
               service="$1"
               port="$2"
               eureka_name="$3"
+              health_path="$4"
 
               if ! should_deploy "$service"; then
                 echo "Skipping unchanged service: $service"
@@ -269,7 +270,7 @@ jobs:
 
               stop_old_java_service "$service"
               docker compose -f "$COMPOSE_FILE" up -d --build "$service"
-              wait_for_http "http://127.0.0.1:${port}" "$service"
+              wait_for_http "http://127.0.0.1:${port}${health_path}" "$service"
               if [ -n "$eureka_name" ]; then
                 wait_for_eureka_service "$eureka_name"
               fi
@@ -279,18 +280,18 @@ jobs:
             docker compose version
             cd "$DEPLOY_BASE"
 
-            compose_up_service "registry-service" "8081" ""
+            compose_up_service "registry-service" "8081" "" "/actuator/health"
             if should_deploy "registry-service"; then
               wait_for_http "http://127.0.0.1:8081/eureka/apps" "registry-service"
             fi
 
-            compose_up_service "token-service" "8082" "TOKEN-SERVICE"
-            compose_up_service "message-service" "8084" "MESSAGE-SERVICE"
-            compose_up_service "document-service" "8086" "DOCUMENT-SERVICE"
-            compose_up_service "notification-service" "8088" "NOTIFICATION-SERVICE"
-            compose_up_service "auth-service" "8085" "AUTH-SERVICE"
-            compose_up_service "login-service" "8083" "LOGIN-SERVICE"
-            compose_up_service "claim-service" "8087" "CLAIM-SERVICE"
-            compose_up_service "cloud-service" "8080" "CLOUD-SERVICE"
+            compose_up_service "token-service" "8082" "TOKEN-SERVICE" "/token-service/actuator/health"
+            compose_up_service "message-service" "8084" "MESSAGE-SERVICE" "/message-service/actuator/health"
+            compose_up_service "document-service" "8086" "DOCUMENT-SERVICE" "/document-service/actuator/health"
+            compose_up_service "notification-service" "8088" "NOTIFICATION-SERVICE" "/notification-service/actuator/health"
+            compose_up_service "auth-service" "8085" "AUTH-SERVICE" "/auth-service/actuator/health"
+            compose_up_service "login-service" "8083" "LOGIN-SERVICE" "/login-service/actuator/health"
+            compose_up_service "claim-service" "8087" "CLAIM-SERVICE" "/claim-service/actuator/health"
+            compose_up_service "cloud-service" "8080" "CLOUD-SERVICE" "/actuator/health"
 
             docker compose -f "$COMPOSE_FILE" ps
