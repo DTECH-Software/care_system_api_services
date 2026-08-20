@@ -7,6 +7,7 @@
 
 package com.dtech.document.service.impl;
 
+import com.dtech.document.dto.response.DocumentBinaryDownloadResponseDTO;
 import com.dtech.document.dto.response.DocumentDownloadResponseDTO;
 import com.dtech.document.dto.response.DocumentUploadResponseDTO;
 import com.dtech.document.mapper.EntityToDto.ImageDownloadMapper;
@@ -30,7 +31,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.Locale;
 import java.util.Optional;
 
@@ -78,7 +78,7 @@ public class DocumentServiceImpl implements DocumentService {
 
     @Override
     @Transactional(readOnly = true)
-    public DocumentDownloadResponseDTO download(DocumentDownloadRequestDTO documentDownloadRequestDTO, Locale locale) {
+    public DocumentBinaryDownloadResponseDTO download(DocumentDownloadRequestDTO documentDownloadRequestDTO, Locale locale) {
 
         try {
             log.info("download document from document service {}", documentDownloadRequestDTO);
@@ -86,9 +86,11 @@ public class DocumentServiceImpl implements DocumentService {
             return documentOpt.map(document -> {
                 log.info("Download document found from document service");
                 byte[] bytes = ImageUtils.decodeFromBase64(documentStorageService.getBase64(document));
-                DocumentDownloadResponseDTO downloadResponseDTO = ImageDownloadMapper.imageDownloadMapper(document);
-                downloadResponseDTO.setDoc(Arrays.toString(bytes));
-                return downloadResponseDTO;
+                return new DocumentBinaryDownloadResponseDTO(
+                        bytes,
+                        document.getFileName(),
+                        document.getFileType()
+                );
             }).orElseGet(() -> {
                 log.error("Document not found with ID: " + documentDownloadRequestDTO.getId());
                 return null;

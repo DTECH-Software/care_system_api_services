@@ -7,7 +7,7 @@
 
 package com.dtech.document.controller;
 
-import com.dtech.document.dto.response.DocumentDownloadResponseDTO;
+import com.dtech.document.dto.response.DocumentBinaryDownloadResponseDTO;
 import com.google.gson.Gson;
 import com.dtech.document.dto.request.DocumentDownloadRequestDTO;
 import com.dtech.document.dto.request.DocumentUploadRequestDTO;
@@ -21,7 +21,9 @@ import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import org.springframework.http.MediaTypeFactory;
 import org.springframework.http.ResponseEntity;
+import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -60,25 +62,44 @@ public class DocumentController {
         }
     }
 
-    @PostMapping(path = "/download",produces = MediaType.MULTIPART_FORM_DATA_VALUE,consumes = MediaType.APPLICATION_JSON_VALUE)
+    @PostMapping(path = "/download", consumes = MediaType.APPLICATION_JSON_VALUE)
     @ApiOperation(value = "Handle document download request ",notes = "Document download request success or failed")
     public ResponseEntity<byte[]> download(@RequestBody @Valid DocumentDownloadRequestValidatorDTO documentDownloadRequestValidatorDTO, Locale locale) {
         log.info("Document download request controller {} ", documentDownloadRequestValidatorDTO);
-        DocumentDownloadResponseDTO downloadResponseDTO = documentService.download(gson.fromJson(gson.toJson(documentDownloadRequestValidatorDTO), DocumentDownloadRequestDTO.class), locale);
+        DocumentBinaryDownloadResponseDTO downloadResponseDTO = documentService.download(gson.fromJson(gson.toJson(documentDownloadRequestValidatorDTO), DocumentDownloadRequestDTO.class), locale);
 
         if(downloadResponseDTO !=null) {
-            log.info("Document download request after download success {} ",downloadResponseDTO);
+            log.info("Document download success fileName={} fileType={} size={}",
+                    downloadResponseDTO.getFileName(),
+                    downloadResponseDTO.getFileType(),
+                    downloadResponseDTO.getContent().length);
             HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.parseMediaType(downloadResponseDTO.getFileType()));
+            headers.setContentType(resolveMediaType(downloadResponseDTO.getFileType(), downloadResponseDTO.getFileName()));
             headers.setContentDispositionFormData("attachment", downloadResponseDTO.getFileName());
+            headers.setContentLength(downloadResponseDTO.getContent().length);
 
             return ResponseEntity.ok()
                     .headers(headers)
-                    .body(downloadResponseDTO.getDoc().getBytes());
+                    .body(downloadResponseDTO.getContent());
         }
 
         return ResponseEntity.ok().build();
    }
+
+    static MediaType resolveMediaType(String fileType, String fileName) {
+        if (StringUtils.hasText(fileType)) {
+            try {
+                MediaType parsed = MediaType.parseMediaType(fileType.trim());
+                if (!MediaType.APPLICATION_OCTET_STREAM.equals(parsed)) {
+                    return parsed;
+                }
+            } catch (IllegalArgumentException invalidMediaType) {
+                log.warn("Invalid stored document media type '{}'; inferring from file name", fileType);
+            }
+        }
+        return MediaTypeFactory.getMediaType(fileName)
+                .orElse(MediaType.APPLICATION_OCTET_STREAM);
+    }
 
     @PostMapping(path = "/find",produces = MediaType.APPLICATION_JSON_VALUE,consumes = MediaType.APPLICATION_JSON_VALUE)
     @ApiOperation(value = "Handle document find request ",notes = "Handle document find success or failed")
