@@ -31,6 +31,7 @@ env:
 jobs:
   build:
     name: Build ${{ matrix.service }}
+    if: github.ref == 'refs/heads/production'
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -78,6 +79,7 @@ jobs:
   deploy:
     name: Deploy Care App to production
     needs: build
+    if: github.ref == 'refs/heads/production'
     runs-on: ubuntu-latest
     environment: production
     steps:
