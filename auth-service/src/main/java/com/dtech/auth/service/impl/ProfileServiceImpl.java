@@ -48,6 +48,9 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.time.LocalDate;
+import java.time.Period;
+import java.time.ZoneId;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -151,6 +154,17 @@ public class ProfileServiceImpl implements ProfileService {
                     .map(applicationUser -> {
 
                         for (ClaimDependentDetailsRequestDTO detailsRequestDTO : claimDependentRequestDTO.getDependents()) {
+
+                            if (isParentRelation(detailsRequestDTO.getRelationCategory())
+                                    && !isParentOlderThanEmployee(applicationUser, detailsRequestDTO)) {
+                                log.info("Dependent registration blocked because parent is not older than employee. username={}, relation={}",
+                                        applicationUser.getUsername(), detailsRequestDTO.getRelationCategory());
+                                return ResponseEntity.ok().body(responseUtil.error(null, 1047,
+                                        messageSource.getMessage(
+                                                ResponseMessageUtil.DEPENDENT_PARENT_MUST_BE_OLDER_THAN_EMPLOYEE,
+                                                null,
+                                                locale)));
+                            }
 
                             if (!MaritalStatus.MARRIED.equals(applicationUser.getUserPersonalDetails().getMaritalStatus())) {
                                 if (detailsRequestDTO.getRelationCategory().equalsIgnoreCase(RelationCategory.WIFE.name())
@@ -708,6 +722,31 @@ public class ProfileServiceImpl implements ProfileService {
                 List.of(Workflow.APPROVED, Workflow.UNDER_REVIEW),
                 true
         );
+    }
+
+    private boolean isParentRelation(String relationCategory) {
+        return RelationCategory.MOTHER.name().equalsIgnoreCase(relationCategory)
+                || RelationCategory.FATHER.name().equalsIgnoreCase(relationCategory);
+    }
+
+    private boolean isParentOlderThanEmployee(ApplicationUser applicationUser,
+                                               ClaimDependentDetailsRequestDTO parent) {
+        if (applicationUser == null
+                || applicationUser.getUserPersonalDetails() == null
+                || applicationUser.getUserPersonalDetails().getDob() == null
+                || parent == null
+                || parent.getDob() == null) {
+            return false;
+        }
+        return calculateAge(parent.getDob())
+                > calculateAge(applicationUser.getUserPersonalDetails().getDob());
+    }
+
+    private int calculateAge(Date dateOfBirth) {
+        LocalDate birthDate = dateOfBirth instanceof java.sql.Date sqlDate
+                ? sqlDate.toLocalDate()
+                : dateOfBirth.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
+        return Period.between(birthDate, LocalDate.now()).getYears();
     }
 
     private boolean isValidatedProfileOtp(ApplicationOtpSession session, String otp) {

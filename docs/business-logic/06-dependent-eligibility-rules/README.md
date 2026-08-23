@@ -16,6 +16,7 @@ Dependent records are controlled by employee marital status, employee gender, re
 - Female employees cannot add relation `WIFE`.
 - `HUSBAND`, `FATHER`, `BROTHER`, and `FATHER_IN_LAW` must not be submitted as female dependents.
 - `WIFE`, `MOTHER`, `SISTER`, and `MOTHER_IN_LAW` must not be submitted as male dependents.
+- A submitted `MOTHER` or `FATHER` must be older than the employee. Registration is blocked when the parent's completed age is equal to or less than the employee's completed age.
 
 ## Duplicate Rules
 - `MOTHER` and `FATHER` are blocked when an `APPROVED` or `UNDER_REVIEW` record already exists for the same user and relation.

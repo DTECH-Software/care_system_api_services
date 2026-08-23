@@ -57,6 +57,7 @@ public class ResponseMessageUtil {
     public final static String DEPENDENT_HUSBAND_MARRIED_ROUND_ALREADY_FOUND = "val.dependents.husband.round.already.found";
     public final static String DEPENDENT_FATHER_IN_LAW_MARRIED_ROUND_ALREADY_FOUND = "val.dependents.father.in.law.round.already.found";
     public final static String DEPENDENT_MOTHER_IN_LAW_MARRIED_ROUND_ALREADY_FOUND = "val.dependents.mother.in.law.round.already.found";
+    public final static String DEPENDENT_PARENT_MUST_BE_OLDER_THAN_EMPLOYEE = "val.dependent.parent.must.be.older.than.employee";
     public final static String ALREADY_MARRIED_EMPLOYEE = "val.already.married.employee";
     public final static String UNMARRIED_EMPLOYEE_CANT_DIVORCE = "val.unmarried.employee.cant.divorce";
     public final static String MARITAL_STATUS_REQUEST_PENDING = "val.marital.status.request.pending";
