@@ -15,8 +15,7 @@ import lombok.ToString;
 public class ChannelRequestDTO {
     private String channel;
     private String ip;
+    private String message;
     private String username;
-    private String browser;
-    private String deviceOS;
-    private String deviceModel;
+    private ChannelMbDeviceDetailsDTO deviceDetails;
 }

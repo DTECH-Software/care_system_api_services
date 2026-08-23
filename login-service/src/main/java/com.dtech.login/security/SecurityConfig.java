@@ -7,26 +7,30 @@
 
 package com.dtech.login.security;
 
+import lombok.extern.log4j.Log4j2;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.web.SecurityFilterChain;
 
 @Configuration
 @EnableWebSecurity
+@Log4j2
 public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+        log.info("Security filter chain {}",http);
         http
-                .authorizeRequests()
-                .requestMatchers("/api/v1/login/login","/api/v1/password/reset")
-                .permitAll()
-                .anyRequest().authenticated();
-
-        http.csrf().disable();
+                .authorizeHttpRequests(auth -> auth
+                        .requestMatchers("/api/v1/login/**", "/api/v1/password/**")
+                        .permitAll()
+                        .anyRequest().authenticated()
+                )
+                .csrf(AbstractHttpConfigurer::disable);
         return http.build();
-
     }
+
 }

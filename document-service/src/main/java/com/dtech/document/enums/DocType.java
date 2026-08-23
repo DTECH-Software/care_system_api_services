@@ -1,0 +1,5 @@
+package com.dtech.document.enums;
+
+public enum DocType {
+    BIRTH,MARRIED,PROFILE, DIAGNOSIS_CARD,TREATMENT_BILL,DEATH_CERTIFICATE
+}

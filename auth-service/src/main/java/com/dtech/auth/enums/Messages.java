@@ -1,0 +1,13 @@
+/**
+ * User: Himal_J
+ * Date: 2/21/2025
+ * Time: 9:21 AM
+ * <p>
+ */
+
+package com.dtech.auth.enums;
+
+public enum Messages {
+   SIGNUP_INQUIRY,SIGNUP_OTP_REQUEST,SIGNUP_OTP_VALIDATION,SIGNUP, //Signup controller
+   DASHBOARD,PROFILE_DETAILS,ADD_DEPENDENT,DETAILS_DEPENDENT,PROFILE_IMAGE_UPDATE,PROFILE_DETAILS_UPDATE,PROFILE_UPDATE,SPLASH //Profile controller
+}

@@ -18,7 +18,7 @@ public class MessageConfig {
     @Bean
     public MessageSource messageSource() {
         ReloadableResourceBundleMessageSource messageSource = new ReloadableResourceBundleMessageSource();
-        messageSource.setBasenames("classpath:messages/response", "classpath:messages/validators");
+        messageSource.setBasenames("classpath:messages/response");
         messageSource.setCacheSeconds(10);
         return messageSource;
     }

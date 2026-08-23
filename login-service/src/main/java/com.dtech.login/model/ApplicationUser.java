@@ -9,17 +9,21 @@ package com.dtech.login.model;
 
 import com.dtech.login.enums.Channel;
 import com.dtech.login.enums.Status;
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.Setter;
 
 import java.io.Serializable;
 import java.util.Date;
 
-@EqualsAndHashCode(callSuper = true)
 @Entity
 @Table(name = "application_user")
-@Data
+@Getter
+@Setter
 public class ApplicationUser extends Audit implements Serializable {
 
     private static final long serialVersionUID = 1L;
@@ -42,32 +46,42 @@ public class ApplicationUser extends Audit implements Serializable {
     @Column(name = "primary_mobile",unique = true,nullable = false)
     private String primaryMobile;
 
-    @Column(name = "user_status",nullable = false)
-    @Enumerated(EnumType.STRING)
-    private Status userStatus;
-
     @Column(name = "login_status",nullable = false)
     @Enumerated(EnumType.STRING)
     private Status loginStatus;
 
     @Column(name = "is_reset",nullable = false)
-    private int isReset;
+    private boolean isReset;
 
     @Column(name = "user_key",nullable = false,updatable = false)
     @Lob
     private String userKey;
 
-    @Column(name = "last_logged_channel",nullable = false)
+    @Column(name = "last_logged_channel")
     @Enumerated(EnumType.STRING)
     private Channel lastLoggedChannel;
 
-    @Column(name = "last_password_change_date",nullable = false)
+    @Column(name = "last_password_change_date")
     @Temporal(TemporalType.TIMESTAMP)
     private Date lastPasswordChangeDate;
 
-    @Column(name = "last_logged_date",nullable = false)
+    @Column(name = "last_logged_date")
     @Temporal(TemporalType.TIMESTAMP)
     private Date lastLoggedDate;
+
+    @Column(name = "mb_last_logged_date")
+    @Temporal(TemporalType.TIMESTAMP)
+    private Date mbLastLoggedDate;
+
+    @Column(name = "op_last_logged_date")
+    @Temporal(TemporalType.TIMESTAMP)
+    private Date opLastLoggedDate;
+
+    @Column(name = "expecting_first_time_loging",nullable = false)
+    private boolean expectingFirstTimeLogging;
+
+    @Column(name = "expecting_dependents_register",nullable = false)
+    private boolean expectingDependentsRegister;
 
     @Column(name = "password_expired_date",nullable = false)
     @Temporal(TemporalType.TIMESTAMP)
@@ -75,5 +89,53 @@ public class ApplicationUser extends Audit implements Serializable {
 
     @Column(name = "attempt_count",nullable = false)
     private int attemptCount;
+
+    @Column(name = "otp_attempt_count")
+    private int otpAttemptCount;
+
+    @OneToOne(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JoinColumn(name = "otp_session",referencedColumnName = "id")
+    @JsonManagedReference
+    private ApplicationOtpSession applicationOtpSession;
+
+    @Column(name = "otp_attempt_reset_time")
+    @Temporal(TemporalType.TIMESTAMP)
+    private Date otpAttemptResetTime;
+
+    @ManyToOne(fetch = FetchType.LAZY,cascade = CascadeType.ALL)
+    @JoinColumn(name = "device_id",referencedColumnName = "id")
+    @JsonBackReference
+    private ApplicationUserDeviceDetails applicationUserDeviceDetails;
+
+    @OneToOne(fetch = FetchType.LAZY,cascade = CascadeType.ALL)
+    @JoinColumn(name = "user_personal_details",referencedColumnName = "id")
+    @JsonBackReference
+    private UserPersonalDetails userPersonalDetails;
+
+    @Override
+    public String toString() {
+        return "ApplicationUser [id=" + id +
+                ", username=" + username +
+                ", password=" + (password != null ? "[PROTECTED]" : null) +
+                ", primaryEmail=" + primaryEmail +
+                ", primaryMobile=" + primaryMobile +
+                ", loginStatus=" + loginStatus +
+                ", isReset=" + isReset +
+                ", userKey=" + (userKey != null ? "[PROTECTED]" : null) +
+                ", lastLoggedChannel=" + lastLoggedChannel +
+                ", lastPasswordChangeDate=" + lastPasswordChangeDate +
+                ", lastLoggedDate=" + lastLoggedDate +
+                ", mbLastLoggedDate=" + mbLastLoggedDate +
+                ", opLastLoggedDate=" + opLastLoggedDate +
+                ", expectingFirstTimeLogging=" + expectingFirstTimeLogging +
+                ", expectingDependentsRegister=" + expectingDependentsRegister +
+                ", passwordExpiredDate=" + passwordExpiredDate +
+                ", attemptCount=" + attemptCount +
+                ", otpAttemptCount=" + otpAttemptCount +
+                ", otpAttemptResetTime=" + otpAttemptResetTime +
+                ", applicationOtpSessionId=" + (applicationOtpSession != null ? applicationOtpSession.getId() : null) +
+                ", applicationUserDeviceDetailsId=" + (applicationUserDeviceDetails != null ? applicationUserDeviceDetails.getId() : null) +
+                ", userPersonalDetailsId=" + (userPersonalDetails != null ? userPersonalDetails.getId() : null) + "]";
+    }
 
 }

@@ -7,14 +7,16 @@
 
 package com.dtech.token.dto.request;
 
+
 import lombok.Data;
+import lombok.ToString;
 
 @Data
+@ToString
 public class ChannelRequestDTO {
     private String channel;
     private String ip;
+    private String message;
     private String username;
-    private String browser;
-    private String deviceOS;
-    private String deviceModel;
+    private ChannelMbDeviceDetailsDTO deviceDetails;
 }

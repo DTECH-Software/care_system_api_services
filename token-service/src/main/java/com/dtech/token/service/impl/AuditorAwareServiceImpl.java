@@ -7,16 +7,16 @@ import org.springframework.stereotype.Component;
 
 import java.util.Optional;
 
-@Component("auditorAwareService")
-public class AuditorAwareServiceImpl implements AuditorAware<String> {
-
-    @Autowired
-    private HttpServletRequest request;
-
-    @Override
-    public Optional<String> getCurrentAuditor() {
-        String username = request.getHeader("username");
-        return Optional.ofNullable(username);
-    }
-
-}
+//@Component("auditorAwareService")
+//public class AuditorAwareServiceImpl implements AuditorAware<String> {
+//
+//    @Autowired
+//    private HttpServletRequest request;
+//
+//    @Override
+//    public Optional<String> getCurrentAuditor() {
+//        String username = request.getHeader("username");
+//        return Optional.ofNullable(username);
+//    }
+//
+//}

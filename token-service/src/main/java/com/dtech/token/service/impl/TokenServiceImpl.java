@@ -9,6 +9,7 @@ package com.dtech.token.service.impl;
 
 import com.dtech.token.dto.request.ChannelRequestDTO;
 import com.dtech.token.dto.response.ApiResponse;
+import com.dtech.token.dto.response.TokenValidResponseDTO;
 import com.dtech.token.enums.Status;
 import com.dtech.token.model.ApplicationUser;
 import com.dtech.token.repository.ApplicationUserRepository;
@@ -51,6 +52,7 @@ public class TokenServiceImpl implements TokenService {
     private final MessageSource messageSource;
 
     @Override
+    @Transactional(readOnly = true)
     public ResponseEntity<ApiResponse<Object>> getToken(ChannelRequestDTO channelRequestDTO, Locale locale) {
         try {
             log.info("get token {}", channelRequestDTO.getUsername());
@@ -60,7 +62,7 @@ public class TokenServiceImpl implements TokenService {
 
             if (userOptional.isPresent()) {
                 ApplicationUser user = userOptional.get();
-                String token = jwtUtil.generateToken(channelRequestDTO.getUsername());
+                String token = jwtUtil.generateToken(user.getUsername());
                 log.info("Generated token: {}", token);
 
                 return ResponseEntity.ok().body(
@@ -94,7 +96,7 @@ public class TokenServiceImpl implements TokenService {
         try {
             log.info("validate token {}", token);
             AtomicBoolean isValid = new AtomicBoolean(false);
-            applicationUserSessionRepository.findByToken(token)
+            applicationUserSessionRepository.findByTokenAndStatus(token,Status.ACTIVE)
                     .ifPresent(applicationUserSession -> {
                         log.info("validate token present {}", token);
                         isValid.set(jwtUtil.validateToken(token));
@@ -105,8 +107,7 @@ public class TokenServiceImpl implements TokenService {
                             log.info("validate token fail session update success {}", token);
                         }
                     });
-
-            return ResponseEntity.ok().body(responseUtil.success(Map.of("isValid", isValid), messageSource.getMessage(ResponseMessageUtil.TOKEN_VALIDATE_SUCCESS, null, locale)));
+            return ResponseEntity.ok().body(responseUtil.success(new TokenValidResponseDTO(isValid.get()), messageSource.getMessage(ResponseMessageUtil.TOKEN_VALIDATE_SUCCESS, null, locale)));
         } catch (Exception e) {
             log.error(e);
             throw e;

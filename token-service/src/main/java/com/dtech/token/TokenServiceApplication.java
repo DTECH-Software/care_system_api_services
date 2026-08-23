@@ -7,7 +7,7 @@ import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
 
 @SpringBootApplication
 @EnableDiscoveryClient
-@EnableJpaAuditing(auditorAwareRef = "auditorAwareService")
+@EnableJpaAuditing //(auditorAwareRef = "auditorAwareService")
 public class TokenServiceApplication {
 
 	public static void main(String[] args) {

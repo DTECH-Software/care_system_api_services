@@ -9,16 +9,22 @@ package com.dtech.login.service.impl;
 
 import com.dtech.login.dto.request.ChannelRequestDTO;
 import com.dtech.login.dto.request.LoginRequestDTO;
+import com.dtech.login.dto.request.ChannelMbDeviceDetailsDTO;
 import com.dtech.login.dto.response.AccessTokenResponseDTO;
 import com.dtech.login.dto.response.ApiResponse;
+import com.dtech.login.dto.response.ApplicationUserDetailsResponseDTO;
 import com.dtech.login.enums.Channel;
+import com.dtech.login.enums.Messages;
 import com.dtech.login.enums.Status;
+import com.dtech.login.feign.AuthFeignClient;
 import com.dtech.login.feign.TokenFeignClient;
 import com.dtech.login.mapper.CommonRequestMapper;
 import com.dtech.login.model.ApplicationPasswordPolicy;
 import com.dtech.login.model.ApplicationUser;
+import com.dtech.login.model.ApplicationUserDeviceDetails;
 import com.dtech.login.model.ApplicationUserSession;
 import com.dtech.login.repository.ApplicationPasswordPolicyRepository;
+import com.dtech.login.repository.ApplicationUserDeviceDetailsRepository;
 import com.dtech.login.repository.ApplicationUserRepository;
 import com.dtech.login.repository.ApplicationUserSessionRepository;
 import com.dtech.login.service.LoginService;
@@ -27,6 +33,7 @@ import com.google.gson.Gson;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 
+import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.MessageSource;
 import org.springframework.http.HttpStatus;
@@ -36,6 +43,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.security.NoSuchAlgorithmException;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Optional;
 
 
@@ -51,9 +59,6 @@ public class LoginServiceImpl implements LoginService {
     private final ResponseUtil responseUtil;
 
     @Autowired
-    private final TokenFeignClient tokenFeignClient;
-
-    @Autowired
     private final ApplicationUserSessionRepository applicationUserSessionRepository;
 
     @Autowired
@@ -65,17 +70,35 @@ public class LoginServiceImpl implements LoginService {
     @Autowired
     private final ApplicationPasswordPolicyRepository applicationPasswordPolicyRepository;
 
+    @Autowired
+    private final TokenFeignClient tokenFeignClient;
+
+    @Autowired
+    private final ApplicationUserDeviceDetailsRepository applicationUserDeviceDetailsRepository;
+
+    @Autowired
+    private final AuthFeignClient authFeignClient;
+
+    @Autowired
+    private final ModelMapper modelMapper;
 
     @Override
     @Transactional
-    public ResponseEntity<ApiResponse<Object>> loginRequest(LoginRequestDTO loginRequestDTO, Locale locale) {
+    public ResponseEntity<ApiResponse<Object>> logIn(LoginRequestDTO loginRequestDTO, Locale locale) {
 
         try {
             log.info("Processing login request username:-{} password:-{} ", loginRequestDTO.getUsername(), loginRequestDTO.getPassword());
             String username = loginRequestDTO.getUsername().trim();
             String password = loginRequestDTO.getPassword().trim();
 
-            return applicationUserRepository.findByUsername(username).map(user -> {
+            Optional<ApplicationUser> optionalUser = applicationUserRepository.findByUsernameAndUserPersonalDetails_UserStatus(username, Status.ACTIVE);
+
+            if (optionalUser.isEmpty()) {
+                log.info("Login request find by email {} ", username);
+                optionalUser = applicationUserRepository.findByPrimaryEmailIgnoreCaseAndUserPersonalDetails_UserStatus(username,Status.ACTIVE);
+                loginRequestDTO.setUsername(optionalUser.isEmpty() ? "" : optionalUser.get().getUsername());
+            }
+            return optionalUser.map(user -> {
 
                 String hashPasswordRequest = "";
                 try {
@@ -85,6 +108,11 @@ public class LoginServiceImpl implements LoginService {
                 }
                 log.info("password decoder:-{}", hashPasswordRequest);
                 if (user.getPassword().equals(hashPasswordRequest)) {
+
+                    if(user.isReset() || user.getLoginStatus() == Status.INACTIVE) {
+                        log.info("user is reset state or inactive {}",user.getUsername());
+                        return ResponseEntity.ok().body(responseUtil.error(null, 1004, messageSource.getMessage(ResponseMessageUtil.LOGIN_STATUS_INACTIVE_OR_EXPECTED_RESET, null, locale)));
+                    }
 
                     Optional<Integer> passwordPolicyAttemptCount = getPasswordPolicyAttemptCount();
                     if (user.getPasswordExpiredDate().before(DateTimeUtil.getCurrentDateTime())) {
@@ -104,9 +132,13 @@ public class LoginServiceImpl implements LoginService {
                     log.info("After token mapper response {}", objectApiResponse);
                     updateSuccessLogin(user, loginRequestDTO);
                     log.info("After successful update application user");
-                    updateUserSession(user, gson.fromJson(gson.toJson(objectApiResponse), AccessTokenResponseDTO.class));
+                    AccessTokenResponseDTO accessTokenResponseDTO = gson.fromJson(gson.toJson(objectApiResponse), AccessTokenResponseDTO.class);
+                    updateUserSession(user,accessTokenResponseDTO );
                     log.info("After successful update application user session");
-                    return ResponseEntity.ok().body(responseUtil.success(objectApiResponse, messageSource.getMessage(ResponseMessageUtil.AUTHENTICATION_SUCCESS, null, locale)));
+                    ApplicationUserDetailsResponseDTO userProfileDetails = getUserProfileDetails(loginRequestDTO.getUsername(), loginRequestDTO);
+                    userProfileDetails.setAccessToken(accessTokenResponseDTO.getAccessToken());
+                    updateApplicationUserDetails(user);
+                    return ResponseEntity.ok().body(responseUtil.success((Object) userProfileDetails, messageSource.getMessage(ResponseMessageUtil.AUTHENTICATION_SUCCESS, null, locale)));
 
                 } else {
                     log.info("Processing login request password mismatch for username {} ", loginRequestDTO.getUsername());
@@ -123,8 +155,57 @@ public class LoginServiceImpl implements LoginService {
             throw e;
         }
     }
+    @Transactional
+    protected void updateApplicationUserDetails(ApplicationUser applicationUser) {
+        try {
+            log.info("User profile request update user details {} ", applicationUser);
+            applicationUser.setExpectingFirstTimeLogging(false);
+            applicationUserRepository.saveAndFlush(applicationUser);
+        } catch (Exception e) {
+            log.error(e);
+            throw e;
+        }
+    }
+    @Transactional
+    protected ApplicationUserDetailsResponseDTO getUserProfileDetails(String username,LoginRequestDTO loginRequestDTO) {
+        try {
+           log.info("get user profile details by username login time{}", username);
+            ChannelRequestDTO channelRequestDTO= CommonRequestMapper.mapCommonRequest(loginRequestDTO, ChannelRequestDTO.class);
+            channelRequestDTO.setUsername(username);
+            channelRequestDTO.setMessage(Messages.PROFILE_DETAILS.name());
+            log.info("Before calling auth service {}", authFeignClient);
+            ResponseEntity<ApiResponse<Object>> profileDetailsResponse = authFeignClient.getProfileDetails(channelRequestDTO);
+            log.info("After response auth service {}", profileDetailsResponse);
+            Object objectApiResponse = ExtractApiResponseUtil.extractApiResponse(profileDetailsResponse);
+            log.info("After message mapper response {}", objectApiResponse);
+            ApplicationUserDetailsResponseDTO applicationUserDetailsResponseDTO = modelMapper.map(objectApiResponse, ApplicationUserDetailsResponseDTO.class);
+            log.info("Profile load status {}", applicationUserDetailsResponseDTO);
+            return applicationUserDetailsResponseDTO;
+        }catch (Exception e) {
+            log.error(e);
+            throw e;
+        }
+    }
 
-    @org.springframework.transaction.annotation.Transactional(readOnly = true)
+    @Transactional
+    protected ApplicationUserDeviceDetails updateUserDeviceDetails(ChannelMbDeviceDetailsDTO channelMbDeviceDetailsDTO) {
+        try {
+            log.info("Update use login device details ");
+            ApplicationUserDeviceDetails applicationUserDeviceDetails = new ApplicationUserDeviceDetails();
+            applicationUserDeviceDetails.setDeviceId(channelMbDeviceDetailsDTO.getDeviceId());
+            applicationUserDeviceDetails.setDeviceModel(channelMbDeviceDetailsDTO.getDeviceModel());
+            applicationUserDeviceDetails.setDeviceOS(channelMbDeviceDetailsDTO.getDeviceOS());
+            applicationUserDeviceDetails.setDeviceName(channelMbDeviceDetailsDTO.getDeviceName());
+            applicationUserDeviceDetails.setLongitude(channelMbDeviceDetailsDTO.getLongitude());
+            applicationUserDeviceDetails.setLatitude(channelMbDeviceDetailsDTO.getLatitude());
+            return applicationUserDeviceDetailsRepository.saveAndFlush(applicationUserDeviceDetails);
+        } catch (Exception e) {
+            log.error(e);
+            throw e;
+        }
+    }
+
+    @Transactional(readOnly = true)
     protected Optional<Integer> getPasswordPolicyAttemptCount() {
         try {
             log.info("Processing password policy attemptCount ");
@@ -142,6 +223,13 @@ public class LoginServiceImpl implements LoginService {
             applicationUser.setLoginStatus(Status.ACTIVE);
             applicationUser.setLastLoggedChannel(Channel.valueOf(loginRequestDTO.getChannel()));
             applicationUser.setLastLoggedDate(DateTimeUtil.getCurrentDateTime());
+            if (loginRequestDTO.getChannel().equals(Channel.MB.name())) {
+                applicationUser.setMbLastLoggedDate(DateTimeUtil.getCurrentDateTime());
+                ApplicationUserDeviceDetails applicationUserDeviceDetails = updateUserDeviceDetails(loginRequestDTO.getDeviceDetails());
+                applicationUser.setApplicationUserDeviceDetails(applicationUserDeviceDetails);
+            } else {
+                applicationUser.setOpLastLoggedDate(DateTimeUtil.getCurrentDateTime());
+            }
             applicationUser.setPasswordExpiredDate(DateTimeUtil.get30FutureDate());
             applicationUser.setAttemptCount(0);
             applicationUserRepository.saveAndFlush(applicationUser);
@@ -162,6 +250,7 @@ public class LoginServiceImpl implements LoginService {
                 log.info("Processing wrong login request username {} attempt {} login status {} ", applicationUser.getUsername()
                         , applicationUser.getAttemptCount(), applicationUser.getLoginStatus());
                 applicationUser.setLoginStatus(Status.INACTIVE);
+                applicationUser.setReset(true);
             }
             applicationUser.setAttemptCount(applicationUser.getAttemptCount() + 1);
             applicationUserRepository.saveAndFlush(applicationUser);
@@ -178,7 +267,7 @@ public class LoginServiceImpl implements LoginService {
             log.info("Processing update password login request  username {} attempt {} ",
                     applicationUser.getUsername(), applicationUser.getAttemptCount());
             applicationUser.setLoginStatus(Status.INACTIVE);
-            applicationUser.setIsReset(1);
+            applicationUser.setReset(true);
             applicationUserRepository.saveAndFlush(applicationUser);
             log.info("After update password login request update data username {}", applicationUser.getUsername());
         } catch (Exception e) {
@@ -205,4 +294,28 @@ public class LoginServiceImpl implements LoginService {
         }
     }
 
+    @Override
+    @Transactional
+    public ResponseEntity<ApiResponse<Object>> logOut(ChannelRequestDTO channelRequestDTO, Locale locale) {
+        try {
+            log.info("User logout action {} ", channelRequestDTO.getUsername());
+
+            ApplicationUser applicationUser = applicationUserRepository.
+                    findByUsername(channelRequestDTO.getUsername().trim()).orElse(null);
+
+            if(applicationUser != null) {
+                log.info("Inside logout user {} ",applicationUser.getUsername());
+                ApplicationUserSession applicationUserSession = applicationUserSessionRepository.
+                        findByApplicationUserAndStatus(applicationUser,Status.ACTIVE).orElse(null);
+                if(applicationUserSession != null) {
+                    log.info("Found token session inactive {}", applicationUserSession.getId());
+                    applicationUserSession.setStatus(Status.INACTIVE);
+                }
+            }
+            return ResponseEntity.ok().body(responseUtil.success(null, messageSource.getMessage(ResponseMessageUtil.LOGOUT_SUCCESS, null, locale)));
+        }catch (Exception e) {
+            log.error(e);
+            throw e;
+        }
+    }
 }

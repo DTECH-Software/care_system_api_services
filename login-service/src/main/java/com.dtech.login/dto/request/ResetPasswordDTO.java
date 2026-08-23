@@ -13,6 +13,6 @@ import lombok.EqualsAndHashCode;
 @EqualsAndHashCode(callSuper = true)
 @Data
 public class ResetPasswordDTO extends ChannelRequestDTO {
-    private String newPassword;
+    private String password;
     private String confirmPassword;
 }

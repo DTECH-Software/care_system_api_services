@@ -17,29 +17,28 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.Locale;
 
 @RestController
 @RequestMapping(path = "api/v1/password")
 @Log4j2
-@RequiredArgsConstructor(onConstructor = @__(@Autowired))
+@RequiredArgsConstructor
 public class ResetPasswordController {
+
     @Autowired
     public final ResetPasswordService resetPasswordService;
 
     @Autowired
     public final Gson gson;
 
-    @PostMapping(path = "/reset")
+    @PostMapping(path = "/reset",produces = MediaType.APPLICATION_JSON_VALUE,consumes = MediaType.APPLICATION_JSON_VALUE)
     @ApiOperation(value = "Handle password request request ",notes = "Password reset request success or failed")
     public ResponseEntity<ApiResponse<Object>> resetPassword(@RequestBody @Valid ResetPasswordValidatorDTO resetPasswordValidatorDTO, Locale locale) {
-        log.info("Password reset request login controller {} ", resetPasswordValidatorDTO);
+        log.info("Password reset request controller {} ", resetPasswordValidatorDTO);
         return resetPasswordService.resetPassword(gson.fromJson(gson.toJson(resetPasswordValidatorDTO), ResetPasswordDTO.class), locale);
     }
 

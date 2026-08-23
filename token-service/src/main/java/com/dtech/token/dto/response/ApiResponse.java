@@ -22,10 +22,10 @@ import java.util.List;
 @AllArgsConstructor
 @NoArgsConstructor
 public class ApiResponse<T> {
-    boolean success;
-    String message;
-    T data;
-    List<String> errors;
+    private boolean success;
+    private String message;
+    private T data;
+    private List<String> errors;
     private int errorCode;
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime responseTime;

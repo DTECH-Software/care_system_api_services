@@ -7,6 +7,7 @@
 
 package com.dtech.login.repository;
 
+import com.dtech.login.enums.Status;
 import com.dtech.login.model.ApplicationUser;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
@@ -16,6 +17,11 @@ import java.util.Optional;
 @Repository
 public interface ApplicationUserRepository extends JpaRepository<ApplicationUser, Long> {
 
+//    Optional<ApplicationUser> findByUsername(String username);
+//    Optional<ApplicationUser> findByPrimaryEmail(String email);
+
+    Optional<ApplicationUser> findByUsernameAndUserPersonalDetails_UserStatus(String username, Status status);
     Optional<ApplicationUser> findByUsername(String username);
+    Optional<ApplicationUser> findByPrimaryEmailIgnoreCaseAndUserPersonalDetails_UserStatus(String email, Status status);
 
 }

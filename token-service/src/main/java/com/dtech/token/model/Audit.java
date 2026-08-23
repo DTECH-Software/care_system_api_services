@@ -35,12 +35,12 @@ public class Audit implements Serializable {
     @Column(name = "last_modified_date",nullable = false)
     private Date lastModifiedDate;
 
-    @CreatedBy
-    @Column(name = "created_user",updatable = false, nullable = false)
-    private String createdBy;
-
-    @LastModifiedBy
-    @Column(name = "last_modified_user",nullable = false)
-    private String lastModifiedBy;
+//    @CreatedBy
+//    @Column(name = "created_user",updatable = false, nullable = false)
+//    private String createdBy;
+//
+//    @LastModifiedBy
+//    @Column(name = "last_modified_user",nullable = false)
+//    private String lastModifiedBy;
 
 }

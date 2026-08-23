@@ -8,33 +8,35 @@
 package com.dtech.login.service.impl;
 
 
+import com.dtech.login.dto.request.MessageRequestDTO;
 import com.dtech.login.dto.request.ResetPasswordDTO;
 import com.dtech.login.dto.response.ApiResponse;
+import com.dtech.login.dto.response.MessageResponseDTO;
+import com.dtech.login.dto.response.PolicyResponseDTO;
+import com.dtech.login.enums.NotificationsType;
 import com.dtech.login.enums.Status;
+import com.dtech.login.feign.MessageFeignClient;
+import com.dtech.login.model.ApplicationOtpSession;
 import com.dtech.login.model.ApplicationPasswordHistory;
 import com.dtech.login.model.ApplicationUser;
-import com.dtech.login.repository.ApplicationPasswordHistoryRepository;
-import com.dtech.login.repository.ApplicationPasswordPolicyRepository;
-import com.dtech.login.repository.ApplicationUserRepository;
+import com.dtech.login.repository.*;
 import com.dtech.login.service.ResetPasswordService;
-import com.dtech.login.util.DateTimeUtil;
-import com.dtech.login.util.PasswordUtil;
-import com.dtech.login.util.ResponseMessageUtil;
-import com.dtech.login.util.ResponseUtil;
+import com.dtech.login.util.*;
+import com.google.gson.Gson;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.MessageSource;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.security.NoSuchAlgorithmException;
-import java.util.List;
-import java.util.Locale;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.util.*;
+
 
 @Service
 @RequiredArgsConstructor
@@ -56,21 +58,102 @@ public class ResetPasswordServiceImpl implements ResetPasswordService {
     @Autowired
     private final ResponseUtil responseUtil;
 
+    @Autowired
+    private final MessageFeignClient messageFeignClient;
+
+    @Autowired
+    private final ApplicationOtpSessionRepository applicationOtpSessionRepository;
+
+    @Autowired
+    private final Gson gson;
+
+    @Transactional
+    protected ResponseEntity<ApiResponse<Object>> sendMessage(ApplicationUser applicationUser, Locale locale, int otpExceedCount, PolicyResponseDTO passwordPolicy) {
+        try {
+            log.info("Processing reset password request gen otp {} ", applicationUser.getUsername());
+            String otp = RandomGeneratorUtil.getRandom6DigitNumber();
+            log.info("Generate otp {} ", otp);
+            MessageRequestDTO messageRequestDTO = new MessageRequestDTO();
+            messageRequestDTO.setValue(otp);
+            messageRequestDTO.setMobileNo(applicationUser.getPrimaryMobile());
+            messageRequestDTO.setType(NotificationsType.OTP.name());
+            log.info("Before calling message service {}", messageFeignClient);
+            ResponseEntity<ApiResponse<Object>> messageResponse = messageFeignClient.sendMessage(messageRequestDTO);
+            log.info("After response message service {}", messageResponse);
+            Object objectApiResponse = ExtractApiResponseUtil.extractApiResponse(messageResponse);
+            log.info("After message mapper response {}", objectApiResponse);
+            MessageResponseDTO messageResponseDTO = gson.fromJson(gson.toJson(objectApiResponse), MessageResponseDTO.class);
+            log.info("Otp send status {}", messageResponseDTO);
+            ApplicationOtpSession applicationOtpSession = updateOtpSession(otp, messageResponseDTO != null ? messageResponseDTO.isSuccess() : false);
+            updateApplicationUser(applicationUser, applicationOtpSession);
+            log.info("Application OTP session updated successfully");
+            if(objectApiResponse != null) {
+                return ResponseEntity.ok().body(responseUtil.success(Map.of("otpRequestAttempt", otpExceedCount,"passwordPolicy",passwordPolicy), messageSource.getMessage(ResponseMessageUtil.APPLICATION_USER_OTP_SEND_SUCCESS, null, locale)));
+            }
+            return ResponseEntity.ok().body(responseUtil.error(null, 1019, messageSource.getMessage(ResponseMessageUtil.OTP_SEND_FAILED, null, locale)));
+        } catch (Exception e) {
+            log.error(e);
+            throw e;
+        }
+    }
+
+    @Transactional
+    protected ApplicationOtpSession updateOtpSession(String otp, boolean state) {
+        try {
+            log.info("Processing reset password request gen otp application otp session update {} ", otp);
+            ApplicationOtpSession applicationOtpSession = new ApplicationOtpSession();
+            applicationOtpSession.setOtp(otp);
+            applicationOtpSession.setSuccess(state);
+            ApplicationOtpSession otpSession = applicationOtpSessionRepository.saveAndFlush(applicationOtpSession);
+            log.info("Reset password request otp session update {} ", otpSession);
+            return otpSession;
+        } catch (Exception e) {
+            log.error(e);
+            throw e;
+        }
+    }
+
+    @Transactional
+    protected void updateApplicationUser(ApplicationUser applicationUser, ApplicationOtpSession applicationOtpSession) {
+        try {
+            log.info("Rest password opt request update application user {}", applicationUser);
+            applicationUser.setApplicationOtpSession(applicationOtpSession);
+            applicationUser.setOtpAttemptCount(applicationUser.getOtpAttemptCount() + 1);
+            applicationUser.setOtpAttemptResetTime(DateTimeUtil.getCurrentDateTime());
+            applicationUserRepository.saveAndFlush(applicationUser);
+        } catch (Exception e) {
+            log.error(e);
+            throw e;
+        }
+    }
+
+
     @Override
     @Transactional
     public ResponseEntity<ApiResponse<Object>> resetPassword(ResetPasswordDTO resetPasswordDTO, Locale locale) {
 
         try {
             log.info("processing reset password request {}", resetPasswordDTO);
-            String username = resetPasswordDTO.getUsername();
-            String password = resetPasswordDTO.getConfirmPassword();
+            String username = resetPasswordDTO.getUsername().trim();
+            String password = resetPasswordDTO.getConfirmPassword().trim();
 
-            return applicationUserRepository.findByUsername(username).map(user -> {
+            Optional<ApplicationUser> optionalUser = applicationUserRepository.
+                    findByUsernameAndUserPersonalDetails_UserStatus(username,Status.ACTIVE);
+
+            if (optionalUser.isEmpty()) {
+                log.info("Reset password find by email {} ", username);
+                optionalUser = applicationUserRepository.
+                        findByPrimaryEmailIgnoreCaseAndUserPersonalDetails_UserStatus(username,Status.ACTIVE);
+                resetPasswordDTO.setUsername(optionalUser.isEmpty() ? "" : optionalUser.get().getUsername());
+            }
+
+            return optionalUser.map(user -> {
                 String hashPassword = "";
                 try {
                     log.info("processing reset password hash {}", password);
                     hashPassword = PasswordUtil.passwordEncoder(user.getUserKey(), password);
                 } catch (NoSuchAlgorithmException e) {
+                    log.error(e);
                     throw new RuntimeException(e);
                 }
                 String message = validAlignCurrentPasswordPolicy(password, user, hashPassword);
@@ -81,10 +164,10 @@ public class ResetPasswordServiceImpl implements ResetPasswordService {
                     log.info("password reset successfully completed {} {}", password, username);
                     return ResponseEntity.ok().body(responseUtil.success(null, messageSource.getMessage(ResponseMessageUtil.PASSWORD_RESET_SUCCESS, null, locale)));
                 }
-                return ResponseEntity.ok().body(responseUtil.error(null, 1007, messageSource.getMessage(message, null, locale)));
+                return ResponseEntity.ok().body(responseUtil.error(null, 1007, message));
             }).orElseGet(() -> {
                 log.info("Processing reset password request user not found for username {} ", resetPasswordDTO.getUsername());
-                return ResponseEntity.ok().body(responseUtil.error(null, 1008, messageSource.getMessage(ResponseMessageUtil.USERNAME_PASSWORD_INVALID, null, locale)));
+                return ResponseEntity.ok().body(responseUtil.error(null, 1014, messageSource.getMessage(ResponseMessageUtil.APPLICATION_USER_NOT_FOUND, null, locale)));
             });
         } catch (Exception e) {
             log.error(e);
@@ -99,7 +182,7 @@ public class ResetPasswordServiceImpl implements ResetPasswordService {
             log.info("Reset password align with current password policy {}", password);
             return applicationPasswordPolicyRepository.findPasswordPolicy()
                     .map(policy -> {
-                        int charCount = PasswordUtil.getCharCount(password);
+                        int charCount = StringUtil.getCharCount(password);
                         // max length check
                         if (charCount > policy.getMaxLength()) {
                             log.info("Reset password invalid max length validation {}", password);
@@ -112,28 +195,28 @@ public class ResetPasswordServiceImpl implements ResetPasswordService {
                             return messageSource.getMessage("val.min.length.invalid", new Object[]{policy.getMinLength()}, null);
                         }
 
-                        int upperCount = PasswordUtil.countCharsByConditions(password, Character::isUpperCase);
+                        int upperCount = StringUtil.countCharsByConditions(password, Character::isUpperCase);
                         // upper count check
                         if (upperCount < policy.getMinUpperCase()) {
                             log.info("Reset password invalid upper case validation {}", password);
                             return messageSource.getMessage("val.upper.length.invalid", new Object[]{policy.getMinUpperCase()}, null);
                         }
 
-                        int lowerCount = PasswordUtil.countCharsByConditions(password, Character::isLowerCase);
+                        int lowerCount = StringUtil.countCharsByConditions(password, Character::isLowerCase);
                         // lower count check
                         if (lowerCount < policy.getMinLowerCase()) {
                             log.info("Reset password invalid lower case validation {}", password);
                             return messageSource.getMessage("val.lower.length.invalid", new Object[]{policy.getMinLowerCase()}, null);
                         }
 
-                        int digitCount = PasswordUtil.countCharsByConditions(password, Character::isDigit);
+                        int digitCount = StringUtil.countCharsByConditions(password, Character::isDigit);
                         // number count check
                         if (digitCount < policy.getMinNumbers()) {
                             log.info("Reset password invalid min digit validation {}", password);
                             return messageSource.getMessage("val.number.length.invalid", new Object[]{policy.getMinNumbers()}, null);
                         }
 
-                        int specialCharCount = PasswordUtil.countCharsByConditions(password, c -> !Character.isLetterOrDigit(c));
+                        int specialCharCount = StringUtil.countCharsByConditions(password, c -> !Character.isLetterOrDigit(c));
                         // special char count check
                         if (specialCharCount < policy.getMinSpecialCharacters()) {
                             log.info("Reset password invalid special char validation {}", password);
@@ -142,16 +225,17 @@ public class ResetPasswordServiceImpl implements ResetPasswordService {
 
                         //check password history in used
                         if (policy.getPasswordHistory() > 0) {
-                            Pageable pageable = PageRequest.of(0, policy.getPasswordHistory(), Sort.by(Sort.Order.desc("createdDate")));
-                            List<ApplicationPasswordHistory> byApplicationUserAndPasswordEquals = applicationPasswordHistoryRepository.findByApplicationUser(applicationUser, pageable);
+                            Sort sort = Sort.by(Sort.Order.desc("createdDate"));
+                            List<ApplicationPasswordHistory> byApplicationUserAndPasswordEquals = applicationPasswordHistoryRepository
+                                    .findByApplicationUserAndPassword(applicationUser,hashPassword,sort);
 
-                            if (byApplicationUserAndPasswordEquals != null && !byApplicationUserAndPasswordEquals.isEmpty()) {
-                                boolean present = byApplicationUserAndPasswordEquals.stream().anyMatch(pw -> pw.getPassword().equals(hashPassword));
-                                if (present) {
+                            LocalDateTime localDateTime = LocalDateTime.now().minusDays(policy.getPasswordHistory());
+                            boolean history = byApplicationUserAndPasswordEquals.stream().anyMatch((pw) -> pw.getCreatedDate().toInstant()
+                                    .atZone(ZoneId.systemDefault()).toLocalDateTime().isAfter(localDateTime));
+
+                            if (history) {
                                     log.info("Reset password invalid history validation {}", password);
                                     return messageSource.getMessage("val.password.used.history", null, null);
-
-                                }
                             }
                         }
                         log.info("Reset password success validation {}", password);
@@ -175,6 +259,7 @@ public class ResetPasswordServiceImpl implements ResetPasswordService {
             applicationUser.setPasswordExpiredDate(DateTimeUtil.get30FutureDate());
             applicationUser.setAttemptCount(0);
             applicationUser.setPassword(newHashPassword);
+            applicationUser.setReset(false);
             applicationUser.setLastPasswordChangeDate(DateTimeUtil.getCurrentDateTime());
             applicationUserRepository.saveAndFlush(applicationUser);
         } catch (Exception e) {

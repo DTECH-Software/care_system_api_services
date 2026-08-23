@@ -1,0 +1,78 @@
+/**
+ * User: Himal_J
+ * Date: 3/25/2025
+ * Time: 10:15 AM
+ * <p>
+ */
+
+package com.dtech.claim.controller;
+
+import com.dtech.claim.dto.request.ChannelRequestDTO;
+import com.dtech.claim.dto.request.DeathClaimRequestDTO;
+import com.dtech.claim.dto.request.DetailsViewRequestDTO;
+import com.dtech.claim.dto.request.PaginationRequest;
+import com.dtech.claim.dto.request.validator.ChannelRequestValidatorDTO;
+import com.dtech.claim.dto.request.validator.DeathClaimRequestValidatorDTO;
+import com.dtech.claim.dto.request.validator.DetailsViewRequestValidatorDTO;
+import com.dtech.claim.dto.response.ApiResponse;
+import com.dtech.claim.dto.search.ClaimHistory;
+import com.dtech.claim.service.DeathClaimRequestService;
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
+import io.swagger.annotations.ApiOperation;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.log4j.Log4j2;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import java.lang.reflect.Type;
+import java.util.Locale;
+
+@RestController
+@RequestMapping(path = "api/v1/death")
+@Log4j2
+@RequiredArgsConstructor
+public class DeathClaimRequestController {
+
+    @Autowired
+    private final DeathClaimRequestService deathClaimRequestService;
+
+    @Autowired
+    private final Gson gson;
+
+    @PostMapping(path = "/reference-data",produces = MediaType.APPLICATION_JSON_VALUE,consumes = MediaType.APPLICATION_JSON_VALUE)
+    @ApiOperation(value = "Handle death claim request request ",notes = "Death claim request success or failed")
+    public ResponseEntity<ApiResponse<Object>> deathClaimReferenceData(@RequestBody @Valid ChannelRequestValidatorDTO channelRequestValidatorDTO, Locale locale) {
+        log.info("Death claim request reference data controller {} ", channelRequestValidatorDTO);
+        return deathClaimRequestService.deathClaimReferenceData(gson.fromJson(gson.toJson(channelRequestValidatorDTO), ChannelRequestDTO.class), locale);
+    }
+
+    @PostMapping(path = "/request",produces = MediaType.APPLICATION_JSON_VALUE,consumes = MediaType.APPLICATION_JSON_VALUE)
+    @ApiOperation(value = "Handle death claim request request ",notes = "Death claim request success or failed")
+    public ResponseEntity<ApiResponse<Object>> deathClaimRequest(@RequestBody @Valid DeathClaimRequestValidatorDTO deathClaimRequestValidatorDTO, Locale locale) {
+        log.info("Death claim request controller {} ", deathClaimRequestValidatorDTO);
+        return deathClaimRequestService.deathClaimRequest(gson.fromJson(gson.toJson(deathClaimRequestValidatorDTO), DeathClaimRequestDTO.class), locale);
+    }
+
+    @PostMapping(path = "/filter-list",produces = MediaType.APPLICATION_JSON_VALUE,consumes = MediaType.APPLICATION_JSON_VALUE)
+    @ApiOperation(value = "Handle death claim history request request ",notes = "Death claim request history success or failed")
+    public ResponseEntity<ApiResponse<Object>> deathClaimHistoryList(@RequestBody @Valid PaginationRequest<ClaimHistory> paginationRequest, Locale locale) {
+        log.info("Death claim history request controller {} ", paginationRequest);
+        Type paginationRequestType = new TypeToken<PaginationRequest<ClaimHistory>>(){}.getType();
+        return deathClaimRequestService.deathClaimHistoryList(gson.fromJson(gson.toJson(paginationRequest), paginationRequestType), locale);
+    }
+
+    @PostMapping(path = "/find",produces = MediaType.APPLICATION_JSON_VALUE,consumes = MediaType.APPLICATION_JSON_VALUE)
+    @ApiOperation(value = "Handle death claim find by id request request ",notes = "Death claim find by id  success or failed")
+    public ResponseEntity<ApiResponse<Object>> deathDetailsFindById(@RequestBody @Valid DetailsViewRequestValidatorDTO detailsViewRequestValidatorDTO, Locale locale) {
+        log.info("Death claim find by id request controller {} ", detailsViewRequestValidatorDTO);
+        return deathClaimRequestService.deathDetailsFindById(gson.fromJson(gson.toJson(detailsViewRequestValidatorDTO), DetailsViewRequestDTO.class), locale);
+    }
+
+}

@@ -17,6 +17,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -25,7 +26,7 @@ import java.util.Locale;
 @RestController
 @RequestMapping(path = "api/v1/token")
 @Log4j2
-@RequiredArgsConstructor(onConstructor = @__(@Autowired))
+@RequiredArgsConstructor
 public class TokenServiceController {
 
     @Autowired
@@ -34,18 +35,18 @@ public class TokenServiceController {
     @Autowired
     public final Gson gson;
 
-    @PostMapping(path = "/issuer-token")
+    @PostMapping(path = "/issuer-token",produces = MediaType.APPLICATION_JSON_VALUE,consumes = MediaType.APPLICATION_JSON_VALUE)
     @ApiOperation(value = "Get authentication token",notes = "Return the access token(JWT)")
     public ResponseEntity<ApiResponse<Object>> getToken(@RequestBody @Valid ChannelRequestValidatorDTO requestValidatorDTO, Locale locale) {
         log.info("Getting token controller {} ", requestValidatorDTO);
         return tokenService.getToken(gson.fromJson(gson.toJson(requestValidatorDTO), ChannelRequestDTO.class), locale);
     }
 
-    @GetMapping(path = "/validate-token")
+    @PostMapping(path = "/validate-token")
     @ApiOperation(value = "Check access token is valid",notes = "Token is valid or invalid")
     public ResponseEntity<ApiResponse<Object>> validateToken(@RequestParam(name = "token",required = true) String token, Locale locale) {
-        log.info("Getting token validate controller {} ", token);
-        return tokenService.validateToken(token, locale);
+        log.info("Getting token validate controller {}", token);
+        return tokenService.validateToken(token,locale);
     }
 
 }

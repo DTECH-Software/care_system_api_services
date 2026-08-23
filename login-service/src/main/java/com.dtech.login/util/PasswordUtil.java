@@ -32,35 +32,4 @@ public class PasswordUtil {
         }
     }
 
-    public static int countCharsByConditions(String str, Predicate<Character> predicate) {
-        log.info("called count by char method {}", str);
-        try {
-            int count = 0;
-            for(Character c : str.toCharArray() ) {
-                if(predicate.test(c)) {
-                    count++;
-                }
-            }
-            return count;
-        }catch (Exception e) {
-            log.error(e);
-            throw e;
-        }
-    }
-
-    public static int getCharCount(String str) {
-        log.info("called count by get char count method {}", str);
-        try {
-            int count = 0;
-            for(Character c : str.toCharArray() ) {
-                    count++;
-            }
-            return count;
-        }catch (Exception e) {
-            log.error(e);
-            throw e;
-        }
-    }
-
-
 }

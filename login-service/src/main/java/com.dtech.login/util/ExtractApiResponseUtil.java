@@ -22,7 +22,7 @@ public class ExtractApiResponseUtil {
                 ApiResponse<Object> apiResponseBody = responseEntity.getBody();
                 if (apiResponseBody.getData() != null) {
                     log.info("call api response inside api response body data {}" , apiResponseBody.getData());
-                    return  apiResponseBody.getData();
+                    return apiResponseBody.getData();
                 }
             }
             log.info("call api response without body response {}", responseEntity.getBody());
