@@ -29,6 +29,7 @@ import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.MessageSource;
+import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.core.io.Resource;
 import org.springframework.data.domain.PageRequest;
@@ -625,45 +626,96 @@ public class ProfileServiceImpl implements ProfileService {
     @Override
     @Transactional(readOnly = true)
     public ResponseEntity<Resource> policyDocument(PolicyDocumentRequestDTO policyDocumentRequestDTO) {
-        log.info("Sample document download request: {}", policyDocumentRequestDTO);
+        log.info("Policy document download request: {}", policyDocumentRequestDTO);
 
-        Optional<ApplicationUser> user = applicationUserRepository.findByUsernameAndUserPersonalDetails_UserStatus(policyDocumentRequestDTO.getUsername(), Status.ACTIVE);
-
-        StaffCategories staffCategories = user.get().getUserPersonalDetails().getUserCompanyDetails().getStaffCategories();
-
-        String req = policyDocumentRequestDTO.getPolicy() ? com.dtech.auth.enums.DocumentStore.POLICY_INS.name().concat(staffCategories.getCode()) :
-                com.dtech.auth.enums.DocumentStore.POLICY_DDF.name().concat(staffCategories.getCode());
-        Optional<DocumentStore> documentStoreOpt = documentStoreRepository.findByCode(req);
-
-        if (documentStoreOpt.isEmpty()) {
-            log.info("Document store not found for code: {}", com.dtech.auth.enums.DocumentStore.POLICY_INS);
+        Optional<ApplicationUser> userOpt = applicationUserRepository
+                .findByUsernameAndUserPersonalDetails_UserStatus(
+                        policyDocumentRequestDTO.getUsername().trim(), Status.ACTIVE);
+        if (userOpt.isEmpty()) {
+            log.warn("Active application user not found for policy document request: {}",
+                    policyDocumentRequestDTO.getUsername());
             return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
         }
 
-        DocumentStore documentStore = documentStoreOpt.get();
-        File file = new File(documentStore.getPath());
-
-        if (!file.exists()) {
-            log.info("File not found at path: {}", documentStore.getPath());
+        UserCompanyDetails companyDetails = userOpt.get().getUserPersonalDetails().getUserCompanyDetails();
+        StaffCategories staffCategory = companyDetails == null ? null : companyDetails.getStaffCategories();
+        if (staffCategory == null || staffCategory.getCode() == null) {
+            log.warn("Staff category not found for policy document user: {}",
+                    policyDocumentRequestDTO.getUsername());
             return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        }
+
+        List<String> candidateCodes = PolicyDocumentCodeUtil.candidateCodes(
+                policyDocumentRequestDTO.getPolicy(), staffCategory.getCode());
+        List<DocumentStore> policyDocuments = resolvePolicyDocuments(candidateCodes);
+
+        if (policyDocuments.isEmpty()) {
+            log.warn("Policy document mapping not found. username={}, staffCategory={}, medicalPolicy={}, candidateCodes={}",
+                    policyDocumentRequestDTO.getUsername(), staffCategory.getCode(),
+                    policyDocumentRequestDTO.getPolicy(), candidateCodes);
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        }
+
+        List<File> files = policyDocuments.stream()
+                .map(document -> new File(document.getPath()))
+                .toList();
+        for (int index = 0; index < files.size(); index++) {
+            File file = files.get(index);
+            if (!file.isFile() || !file.canRead()) {
+                DocumentStore documentStore = policyDocuments.get(index);
+                log.warn("Policy document file is missing or unreadable. code={}, path={}",
+                        documentStore.getCode(), documentStore.getPath());
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+            }
         }
 
         try {
-            Resource resource = new InputStreamResource(new FileInputStream(file));
+            if (files.size() == 1) {
+                return singlePolicyDocumentResponse(files.get(0));
+            }
 
-            HttpHeaders headers = new HttpHeaders();
-            headers.add(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + file.getName() + "\"");
+            byte[] mergedPolicy = PolicyPdfMergeUtil.merge(files);
+            String policyName = Boolean.TRUE.equals(policyDocumentRequestDTO.getPolicy())
+                    ? "medical-policy-"
+                    : "death-policy-";
+            String fileName = policyName + staffCategory.getCode() + ".pdf";
 
             return ResponseEntity.ok()
-                    .headers(headers)
-                    .contentLength(file.length())
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + fileName + "\"")
+                    .contentLength(mergedPolicy.length)
                     .contentType(MediaType.APPLICATION_PDF)
-                    .body(resource);
+                    .body(new ByteArrayResource(mergedPolicy));
 
-        } catch (FileNotFoundException e) {
-            log.error("Error while loading sample format file", e);
+        } catch (IOException e) {
+            log.error("Error while loading or merging policy documents. codes={}",
+                    policyDocuments.stream().map(DocumentStore::getCode).toList(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
+    }
+
+    private List<DocumentStore> resolvePolicyDocuments(List<String> candidateCodes) {
+        for (String candidateCode : candidateCodes) {
+            List<DocumentStore> multipleDocuments = documentStoreRepository
+                    .findAllByCodeStartingWithOrderByCodeAsc(candidateCode + "_DOC_");
+            if (!multipleDocuments.isEmpty()) {
+                return multipleDocuments;
+            }
+
+            Optional<DocumentStore> singleDocument = documentStoreRepository.findByCode(candidateCode);
+            if (singleDocument.isPresent()) {
+                return List.of(singleDocument.get());
+            }
+        }
+        return List.of();
+    }
+
+    private ResponseEntity<Resource> singlePolicyDocumentResponse(File file) throws FileNotFoundException {
+        Resource resource = new InputStreamResource(new FileInputStream(file));
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + file.getName() + "\"")
+                .contentLength(file.length())
+                .contentType(MediaType.APPLICATION_PDF)
+                .body(resource);
     }
 
     @Override
