@@ -53,7 +53,7 @@ services:
     ports:
       - '8085:8085'
     volumes:
-      - /opt/wecare/policy-documents:/data/policy-documents:ro
+      - /opt/wecare/policy-documents:/opt/wecare/policy-documents:ro
     environment:
       - EUREKA_INSTANCE_HOSTNAME=45.79.125.85
       - SPRING_PROFILES_ACTIVE=sit
