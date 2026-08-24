@@ -187,7 +187,7 @@ jobs:
               exit 1
             fi
 
-            docker compose -f "$COMPOSE_FILE" up -d --no-build
+            docker compose -f "$COMPOSE_FILE" up -d --no-build --force-recreate
 
             wait_for_health() {
               name="$1"
