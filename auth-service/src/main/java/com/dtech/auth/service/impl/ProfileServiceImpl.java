@@ -133,6 +133,13 @@ public class ProfileServiceImpl implements ProfileService {
                 List<NotificationHistory> notificationHistories = notificationHistoryRepository.findAllByTypeAndEmployeeOrderByLastModifiedByDesc(NotificationsType.IN_APP_NOTIFICATION, ap, pageable);
                 ProfileMapper profileMapper = new ProfileMapper();
                 ApplicationUserDetailsResponseDTO applicationUserDetailsResponseDTO = profileMapper.mapApplicationUser(ap, unreadCount, notificationHistories);
+                applicationUserDetailsResponseDTO.setProfileImg(ProfileDocumentResolver.resolve(
+                        ap.getProfileImg(), documentFeignClient, gson));
+                if (ap.getUserPersonalDetails().getBirthImg() != null) {
+                    applicationUserDetailsResponseDTO.getUserPersonalDetails().setBirthImg(
+                            ProfileDocumentResolver.resolve(
+                                    ap.getUserPersonalDetails().getBirthImg(), documentFeignClient, gson));
+                }
                 log.info("User profile request success{} ", applicationUserDetailsResponseDTO);
                 return ResponseEntity.ok().body(responseUtil.success((Object) applicationUserDetailsResponseDTO, messageSource.getMessage(ResponseMessageUtil.APPLICATION_PROFILE_SUCCESS, null, locale)));
             }).orElseGet(() -> {
