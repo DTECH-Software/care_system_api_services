@@ -1,5 +1,6 @@
 package com.dtech.claim.audit;
 
+import com.dtech.claim.appversion.MobileAppVersionAdvice;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
@@ -37,15 +38,20 @@ public class CareAppAuditWriter {
                     INSERT INTO audit_log
                     (old_value, new_value, ip_address, user_agent, task, task_description, page,
                      source, module, action, result, response_status, request_path, http_method,
-                     duration_ms, correlation_id, created_date, last_modified_date,
+                     duration_ms, correlation_id, client_app_version, client_platform, app_update_status,
+                     created_date, last_modified_date,
                      created_user, last_modified_user)
                     VALUES (NULL, NULL, ?, ?, 'API_REQUEST', ?, NULL,
-                            'WECARE_APP', ?, ?, ?, ?, ?, ?, ?, ?,
+                            'WECARE_APP', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
                             CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, ?, ?)
                     """,
                     resolveIp(request), limit(request.getHeader("User-Agent"), MAX_SHORT_TEXT),
                     taskDescription, module, action, result, responseStatus, requestPath, method,
-                    durationMs, correlationId, username, username);
+                    durationMs, correlationId,
+                    attribute(request, MobileAppVersionAdvice.AUDIT_CLIENT_VERSION_ATTRIBUTE, 30),
+                    attribute(request, MobileAppVersionAdvice.AUDIT_CLIENT_PLATFORM_ATTRIBUTE, 20),
+                    attribute(request, MobileAppVersionAdvice.AUDIT_UPDATE_STATUS_ATTRIBUTE, 20),
+                    username, username);
         } catch (Exception e) {
             // Audit failure must never interrupt the user's business request.
             log.error("Unable to save Care-App audit metadata for module={} path={}",
@@ -77,6 +83,12 @@ public class CareAppAuditWriter {
         String ip = forwarded == null || forwarded.isBlank()
                 ? request.getRemoteAddr() : forwarded.split(",", 2)[0].trim();
         return limit(ip == null ? "unknown" : ip, 45);
+    }
+
+    private String attribute(HttpServletRequest request, String name, int max) {
+        Object value = request.getAttribute(name);
+        if (value == null || value.toString().isBlank()) return null;
+        return limit(value.toString(), max);
     }
 
     private String limit(String value, int max) {

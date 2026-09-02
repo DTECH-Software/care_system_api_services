@@ -50,6 +50,7 @@ public class ChannelRequestValidatorDTO {
     private String username;
     private Boolean assistedMode;
     private Long actingEmployeeId;
+    private String appVersion;
     @Valid
     private ChannelMbDeviceDetailsValidatorDTO deviceDetails;
 }

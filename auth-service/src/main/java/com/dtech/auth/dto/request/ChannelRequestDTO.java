@@ -19,5 +19,6 @@ public class ChannelRequestDTO {
     private String username;
     private Boolean assistedMode;
     private Long actingEmployeeId;
+    private String appVersion;
     private ChannelMbDeviceDetailsDTO deviceDetails;
 }
