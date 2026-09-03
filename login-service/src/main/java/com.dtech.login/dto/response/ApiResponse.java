@@ -8,6 +8,7 @@
 package com.dtech.login.dto.response;
 
 import com.dtech.login.appversion.MobileAppVersionResponse;
+import com.dtech.login.maintenance.MaintenanceResponse;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.AllArgsConstructor;
@@ -32,4 +33,7 @@ public class ApiResponse<T> {
     private LocalDateTime responseTime;
     @JsonInclude(JsonInclude.Include.NON_NULL)
     private MobileAppVersionResponse appVersion;
+    private boolean underMaintenance;
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    private MaintenanceResponse maintenance;
 }
