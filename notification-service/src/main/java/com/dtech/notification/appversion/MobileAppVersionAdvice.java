@@ -23,12 +23,8 @@ import org.springframework.web.context.request.ServletRequestAttributes;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.Type;
-import java.time.Duration;
-import java.time.Instant;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Pattern;
 
 @ControllerAdvice
@@ -40,11 +36,8 @@ public class MobileAppVersionAdvice implements RequestBodyAdvice, ResponseBodyAd
     public static final String AUDIT_UPDATE_STATUS_ATTRIBUTE = "care.audit.app-update-status";
     private static final String RESPONSE_ATTRIBUTE = "care.app-version.response";
     private static final Pattern VERSION_PATTERN = Pattern.compile("^\\d+(?:\\.\\d+){0,3}(?:[-+][0-9A-Za-z.-]+)?$");
-    private static final Duration CACHE_TTL = Duration.ofMinutes(5);
-
     private final JdbcTemplate jdbcTemplate;
     private final ResponseUtil responseUtil;
-    private final Map<String, CachedConfig> cache = new ConcurrentHashMap<>();
 
     @Override
     public boolean supports(MethodParameter methodParameter, Type targetType,
@@ -151,10 +144,6 @@ public class MobileAppVersionAdvice implements RequestBodyAdvice, ResponseBodyAd
 
     private VersionConfig loadConfig(String platform) {
         if (platform == null) return null;
-        CachedConfig cached = cache.get(platform);
-        if (cached != null && cached.loadedAt().plus(CACHE_TTL).isAfter(Instant.now())) {
-            return cached.config();
-        }
         try {
             List<VersionConfig> rows = jdbcTemplate.query("""
                     SELECT latest_version, minimum_supported_version, force_update,
@@ -169,7 +158,6 @@ public class MobileAppVersionAdvice implements RequestBodyAdvice, ResponseBodyAd
                     resultSet.getString("store_url"),
                     resultSet.getString("release_notes")), platform);
             VersionConfig config = rows.isEmpty() ? null : rows.get(0);
-            cache.put(platform, new CachedConfig(config, Instant.now()));
             return config;
         } catch (Exception exception) {
             log.warn("Unable to load mobile app version configuration for platform={}; request will not be blocked",
@@ -258,9 +246,6 @@ public class MobileAppVersionAdvice implements RequestBodyAdvice, ResponseBodyAd
 
     private record VersionConfig(String latestVersion, String minimumSupportedVersion,
                                  boolean forceUpdate, String storeUrl, String releaseNotes) {
-    }
-
-    private record CachedConfig(VersionConfig config, Instant loadedAt) {
     }
 
     private static final class MobileAppVersionException extends RuntimeException {
