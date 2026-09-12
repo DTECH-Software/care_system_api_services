@@ -212,6 +212,7 @@ public class BiometricServiceImpl implements BiometricService {
             channelRequestDTO.setChannel(biometricLoginRequestDTO.getChannel());
             channelRequestDTO.setIp(biometricLoginRequestDTO.getIp());
             channelRequestDTO.setUsername(username);
+            channelRequestDTO.setAppVersion(biometricLoginRequestDTO.getAppVersion());
             channelRequestDTO.setDeviceDetails(biometricLoginRequestDTO.getDeviceDetails());
             channelRequestDTO.setMessage(Messages.PROFILE_DETAILS.name());
             ResponseEntity<ApiResponse<Object>> profileDetailsResponse = authFeignClient.getProfileDetails(channelRequestDTO);
@@ -237,6 +238,7 @@ public class BiometricServiceImpl implements BiometricService {
         channelRequestDTO.setChannel(Channel.MB.name());
         channelRequestDTO.setMessage(Messages.SIGN_IN.name());
         channelRequestDTO.setIp(biometricLoginRequestDTO.getIp());
+        channelRequestDTO.setAppVersion(biometricLoginRequestDTO.getAppVersion());
         channelRequestDTO.setDeviceDetails(deviceDetails);
 
         ResponseEntity<ApiResponse<Object>> tokenEntity = tokenFeignClient.getToken(channelRequestDTO);

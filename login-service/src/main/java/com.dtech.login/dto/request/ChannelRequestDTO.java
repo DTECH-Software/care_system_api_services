@@ -17,5 +17,6 @@ public class ChannelRequestDTO {
     private String ip;
     private String message;
     private String username;
+    private String appVersion;
     private ChannelMbDeviceDetailsDTO deviceDetails;
 }

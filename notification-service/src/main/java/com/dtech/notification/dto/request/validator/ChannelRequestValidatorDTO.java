@@ -29,6 +29,7 @@ public class ChannelRequestValidatorDTO {
     @ValidEnum(enumClass = Messages.class, message = "Invalid message.")
     private String message;
     private String username;
+    private String appVersion;
     @Valid
     private ChannelMbDeviceDetailsValidatorDTO deviceDetails;
 }

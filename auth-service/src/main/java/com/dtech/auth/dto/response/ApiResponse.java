@@ -1,6 +1,9 @@
 package com.dtech.auth.dto.response;
 
+import com.dtech.auth.appversion.MobileAppVersionResponse;
+import com.dtech.auth.maintenance.MaintenanceResponse;
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -21,4 +24,9 @@ public class ApiResponse<T> {
     private int errorCode;
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime responseTime;
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    private MobileAppVersionResponse appVersion;
+    private boolean underMaintenance;
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    private MaintenanceResponse maintenance;
 }

@@ -11,4 +11,5 @@ public class BiometricLoginRequestDTO {
     private String ip;
     private String username;
     private String uniqueCode;
+    private String appVersion;
 }

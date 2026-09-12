@@ -11,4 +11,5 @@ public class BiometricEnableRequestDTO {
     private Boolean enable;
     private String ip;
     private String username;
+    private String appVersion;
 }
