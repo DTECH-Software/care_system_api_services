@@ -13,6 +13,7 @@ services:
   registry-service:
     image: care/registry-service:production
     container_name: registry-service
+    init: true
     mem_limit: 768m
     ports:
       - "8081:8081"
@@ -34,6 +35,7 @@ services:
   token-service:
     image: care/token-service:production
     container_name: token-service
+    init: true
     env_file: /opt/wecare/secrets/care-app-production.env
     mem_limit: 512m
     ports:
@@ -61,6 +63,7 @@ services:
   message-service:
     image: care/message-service:production
     container_name: message-service
+    init: true
     env_file: /opt/wecare/secrets/care-app-production.env
     mem_limit: 512m
     ports:
@@ -88,6 +91,7 @@ services:
   document-service:
     image: care/document-service:production
     container_name: document-service
+    init: true
     env_file: /opt/wecare/secrets/care-app-production.env
     mem_limit: 512m
     ports:
@@ -116,6 +120,7 @@ services:
   notification-service:
     image: care/notification-service:production
     container_name: notification-service
+    init: true
     env_file: /opt/wecare/secrets/care-app-production.env
     mem_limit: 512m
     ports:
@@ -145,6 +150,7 @@ services:
   auth-service:
     image: care/auth-service:production
     container_name: auth-service
+    init: true
     env_file: /opt/wecare/secrets/care-app-production.env
     mem_limit: 1g
     ports:
@@ -180,6 +186,7 @@ services:
   login-service:
     image: care/login-service:production
     container_name: login-service
+    init: true
     env_file: /opt/wecare/secrets/care-app-production.env
     mem_limit: 512m
     ports:
@@ -211,6 +218,7 @@ services:
   claim-service:
     image: care/claim-service:production
     container_name: claim-service
+    init: true
     env_file: /opt/wecare/secrets/care-app-production.env
     mem_limit: 768m
     ports:
@@ -244,6 +252,7 @@ services:
   cloud-service:
     image: care/cloud-service:production
     container_name: cloud-service
+    init: true
     mem_limit: 512m
     ports:
       - "8080:8080"
