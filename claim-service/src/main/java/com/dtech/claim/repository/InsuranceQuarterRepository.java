@@ -7,7 +7,6 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
-import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 
@@ -21,7 +20,7 @@ public interface InsuranceQuarterRepository extends JpaRepository<InsuranceQuart
             "ORDER BY e.fromDate DESC, e.id DESC")
     List<InsuranceQuarter> findByDateWithinRangeAndCodeWithLimit(@Param("limit") InsuranceDetailsLimit limit,
                                                                  @Param("code") String code,
-                                                                 @Param("givenDate") Date givenDate);
+                                                                 @Param("givenDate") java.sql.Date givenDate);
 
     @Query("SELECT e FROM InsuranceQuarter e " +
             "WHERE e.insuranceDetailsLimit = :limit " +

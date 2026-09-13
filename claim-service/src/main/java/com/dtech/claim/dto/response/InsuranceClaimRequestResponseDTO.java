@@ -7,6 +7,7 @@
 
 package com.dtech.claim.dto.response;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.Data;
 
 import java.math.BigDecimal;
@@ -21,10 +22,12 @@ public class InsuranceClaimRequestResponseDTO {
     private String requestStatus;
     private String requestStatusDescription;
     private String remark;
+    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ssXXX", timezone = "Asia/Colombo")
     private Date approvedDateTime;
     private ClaimsDependentsResponseDTO claimsDependents;
     private InsuranceClaimsDetailsResponseDTO insuranceClaimsDetails;
     private BigDecimal approvedAmount;
+    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ssXXX", timezone = "Asia/Colombo")
     private Date createdDate;
     private String staffCategoryCode;
     private String staffCategoryDescription;

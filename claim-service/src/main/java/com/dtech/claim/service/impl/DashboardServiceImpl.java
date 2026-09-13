@@ -20,6 +20,7 @@ import com.dtech.claim.repository.*;
 import com.dtech.claim.service.AssistedUserResolver;
 import com.dtech.claim.service.DashboardService;
 import com.dtech.claim.util.DateTimeUtil;
+import com.dtech.claim.util.PolicyDateUtil;
 import com.dtech.claim.util.ResponseMessageUtil;
 import com.dtech.claim.util.ResponseUtil;
 import lombok.RequiredArgsConstructor;
@@ -269,20 +270,25 @@ public class DashboardServiceImpl implements DashboardService {
             }
         }
 
-        Date now = DateTimeUtil.getCurrentDateTime();
+        return selectCurrentPeriod(periods, PolicyDateUtil.todaySqlDate());
+    }
+
+    static InsuranceStaffCategoryPeriod selectCurrentPeriod(List<InsuranceStaffCategoryPeriod> periods, Date today) {
+        if (periods == null) {
+            return null;
+        }
         for (InsuranceStaffCategoryPeriod period : periods) {
+            if (period == null) {
+                continue;
+            }
             Date from = period.getFromDate();
             Date to = period.getToDate();
-            if (from != null && to != null && !now.before(from) && !now.after(to)) {
+            if (PolicyDateUtil.contains(from, to, today)) {
                 return period;
             }
         }
 
-        return periods.stream()
-                .filter(Objects::nonNull)
-                .max(Comparator.comparing(InsuranceStaffCategoryPeriod::getFromDate,
-                        Comparator.nullsLast(Comparator.naturalOrder())))
-                .orElse(null);
+        return null;
     }
 
     private List<InsuranceStaffCategoryPeriod> resolveApplicablePolicyPeriods(ApplicationUser user) {
@@ -371,8 +377,7 @@ public class DashboardServiceImpl implements DashboardService {
                 && period != null
                 && period.getFromDate() != null
                 && period.getToDate() != null
-                && !date.before(period.getFromDate())
-                && !date.after(period.getToDate());
+                && PolicyDateUtil.contains(period.getFromDate(), period.getToDate(), date);
     }
 
     private List<LatestUpdatedResponseDTO> getLatestUpdatedInsuranceClaims(
@@ -474,7 +479,7 @@ public class DashboardServiceImpl implements DashboardService {
                 && changeDate != null
                 && currentPeriod.getStaffCategories() != null) {
             prevPeriod = insuranceStaffCategoryPeriodRepository
-                    .findByDateWithinRangeAnyStaff(changeDate)
+                    .findByDateWithinRangeAnyStaff(PolicyDateUtil.toSqlDate(changeDate))
                     .stream()
                     .filter(p -> p.getStaffCategories() != null)
                     .filter(p -> !p.getStaffCategories().getCode()
@@ -565,7 +570,7 @@ public class DashboardServiceImpl implements DashboardService {
         return period != null
                 && period.getToDate() != null
                 && transferDate != null
-                && period.getToDate().before(transferDate);
+                && PolicyDateUtil.isBefore(period.getToDate(), transferDate);
     }
 
     private InsuranceStaffCategoryPeriod resolvePreviousPeriodFromClaimHistory(ApplicationUser applicationUser,
@@ -615,15 +620,15 @@ public class DashboardServiceImpl implements DashboardService {
                 || currentPeriod.getFromDate() == null || currentPeriod.getToDate() == null) {
             return true;
         }
-        return !candidate.getToDate().before(currentPeriod.getFromDate())
-                && !candidate.getFromDate().after(currentPeriod.getToDate());
+        return PolicyDateUtil.overlaps(candidate.getFromDate(), candidate.getToDate(),
+                currentPeriod.getFromDate(), currentPeriod.getToDate());
     }
 
     private InsuranceQuarter resolveApplicableQuarter(InsuranceDetailsLimit insuranceDetailsLimit,
                                                       String categoryCode,
                                                       Date lookupDate) {
         InsuranceQuarter matchingQuarter = insuranceQuarterRepository
-                .findByDateWithinRangeAndCodeWithLimit(insuranceDetailsLimit, categoryCode, lookupDate)
+                .findByDateWithinRangeAndCodeWithLimit(insuranceDetailsLimit, categoryCode, PolicyDateUtil.toSqlDate(lookupDate))
                 .stream()
                 .findFirst()
                 .orElse(null);
@@ -640,7 +645,7 @@ public class DashboardServiceImpl implements DashboardService {
             return null;
         }
 
-        return lookupDate.before(firstQuarter.getFromDate()) ? firstQuarter : null;
+        return PolicyDateUtil.isBefore(lookupDate, firstQuarter.getFromDate()) ? firstQuarter : null;
     }
 
     private BigDecimal resolveCategoryFundLimit(InsuranceDetailsLimit insuranceDetailsLimit,

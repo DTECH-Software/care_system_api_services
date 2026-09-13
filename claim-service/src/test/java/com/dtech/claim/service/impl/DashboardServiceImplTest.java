@@ -4,10 +4,12 @@ import com.dtech.claim.model.InsuranceStaffCategoryPeriod;
 import org.junit.jupiter.api.Test;
 
 import java.sql.Date;
+import java.time.Instant;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class DashboardServiceImplTest {
@@ -40,6 +42,26 @@ class DashboardServiceImplTest {
                 currentPeriod,
                 Date.valueOf("2026-08-01")
         ));
+    }
+
+    @Test
+    void shouldNotTreatLastPolicyDayAsBeforeTransfer() {
+        InsuranceStaffCategoryPeriod period = policyPeriod("2026-08-13", "2027-08-12");
+
+        assertFalse(DashboardServiceImpl.isPolicyPeriodEntirelyBeforeTransfer(
+                period,
+                java.util.Date.from(Instant.parse("2027-08-12T18:29:59Z"))
+        ));
+    }
+
+    @Test
+    void shouldSelectPolicyUntilEndOfLastDayButNotNextDay() {
+        InsuranceStaffCategoryPeriod period = policyPeriod("2026-08-13", "2027-08-12");
+
+        assertEquals(period, DashboardServiceImpl.selectCurrentPeriod(
+                List.of(period), java.util.Date.from(Instant.parse("2027-08-12T18:29:59Z"))));
+        assertNull(DashboardServiceImpl.selectCurrentPeriod(
+                List.of(period), java.util.Date.from(Instant.parse("2027-08-12T18:30:00Z"))));
     }
 
     @Test

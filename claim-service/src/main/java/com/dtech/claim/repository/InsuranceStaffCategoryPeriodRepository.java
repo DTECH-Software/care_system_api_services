@@ -18,10 +18,10 @@ public interface InsuranceStaffCategoryPeriodRepository extends JpaRepository<In
             "WHERE :inputDate BETWEEN i.fromDate AND i.toDate " +
             "AND i.staffCategories.code = :staff " +
             "ORDER BY i.fromDate DESC, i.id DESC")
-    List<InsuranceStaffCategoryPeriod> findByDateWithinRange(@Param("inputDate") Date inputDate,@Param("staff") String staff);
+    List<InsuranceStaffCategoryPeriod> findByDateWithinRange(@Param("inputDate") java.sql.Date inputDate,@Param("staff") String staff);
 
     @Query("SELECT i FROM InsuranceStaffCategoryPeriod i WHERE :inputDate BETWEEN i.fromDate AND i.toDate ORDER BY i.fromDate DESC")
-    List<InsuranceStaffCategoryPeriod> findByDateWithinRangeAnyStaff(@Param("inputDate") Date inputDate);
+    List<InsuranceStaffCategoryPeriod> findByDateWithinRangeAnyStaff(@Param("inputDate") java.sql.Date inputDate);
 
     Optional<InsuranceStaffCategoryPeriod> findByStaffCategories_CodeAndStatus(String staffCategories, Status status);
 
