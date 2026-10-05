@@ -61,7 +61,10 @@ services:
   message-service:
     image: care/message-service:production
     container_name: message-service
-    env_file: /opt/wecare/secrets/care-app-production.env
+    env_file:
+      - /opt/wecare/secrets/care-app-production.env
+      - path: /opt/wecare/secrets/care-app-message-production.env
+        required: false
     mem_limit: 512m
     ports:
       - "8084:8084"
