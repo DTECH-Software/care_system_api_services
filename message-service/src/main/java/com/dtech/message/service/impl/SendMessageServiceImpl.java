@@ -16,6 +16,7 @@ import com.dtech.message.enums.MessageType;
 import com.dtech.message.repository.NotificationTemplateRepository;
 import com.dtech.message.service.HutchSmsClient;
 import com.dtech.message.service.SendMessageService;
+import com.dtech.message.service.SmsTextFormatter;
 import com.dtech.message.util.ResponseUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
@@ -87,7 +88,8 @@ public class SendMessageServiceImpl implements SendMessageService {
             return notificationTemplateRepository
                     .findByType(MessageType.valueOf(messageRequestDTO.getType())).map((template) -> {
 
-                        String otpMessage = MessageFormat.format(template.getMessageBody(), messageRequestDTO.getValue());
+                        String otpMessage = SmsTextFormatter.toPlainText(
+                                MessageFormat.format(template.getMessageBody(), messageRequestDTO.getValue()));
                         if ("hutch".equalsIgnoreCase(provider)) {
                             MessageResponseDTO result = hutchSmsClient.send(messageRequestDTO.getMobileNo(), otpMessage);
                             if (result.isSuccess()) {
