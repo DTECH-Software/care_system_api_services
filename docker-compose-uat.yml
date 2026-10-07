@@ -41,7 +41,7 @@ services:
       JAVA_TOOL_OPTIONS: "-Xms128m -Xmx384m -Duser.timezone=Asia/Colombo"
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: "http://registry-service:8081/eureka/"
       EUREKA_INSTANCE_HOSTNAME: token-service
-      SPRING_DATASOURCE_URL: "jdbc:mysql://host.docker.internal:3306/caresystem?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Colombo"
+      SPRING_DATASOURCE_URL: "jdbc:mysql://host.docker.internal:3306/caresystem?useSSL=false&allowPublicKeyRetrieval=true&connectionTimeZone=SERVER&preserveInstants=true"
       TZ: Asia/Colombo
     extra_hosts:
       - "host.docker.internal:host-gateway"
@@ -71,7 +71,7 @@ services:
       JAVA_TOOL_OPTIONS: "-Xms128m -Xmx384m -Duser.timezone=Asia/Colombo"
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: "http://registry-service:8081/eureka/"
       EUREKA_INSTANCE_HOSTNAME: message-service
-      SPRING_DATASOURCE_URL: "jdbc:mysql://host.docker.internal:3306/caresystem?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Colombo"
+      SPRING_DATASOURCE_URL: "jdbc:mysql://host.docker.internal:3306/caresystem?useSSL=false&allowPublicKeyRetrieval=true&connectionTimeZone=SERVER&preserveInstants=true"
       TZ: Asia/Colombo
     extra_hosts:
       - "host.docker.internal:host-gateway"
@@ -104,7 +104,7 @@ services:
       JAVA_TOOL_OPTIONS: "-Xms128m -Xmx384m -Duser.timezone=Asia/Colombo"
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: "http://registry-service:8081/eureka/"
       EUREKA_INSTANCE_HOSTNAME: document-service
-      SPRING_DATASOURCE_URL: "jdbc:mysql://host.docker.internal:3306/caresystem?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Colombo"
+      SPRING_DATASOURCE_URL: "jdbc:mysql://host.docker.internal:3306/caresystem?useSSL=false&allowPublicKeyRetrieval=true&connectionTimeZone=SERVER&preserveInstants=true"
       TZ: Asia/Colombo
     extra_hosts:
       - "host.docker.internal:host-gateway"
@@ -134,7 +134,7 @@ services:
       JAVA_TOOL_OPTIONS: "-Xms128m -Xmx384m -Duser.timezone=Asia/Colombo"
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: "http://registry-service:8081/eureka/"
       EUREKA_INSTANCE_HOSTNAME: notification-service
-      SPRING_DATASOURCE_URL: "jdbc:mysql://host.docker.internal:3306/caresystem?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Colombo"
+      SPRING_DATASOURCE_URL: "jdbc:mysql://host.docker.internal:3306/caresystem?useSSL=false&allowPublicKeyRetrieval=true&connectionTimeZone=SERVER&preserveInstants=true"
       TZ: Asia/Colombo
     extra_hosts:
       - "host.docker.internal:host-gateway"
@@ -167,7 +167,7 @@ services:
       JAVA_TOOL_OPTIONS: "-Xms256m -Xmx768m -Duser.timezone=Asia/Colombo"
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: "http://registry-service:8081/eureka/"
       EUREKA_INSTANCE_HOSTNAME: auth-service
-      SPRING_DATASOURCE_URL: "jdbc:mysql://host.docker.internal:3306/caresystem?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Colombo"
+      SPRING_DATASOURCE_URL: "jdbc:mysql://host.docker.internal:3306/caresystem?useSSL=false&allowPublicKeyRetrieval=true&connectionTimeZone=SERVER&preserveInstants=true"
       TZ: Asia/Colombo
     extra_hosts:
       - "host.docker.internal:host-gateway"
@@ -200,7 +200,7 @@ services:
       JAVA_TOOL_OPTIONS: "-Xms128m -Xmx384m -Duser.timezone=Asia/Colombo"
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: "http://registry-service:8081/eureka/"
       EUREKA_INSTANCE_HOSTNAME: login-service
-      SPRING_DATASOURCE_URL: "jdbc:mysql://host.docker.internal:3306/caresystem?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Colombo"
+      SPRING_DATASOURCE_URL: "jdbc:mysql://host.docker.internal:3306/caresystem?useSSL=false&allowPublicKeyRetrieval=true&connectionTimeZone=SERVER&preserveInstants=true"
       TZ: Asia/Colombo
     extra_hosts:
       - "host.docker.internal:host-gateway"
@@ -232,7 +232,7 @@ services:
       JAVA_TOOL_OPTIONS: "-Xms256m -Xmx512m -Duser.timezone=Asia/Colombo"
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: "http://registry-service:8081/eureka/"
       EUREKA_INSTANCE_HOSTNAME: claim-service
-      SPRING_DATASOURCE_URL: "jdbc:mysql://host.docker.internal:3306/caresystem?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Colombo"
+      SPRING_DATASOURCE_URL: "jdbc:mysql://host.docker.internal:3306/caresystem?useSSL=false&allowPublicKeyRetrieval=true&connectionTimeZone=SERVER&preserveInstants=true"
       TZ: Asia/Colombo
     extra_hosts:
       - "host.docker.internal:host-gateway"

@@ -332,7 +332,7 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
                                                 log.info(user.getUserPersonalDetails().getUserCompanyDetails().getStaffCategories().getCode());
                                                 log.info(DateTimeUtil.getCurrentDateTime());
                                                 InsuranceStaffCategoryPeriod insuranceYear = insuranceStaffCategoryPeriodRepository.
-                                                        findByDateWithinRange(DateTimeUtil.getCurrentDateTime(), user.getUserPersonalDetails().getUserCompanyDetails().getStaffCategories().getCode())
+                                                        findByDateWithinRange(PolicyDateUtil.todaySqlDate(), user.getUserPersonalDetails().getUserCompanyDetails().getStaffCategories().getCode())
                                                         .stream()
                                                         .findFirst()
                                                         .orElse(null);
@@ -707,7 +707,7 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
             log.info("Insurance claim reference data {}", channelRequestDTO);
             return assistedUserResolver.resolve(channelRequestDTO).map((user) -> {
                 InsuranceStaffCategoryPeriod period = insuranceStaffCategoryPeriodRepository
-                        .findByDateWithinRange(DateTimeUtil.getCurrentDateTime(), user.getUserPersonalDetails().getUserCompanyDetails().getStaffCategories().getCode())
+                        .findByDateWithinRange(PolicyDateUtil.todaySqlDate(), user.getUserPersonalDetails().getUserCompanyDetails().getStaffCategories().getCode())
                         .stream()
                         .findFirst()
                         .orElse(null);
@@ -856,7 +856,7 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
                     && currentPeriod != null
                     && currentPeriod.getStaffCategories() != null) {
                 prevPeriod = insuranceStaffCategoryPeriodRepository
-                        .findByDateWithinRangeAnyStaff(changeDate)
+                        .findByDateWithinRangeAnyStaff(PolicyDateUtil.toSqlDate(changeDate))
                         .stream()
                         .filter(p -> p.getStaffCategories() != null)
                         .filter(p -> !p.getStaffCategories().getCode()
@@ -1176,7 +1176,7 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
                                                       String categoryCode,
                                                       Date lookupDate) {
         InsuranceQuarter matchingQuarter = insuranceQuarterRepository
-                .findByDateWithinRangeAndCodeWithLimit(insuranceDetailsLimit, categoryCode, lookupDate)
+                .findByDateWithinRangeAndCodeWithLimit(insuranceDetailsLimit, categoryCode, PolicyDateUtil.toSqlDate(lookupDate))
                 .stream()
                 .findFirst()
                 .orElse(null);
@@ -1193,7 +1193,7 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
             return null;
         }
 
-        return lookupDate.before(firstQuarter.getFromDate()) ? firstQuarter : null;
+        return PolicyDateUtil.isBefore(lookupDate, firstQuarter.getFromDate()) ? firstQuarter : null;
     }
 
     private BigDecimal resolveCategoryFundLimit(InsuranceDetailsLimit insuranceDetailsLimit,
@@ -1224,7 +1224,7 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
                 currentPeriod);
         if (previousPeriod == null && changeDate != null) {
             previousPeriod = insuranceStaffCategoryPeriodRepository
-                    .findByDateWithinRangeAnyStaff(changeDate)
+                    .findByDateWithinRangeAnyStaff(PolicyDateUtil.toSqlDate(changeDate))
                     .stream()
                     .filter(p -> p.getStaffCategories() != null)
                     .filter(p -> !p.getStaffCategories().getCode()
@@ -1282,8 +1282,8 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
                 || currentPeriod.getFromDate() == null || currentPeriod.getToDate() == null) {
             return true;
         }
-        return !candidate.getToDate().before(currentPeriod.getFromDate())
-                && !candidate.getFromDate().after(currentPeriod.getToDate());
+        return PolicyDateUtil.overlaps(candidate.getFromDate(), candidate.getToDate(),
+                currentPeriod.getFromDate(), currentPeriod.getToDate());
     }
 
     private List<InsuranceDetailsLimit> resolveMatchingInsuranceDetailsLimits(InsuranceDetailsLimit insuranceDetailsLimit) {

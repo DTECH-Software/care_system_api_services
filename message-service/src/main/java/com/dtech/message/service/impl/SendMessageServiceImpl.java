@@ -14,7 +14,9 @@ import com.dtech.message.dto.response.ApiResponse;
 import com.dtech.message.dto.response.MessageResponseDTO;
 import com.dtech.message.enums.MessageType;
 import com.dtech.message.repository.NotificationTemplateRepository;
+import com.dtech.message.service.HutchSmsClient;
 import com.dtech.message.service.SendMessageService;
+import com.dtech.message.service.SmsTextFormatter;
 import com.dtech.message.util.ResponseUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
@@ -43,6 +45,11 @@ public class SendMessageServiceImpl implements SendMessageService {
 
     @Autowired
     private final RestTemplate restTemplate;
+
+    private final HutchSmsClient hutchSmsClient;
+
+    @Value("${message.provider:textit}")
+    private String provider;
 
     @Value("${message.uri}")
     private String messageURI;
@@ -81,9 +88,23 @@ public class SendMessageServiceImpl implements SendMessageService {
             return notificationTemplateRepository
                     .findByType(MessageType.valueOf(messageRequestDTO.getType())).map((template) -> {
 
+                        String otpMessage = SmsTextFormatter.toPlainText(
+                                MessageFormat.format(template.getMessageBody(), messageRequestDTO.getValue()));
+                        if ("hutch".equalsIgnoreCase(provider)) {
+                            MessageResponseDTO result = hutchSmsClient.send(messageRequestDTO.getMobileNo(), otpMessage);
+                            if (result.isSuccess()) {
+                                result.setMessage(messageSource.getMessage("val.otp.send.success", null, null));
+                            }
+                            return result;
+                        }
+                        if (!"textit".equalsIgnoreCase(provider)) {
+                            log.error("Unsupported SMS provider configured: {}", provider);
+                            return MessageResponseDTO.builder().success(false)
+                                    .message("SMS provider is not configured").build();
+                        }
+
                         ITextMessageRequestDTO iTextMessageRequestDTO = new ITextMessageRequestDTO();
                         iTextMessageRequestDTO.setTo(messageRequestDTO.getMobileNo());
-                        String otpMessage = MessageFormat.format(template.getMessageBody(), messageRequestDTO.getValue());
                         iTextMessageRequestDTO.setText(otpMessage);
                         HttpHeaders headers = new HttpHeaders();
                         headers.set(HttpHeaders.CONTENT_TYPE, "application/json");
@@ -98,7 +119,6 @@ public class SendMessageServiceImpl implements SendMessageService {
                                     .success(false)
                                     .message("No response body from the API").build();
                         }
-                        log.info("After send message {}", response.toString());
                         MessageResponseDTO responseState = getResponseState(response);
                         responseState.setMessage(messageSource.getMessage("val.otp.send.success", null, null));
                         return responseState;
