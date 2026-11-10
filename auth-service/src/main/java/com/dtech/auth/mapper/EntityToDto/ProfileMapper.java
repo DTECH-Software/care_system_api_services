@@ -15,6 +15,7 @@ import com.dtech.auth.model.ApplicationUser;
 import com.dtech.auth.model.ClaimsDependents;
 import com.dtech.auth.model.NotificationHistory;
 import com.dtech.auth.util.DateTimeUtil;
+import com.dtech.auth.util.DateOnlyUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.modelmapper.ModelMapper;
@@ -39,6 +40,8 @@ public class ProfileMapper {
         try {
             log.info("application user mapper");
             ApplicationUserDetailsResponseDTO applicationUserDetailsResponseDTO = modelMapper.map(applicationUser, ApplicationUserDetailsResponseDTO.class);
+            applicationUserDetailsResponseDTO.getUserPersonalDetails().setDob(
+                    DateOnlyUtil.format(applicationUser.getUserPersonalDetails().getDob()));
             log.info("application user get age");
             applicationUserDetailsResponseDTO.getUserPersonalDetails().setAge(DateTimeUtil.getAge(
                     String.valueOf(applicationUser.getUserPersonalDetails().getDob())));

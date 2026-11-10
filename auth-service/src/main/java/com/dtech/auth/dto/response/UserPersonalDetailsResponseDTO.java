@@ -7,10 +7,7 @@
 
 package com.dtech.auth.dto.response;
 
-import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.Data;
-
-import java.util.Date;
 
 @Data
 public class UserPersonalDetailsResponseDTO {
@@ -23,8 +20,7 @@ public class UserPersonalDetailsResponseDTO {
     private String nic;
     private String email;
     private String mobileNo;
-    @JsonFormat(pattern = "yyyy-MM-dd")
-    private Date dob;
+    private String dob;
     private long age;
     private String gender;
     private String genderDescription;

@@ -9,8 +9,6 @@ package com.dtech.login.dto.response;
 
 import lombok.Data;
 
-import java.util.Date;
-
 @Data
 public class UserPersonalDetailsResponseDTO {
     private String epfNo;
@@ -20,7 +18,7 @@ public class UserPersonalDetailsResponseDTO {
     private String nic;
     private String email;
     private String mobileNo;
-    private Date dob;
+    private String dob;
     private long age;
     private String gender;
     private String genderDescription;
