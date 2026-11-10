@@ -12,6 +12,7 @@ import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
 @EnableFeignClients
 public class NotificationServiceApplication {
 
+	// Build marker: validates the UAT CI/CD pipeline without changing runtime behavior.
 	public static void main(String[] args) {
 		SpringApplication.run(NotificationServiceApplication.class, args);
 	}

@@ -177,6 +177,7 @@ public class SignupServiceImpl implements SignupService {
                     }).orElseGet(() -> {
                         log.info("Sign up inquiry start");
                         UserPersonalDetailsResponseDTO userPersonalDetailsResponseDTO = modelMapper.map(user, UserPersonalDetailsResponseDTO.class);
+                        userPersonalDetailsResponseDTO.setDob(DateOnlyUtil.format(user.getDob()));
                         getAge(userPersonalDetailsResponseDTO);
                         log.info("Sign up inquiry end {} ", userPersonalDetailsResponseDTO);
                         return ResponseEntity.ok().body(responseUtil.success(userPersonalDetailsResponseDTO, messageSource.getMessage(ResponseMessageUtil.EMPLOYEE_DETAILS_INQUIRY_SUCCESS, null, locale)));

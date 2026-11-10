@@ -8,6 +8,7 @@ import org.springframework.cloud.netflix.eureka.server.EnableEurekaServer;
 @EnableEurekaServer
 public class RegistryServiceApplication {
 
+	// Build marker: validates the UAT CI/CD pipeline without changing runtime behavior.
 	public static void main(String[] args) {
 		SpringApplication.run(RegistryServiceApplication.class, args);
 	}

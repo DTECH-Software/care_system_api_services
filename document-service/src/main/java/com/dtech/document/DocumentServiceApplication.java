@@ -13,6 +13,7 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 @EnableJpaAuditing
 public class DocumentServiceApplication {
 
+	// Build marker: validates the UAT CI/CD pipeline without changing runtime behavior.
 	public static void main(String[] args) {
 		SpringApplication.run(DocumentServiceApplication.class, args);
 	}

@@ -14,6 +14,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @EnableScheduling
 public class AuthServiceApplication {
 
+	// Build marker: validates the UAT CI/CD pipeline without changing runtime behavior.
 	public static void main(String[] args) {
 		SpringApplication.run(AuthServiceApplication.class, args);
 	}
