@@ -21,6 +21,7 @@ import com.dtech.claim.mapper.EntityToDtoMapper;
 import com.dtech.claim.model.*;
 import com.dtech.claim.repository.*;
 import com.dtech.claim.service.DeathClaimRequestService;
+import com.dtech.claim.service.ClaimAttachmentContentService;
 import com.dtech.claim.specifications.DeathClaimHistorySpecification;
 import com.dtech.claim.util.*;
 import jakarta.persistence.EntityManager;
@@ -79,6 +80,9 @@ public class DeathClaimRequestServiceImpl implements DeathClaimRequestService {
 
     @Autowired
     private final DocumentFeignClient documentFeignClient;
+
+    @Autowired
+    private final ClaimAttachmentContentService claimAttachmentContentService;
 
     @Autowired
     private final ModelMapper modelMapper;
@@ -469,7 +473,7 @@ public class DeathClaimRequestServiceImpl implements DeathClaimRequestService {
 
                 List<DocumentDownloadResponseDTO> collect = deathClaimRequest.getDocuments().stream().map((document -> {
                     log.info("inside document list claims request details attachment view - death  {} ", document);
-                    return new DocumentDownloadResponseDTO(String.valueOf(document.getType()), document.getFileName(), document.getFileType(), document.getDoc());
+                    return new DocumentDownloadResponseDTO(String.valueOf(document.getType()), document.getFileName(), document.getFileType(), claimAttachmentContentService.getBase64(document));
                 })).toList();
                 return ResponseEntity.ok().body(responseUtil.success((Object) Map.of("documents", collect),
                         messageSource.getMessage(ResponseMessageUtil.DEATH_CLAIM_REQUEST_FIND_BY_ID_SUCCESS,
