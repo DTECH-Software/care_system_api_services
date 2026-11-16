@@ -22,6 +22,7 @@ import com.dtech.claim.mapper.EntityToDtoMapper;
 import com.dtech.claim.model.*;
 import com.dtech.claim.repository.*;
 import com.dtech.claim.service.AssistedUserResolver;
+import com.dtech.claim.service.ClaimAttachmentContentService;
 import com.dtech.claim.service.InsuranceClaimRequestService;
 import com.dtech.claim.specifications.InsuranceClaimHistorySpecification;
 import com.dtech.claim.util.*;
@@ -107,6 +108,9 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
 
     @Autowired
     private final DocumentFeignClient documentFeignClient;
+
+    @Autowired
+    private final ClaimAttachmentContentService claimAttachmentContentService;
 
     @Autowired
     private final ModelMapper modelMapper;
@@ -1447,7 +1451,7 @@ public class InsuranceClaimRequestServiceImpl implements InsuranceClaimRequestSe
 
                 List<DocumentDownloadResponseDTO> collect = insuranceClaimsRequest.getInsuranceClaimsDetails().getDocuments().stream().map((document -> {
                     log.info("inside document list claims request details attachment view {} ", document);
-                    return new DocumentDownloadResponseDTO(String.valueOf(document.getType()), document.getFileName(), document.getFileType(), document.getDoc());
+                    return new DocumentDownloadResponseDTO(String.valueOf(document.getType()), document.getFileName(), document.getFileType(), claimAttachmentContentService.getBase64(document));
                 })).toList();
                 return ResponseEntity.ok().body(responseUtil.success((Object) Map.of("documents", collect),
                         messageSource.getMessage(ResponseMessageUtil.INSURANCE_CLAIM_REQUEST_FIND_BY_ID_SUCCESS,
